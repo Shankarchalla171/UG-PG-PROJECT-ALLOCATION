@@ -1,0 +1,5 @@
+spring.application.name=Backend
+spring.datasource.username=root
+spring.datasource.url=
+spring.datasource.password=
+spring.jpa.hibernate.ddl-auto=update
