@@ -1,4 +1,9 @@
 package com.selab.backend.models;
 
-public class Role {
+public enum Role {
+    USER,
+    ADMIN,
+    STUDENT,
+    PROFF,
+    DEPTCORDINATOR
 }
