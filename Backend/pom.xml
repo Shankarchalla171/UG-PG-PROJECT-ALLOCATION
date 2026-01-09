@@ -30,7 +30,11 @@
 		<java.version>21</java.version>
 	</properties>
 	<dependencies>
-
+		<dependency>
+			<groupId>io.github.cdimascio</groupId>
+			<artifactId>dotenv-java</artifactId>
+			<version>3.0.0</version>
+		</dependency>
 
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
