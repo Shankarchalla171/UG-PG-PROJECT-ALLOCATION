@@ -4,7 +4,7 @@ package com.selab.backend.controller;
 import com.selab.backend.auth.AuthenticationRequest;
 import com.selab.backend.auth.AuthenticationResponse;
 import com.selab.backend.auth.RegisterRequest;
-import com.selab.backend.services.AuthenticationService;
+import com.selab.backend.auth.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.annotation.RequiredTypes;
 import org.springframework.http.ResponseEntity;
