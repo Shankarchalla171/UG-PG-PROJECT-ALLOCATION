@@ -51,7 +51,7 @@ public class SecurityConfiguration {
     {
 
 
-        DaoAuthenticationProvider authenticationProvider =new DaoAuthenticationProvider();
+        DaoAuthenticationProvider authenticationProvider =dnew DaoAuthenticationProvider();
         authenticationProvider.setUserDetailsPasswordService(userDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder());
         return authenticationProvider;
