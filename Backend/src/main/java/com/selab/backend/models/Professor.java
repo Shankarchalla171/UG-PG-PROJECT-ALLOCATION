@@ -15,18 +15,18 @@ public class Professor {
     @Id
     @Email
     private String email;
-    @NotBlank
+//    @NotBlank
     private String userName;
 
-    @NotBlank
+//    @NotBlank
     private String departmentName;
 
-    @NotBlank
+//    @NotBlank
     private String domain;
 
-    @NotBlank
+//    @NotBlank
     private String googleScholarLink;
-    @NotBlank
+//    @NotBlank
     private  String officeNumber;
 
 }

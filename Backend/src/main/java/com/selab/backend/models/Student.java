@@ -16,19 +16,19 @@ public class Student {
 
     @Id
     private String rollNumber;
-    @NotBlank
+//    @NotBlank
     private String userName;
 
-    @NotBlank
+//    @NotBlank
     private String name;
 
-    @NotBlank
+//    @NotBlank
     @Email
     private String collegeEmailId;
-    @NotBlank
+//    @NotBlank
     private String departmentName;
 
-    @NotBlank
+//    @NotBlank
     private  String resumePath;
 
 
