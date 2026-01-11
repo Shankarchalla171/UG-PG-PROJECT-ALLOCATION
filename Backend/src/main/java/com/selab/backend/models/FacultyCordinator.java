@@ -15,7 +15,7 @@ public class FacultyCordinator {
     @Id
     private String email;
 
-    @NotBlank
+//    @NotBlank
     private String DeptName;
 
 

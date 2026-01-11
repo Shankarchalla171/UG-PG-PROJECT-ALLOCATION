@@ -24,12 +24,19 @@ public class AuthenticationService
 
 
     public AuthenticationResponse register(RegisterRequest registerRequest) {
-        var user = User.builder()
-                .username(registerRequest.getUsername())
-                .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .email(registerRequest.getEmail())
-                .role(Role.USER)
-                .build();
+//        var user = User.builder()
+//                .username(registerRequest.getUsername())
+//                .password(passwordEncoder.encode(registerRequest.getPassword()))
+//                .email(registerRequest.getEmail())
+//                .role(Role.USER)
+//                .build();
+        var user =new User(
+                registerRequest.getUsername(),
+                registerRequest.getEmail(),
+                passwordEncoder.encode(registerRequest.getPassword()),
+                Role.USER
+        );
+
         userRepository.save(user);
         var jwtToken=jwtService.generateToken(user);
         return AuthenticationResponse.builder()

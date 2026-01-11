@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,12 +14,18 @@ import java.util.List;
 @Entity
 @Table(name="users")
 @Data
-@Builder
-
+//@Builder
+@NoArgsConstructor
 public class User implements UserDetails {
+    public User(String username, String email, String password, Role role) {
+        this.username=username;
+        this.email=email;
+        this.password=password;
+        this.role=role;
+    }
     @Id
-    @Column(nullable = false)
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    @Column(nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     @NotBlank
     @Column(nullable = false,unique = true )
@@ -29,7 +36,7 @@ public class User implements UserDetails {
     @NotBlank
     @Column(nullable = false)
     private String password;
-    @NotBlank
+//    @NotBlank
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Role role;
