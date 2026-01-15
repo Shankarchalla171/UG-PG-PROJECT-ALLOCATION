@@ -1,34 +1,64 @@
-# version: '3.8'
+version: '3.8'
 
 services:
-  app:
-    build: .
-    ports:
-      - "0.0.0.0:8080:8080"
-    environment:
-      # - SPRING_DATASOURCE_URL=jdbc:mariadb://${DB_HOST}:${DB_PORT}/${DB_NAME}
-      - SPRING_DATASOURCE_URL=jdbc:mariadb://db:3306/${DB_NAME}
-      - SPRING_DATASOURCE_USERNAME=${DB_USER}
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-      - JWT_SECRET=${JWT_SECRET}
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-    depends_on:
-      - db
-    env_file:
-      - .env  
-
   db:
     image: mariadb:11.2
+    container_name: SELab-db
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "0.0.0.0:3306:3306"
+      - "3307:3306"
+    networks:
+      - selab-network  # Explicit network name
     volumes:
-      - db_data:/var/lib/mysql
-      - ./db-init:/docker-entrypoint-initdb.d
+      - SELab-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ./Backend
+    container_name: SELab-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 30000
+      # Add server properties
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    networks:
+      - selab-network
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    # Add extra hosts
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build: ./FrontEnd
+    container_name: SELab-frontend
+    ports:
+      - "5173:5173"
+    networks:
+      - selab-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  selab-network:
+    driver: bridge
+    name: selab-network  # Explicit name
 
 volumes:
-  db_data:
+  SELab-db-data:
