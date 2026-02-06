@@ -4,8 +4,8 @@ import { authReducer } from "../Reducers/authReducer";
 
 const initialState = {
     isloggedIn: false,
-    email: null,
-    password: null,
+    email:"",
+    password: "",
     role: null,
     token: null,
 };
