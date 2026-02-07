@@ -6,7 +6,7 @@ const initialState = {
     isloggedIn: false,
     email:"",
     password: "",
-    role: "null",
+    role: "",
     token: null,
 };
 
