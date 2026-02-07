@@ -1,5 +1,5 @@
 import { useContext, useState } from "react";
-import { AuthContext } from "../Context/AuthContext";
+import { AuthContext } from "../context/AuthContext";
 import mainGate from "../assets/mainGate.png";
 import { useNavigate } from "react-router-dom";
 

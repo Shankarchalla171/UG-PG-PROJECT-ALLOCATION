@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import { useReducer } from "react";
-import { authReducer } from "../Reducers/authReducer";
+import { authReducer } from "../reducers/authReducer";
 
 const initialState = {
     isloggedIn: false,

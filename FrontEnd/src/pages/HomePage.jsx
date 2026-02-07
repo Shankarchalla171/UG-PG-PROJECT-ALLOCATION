@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { AuthContext } from "../Context/AuthContext";   
+import { AuthContext } from "../context/AuthContext";   
 const HomePage = () =>{
     const{isloggedIn,email,password,role,token,authDispatch} = useContext(AuthContext);
     console.log(isloggedIn,email,role,token,password);
