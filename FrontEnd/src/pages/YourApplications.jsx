@@ -21,8 +21,8 @@ const YourApplications = () => {
 
     return (
         <> 
+          <Navbar />
           <main className='min-h-screen bg-gradient-to-br from-amber-50/50 to-orange-50/30'>
-            <Navbar/>
             <div className='flex'>
                 <Sidebar/>
                 <div className='flex-1 p-6'>

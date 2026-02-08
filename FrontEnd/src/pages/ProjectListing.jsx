@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import projects from '../../public/dummyData/projects';
 import ProjectCard from '../components/ProjectCard';
-import {  useNavigate} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const ProjectListing = () => {
   const [projectlist, setProjectlist] = useState([]);
@@ -23,7 +23,7 @@ const ProjectListing = () => {
 
   useEffect(() => {
     projects.forEach((project) => {
-      if(activeProjectId === null) {
+      if (activeProjectId === null) {
         setActiveProject([]);
       }
       if (project.id === activeProjectId) {
@@ -224,101 +224,99 @@ const ProjectListing = () => {
         </div>
 
         {/* Project Details Panel - Responsive */}
-        <div className={`${
-          activeProject?.projectTitle 
-            ? 'fixed inset-0 z-50 lg:relative lg:inset-auto bg-black/40 backdrop-blur-sm lg:bg-transparent lg:backdrop-blur-none' 
+        <div className={`${activeProject?.projectTitle
+            ? 'fixed  inset-0 z-50 lg:relative lg:inset-auto  lg:z-0 bg-black/40 backdrop-blur-sm lg:bg-transparent lg:backdrop-blur-none'
             : 'hidden lg:block'
-        } lg:w-80 xl:w-96 lg:shrink-0`}>
-          <div className='h-full lg:h-auto p-4 lg:p-4 border-l border-orange-200/60 bg-white/95 lg:bg-gradient-to-b lg:from-amber-50/50 lg:to-orange-50/30 overflow-y-auto ml-auto max-w-md lg:max-w-none'>
-          {activeProject?.projectTitle ? (
-            <div className='sticky top-4 lg:top-20 w-full max-w-md mx-auto lg:max-w-none'>
-              {/* Mobile Close Button */}
-              <button 
-                onClick={() => setActiveProjectId(null)}
-                className='lg:hidden mb-4 flex items-center gap-2 text-amber-700 hover:text-orange-600 transition-colors hover:cursor-pointer'
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
-                </svg>
-                Back to projects
-              </button>
-              <h2 className='text-base lg:text-lg font-bold text-amber-900 mb-3 lg:mb-4 flex items-center gap-2'>
-                <svg className="w-4 h-4 lg:w-5 lg:h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                </svg>
-                Project Details
-              </h2>
-              <div className='bg-white rounded-xl border border-orange-200 shadow-md p-4 lg:p-5 transition-all duration-300'>
-                {/* Title */}
-                <h3 className='text-base lg:text-lg font-semibold text-amber-900 mb-2 lg:mb-3 leading-tight'>{activeProject.projectTitle}</h3>
-                
-                {/* Description */}
-                <p className='text-sm text-amber-700 mb-3 lg:mb-4 leading-relaxed'>{activeProject.description}</p>
-                
-                {/* Faculty */}
-                <div className='flex items-center gap-2 text-sm text-amber-700 mb-3 lg:mb-4 p-2 lg:p-3 bg-amber-50 rounded-lg'>
-                  <svg className="w-5 h-5 flex-shrink-0 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+          } lg:w-80 xl:w-96 lg:shrink-0 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:self-start`}>
+          <div className='h-full lg:h-full p-4 lg:p-4 border-l border-orange-200/60 bg-white/95 lg:bg-gradient-to-b lg:from-amber-50/50 lg:to-orange-50/30 overflow-y-auto ml-auto max-w-md lg:max-w-none'>
+            {activeProject?.projectTitle ? (
+              <div className='w-full max-w-md mx-auto lg:max-w-none'>
+                {/* Mobile Close Button */}
+                <button
+                  onClick={() => setActiveProjectId(null)}
+                  className='lg:hidden mb-4 flex items-center gap-2 text-amber-700 hover:text-orange-600 transition-colors hover:cursor-pointer'
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
                   </svg>
-                  <div>
-                    <p className='text-xs text-amber-500'>Faculty</p>
-                    <p className='font-medium text-amber-800'>{activeProject.facultyName}</p>
-                  </div>
-                </div>
+                  Back to projects
+                </button>
+                <h2 className='text-base lg:text-lg font-bold text-amber-900 mb-3 lg:mb-4 flex items-center gap-2'>
+                  <svg className="w-4 h-4 lg:w-5 lg:h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+                  </svg>
+                  Project Details
+                </h2>
+                <div className='bg-white rounded-xl border border-orange-200 shadow-md p-4 lg:p-5 transition-all duration-300'>
+                  {/* Title */}
+                  <h3 className='text-base lg:text-lg font-semibold text-amber-900 mb-2 lg:mb-3 leading-tight'>{activeProject.projectTitle}</h3>
 
-                {/* Domains */}
-                {activeProject.domains && activeProject.domains.length > 0 && (
-                  <div className='mb-3 lg:mb-4'>
-                    <p className='text-xs font-medium text-amber-600 mb-1.5 lg:mb-2 uppercase tracking-wide'>Domains</p>
-                    <div className='flex flex-wrap gap-1.5 lg:gap-2'>
-                      {activeProject.domains.map((domain, idx) => (
-                        <span key={idx} className='px-2 lg:px-3 py-1 lg:py-1.5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg text-xs font-medium text-amber-800'>
-                          {domain}
-                        </span>
-                      ))}
+                  {/* Description */}
+                  <p className='text-sm text-amber-700 mb-3 lg:mb-4 leading-relaxed'>{activeProject.description}</p>
+
+                  {/* Faculty */}
+                  <div className='flex items-center gap-2 text-sm text-amber-700 mb-3 lg:mb-4 p-2 lg:p-3 bg-amber-50 rounded-lg'>
+                    <svg className="w-5 h-5 flex-shrink-0 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                    <div>
+                      <p className='text-xs text-amber-500'>Faculty</p>
+                      <p className='font-medium text-amber-800'>{activeProject.facultyName}</p>
                     </div>
                   </div>
-                )}
 
-                {/* Slots Available */}
-                <div className='flex items-center justify-between p-2 lg:p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-orange-100 mb-3 lg:mb-4'>
-                  <div className='flex items-center gap-2'>
-                    <svg className="w-4 h-4 lg:w-5 lg:h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-                    </svg>
-                    <span className='text-sm text-amber-700'>Available Slots</span>
+                  {/* Domains */}
+                  {activeProject.domains && activeProject.domains.length > 0 && (
+                    <div className='mb-3 lg:mb-4'>
+                      <p className='text-xs font-medium text-amber-600 mb-1.5 lg:mb-2 uppercase tracking-wide'>Domains</p>
+                      <div className='flex flex-wrap gap-1.5 lg:gap-2'>
+                        {activeProject.domains.map((domain, idx) => (
+                          <span key={idx} className='px-2 lg:px-3 py-1 lg:py-1.5 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg text-xs font-medium text-amber-800'>
+                            {domain}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Slots Available */}
+                  <div className='flex items-center justify-between p-2 lg:p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-orange-100 mb-3 lg:mb-4'>
+                    <div className='flex items-center gap-2'>
+                      <svg className="w-4 h-4 lg:w-5 lg:h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
+                      </svg>
+                      <span className='text-sm text-amber-700'>Available Slots</span>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${activeProject.availableSlots > 0
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-red-100 text-red-700'
+                      }`}>
+                      {activeProject.availableSlots > 0 ? activeProject.availableSlots : 'Full'}
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    activeProject.availableSlots > 0 
-                      ? 'bg-emerald-100 text-emerald-700' 
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    {activeProject.availableSlots > 0 ? activeProject.availableSlots : 'Full'}
-                  </span>
-                </div>
 
-                {/* Apply Button */}
-                {activeProject.availableSlots > 0 && (
-                  <button className='w-full py-2.5 lg:py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-2 text-sm lg:text-base
+                  {/* Apply Button */}
+                  {activeProject.availableSlots > 0 && (
+                    <button className='w-full py-2.5 lg:py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-2 text-sm lg:text-base
                     hover:cursor-pointer'
-                    onClick={()=>{navigate(`/applicationform/${activeProject.id}`)}}>
-                    <svg className="w-4 h-4 lg:w-5 lg:h-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                    </svg>
-                    Apply Now
-                  </button>
-                )}
+                      onClick={() => { navigate(`/applicationform/${activeProject.id}`) }}>
+                      <svg className="w-4 h-4 lg:w-5 lg:h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                      </svg>
+                      Apply Now
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className='hidden lg:flex flex-col items-center justify-center py-16 text-amber-500'>
-              <svg className="w-12 h-12 xl:w-16 xl:h-16 mb-3 xl:mb-4 text-amber-200" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4.86 8.86l-3 3.87L9 13.14 6 17h12l-3.86-5.14z"/>
-              </svg>
-              <p className='text-xs xl:text-sm font-medium text-amber-600'>Select a project</p>
-              <p className='text-xs text-amber-400 mt-1 text-center'>Click on a project card to view details</p>
-            </div>
-          )}
+            ) : (
+              <div className='hidden lg:flex flex-col items-center justify-center py-16 text-amber-500'>
+                <svg className="w-12 h-12 xl:w-16 xl:h-16 mb-3 xl:mb-4 text-amber-200" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4.86 8.86l-3 3.87L9 13.14 6 17h12l-3.86-5.14z" />
+                </svg>
+                <p className='text-xs xl:text-sm font-medium text-amber-600'>Select a project</p>
+                <p className='text-xs text-amber-400 mt-1 text-center'>Click on a project card to view details</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
