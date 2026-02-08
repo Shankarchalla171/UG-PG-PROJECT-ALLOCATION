@@ -5,10 +5,11 @@ import {Routes, Route} from 'react-router-dom';
 import ProfessorCreateProject from './pages/Professor_create_project';
 import Professor_dashboard from './pages/Professor_dashboard';
 import ProfessorViewProjects from './pages/Professors_projects';
-import ProjectListing from './Pages/ProjectListing';
+import ProjectListing from './Pages/ProjectListing'
 import SubmitApplication from './pages/SubmitAppliation';
 import YourApplications from './pages/YourApplications';
-
+import Student_teams from './pages/student_teams';
+import Student_confirmations from './pages/Student_confirmations';
 
 function App() {
     return (
@@ -21,8 +22,10 @@ function App() {
         <Route path='/professor_create_project' element={<ProfessorCreateProject/>}/>
         <Route path='/professor_projects' element={<ProfessorViewProjects/>}/>
         <Route path='/applicationform/:id' element={<SubmitApplication/>}/>
-        <Route path='/projects' element={<ProjectListing/>}/>
+        <Route path='/student_view_projects' element={<ProjectListing/>}/>
         <Route path='/student_applications' element={<YourApplications/>}/>
+        <Route path='/student_teams' element={<Student_teams/>}/>
+        <Route path='/student_confirmations_recieved' element={<Student_confirmations/>}/>
       </Routes>
     </>
   )

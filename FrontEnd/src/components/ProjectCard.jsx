@@ -2,7 +2,6 @@ import React from 'react';
 
 const ProjectCard = ({ project, activeProjectId, setActiveProjectId }) => {
     const { id,projectTitle, facultyName, domains, availableSlots } = project;
-
     return (
         <div className='group bg-white rounded-xl border border-orange-200/60 shadow-sm hover:shadow-xl hover:border-orange-300 hover:scale-[1.02] transition-all duration-200 ease-out overflow-hidden'>
             {/* Header */}
@@ -45,7 +44,7 @@ const ProjectCard = ({ project, activeProjectId, setActiveProjectId }) => {
             {/* Footer */}
             <div className='px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-t border-orange-100 '>
                 <button className='w-full py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:cursor-pointer'
-                   onClick={()=> setActiveProjectId(id)}
+                    onClick={() => setActiveProjectId(id)}
                 >
                     View Details
                 </button>
