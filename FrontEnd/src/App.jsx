@@ -12,6 +12,8 @@ import ProfessorFinalAllocation from './pages/Professor_final_allocation';
 import Professor_student_request from './pages/Professor_student_request';
 import Dept_view_allocatoins from './pages/Dept_view_allocatoins';
 import Dept_enforce_deadlines from './pages/Dept_enforce_deadlines';
+import Student_teams from './pages/student_teams';
+import Student_confirmations from './pages/Student_confirmations';
 function App() {
     return (
     <>
