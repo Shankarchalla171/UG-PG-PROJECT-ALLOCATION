@@ -73,16 +73,82 @@ const ProfessorViewProjects = () => {
         }
     ]);
 
+    const [editingId, setEditingId] = useState(null);
+    const [editFormData, setEditFormData] = useState({
+        title: '',
+        description: '',
+        numberOfInterns: '',
+        domain: '',
+        requirements: '',
+        duration: '',
+        status: 'Active'
+    });
+
     const handleDelete = (id) => {
         if (window.confirm("Are you sure you want to delete this project?")) {
             setProjects(projects.filter(project => project.id !== id));
         }
     };
 
-    const handleEdit = (id) => {
-        // For now, just log which project to edit
-        console.log("Edit project with id:", id);
-        alert(`Editing project with ID: ${id}`);
+    const handleEdit = (project) => {
+        setEditingId(project.id);
+        setEditFormData({
+            title: project.title,
+            description: project.description,
+            numberOfInterns: project.numberOfInterns,
+            domain: project.domain,
+            requirements: project.requirements,
+            duration: project.duration,
+            status: project.status
+        });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setEditFormData({
+            title: '',
+            description: '',
+            numberOfInterns: '',
+            domain: '',
+            requirements: '',
+            duration: '',
+            status: 'Active'
+        });
+    };
+
+    const handleSaveEdit = (id) => {
+        const updatedProjects = projects.map(project => {
+            if (project.id === id) {
+                return {
+                    ...project,
+                    ...editFormData,
+                    numberOfInterns: parseInt(editFormData.numberOfInterns),
+                    duration: parseInt(editFormData.duration),
+                    applicants: parseInt(project.applicants)
+                };
+            }
+            return project;
+        });
+
+        setProjects(updatedProjects);
+        setEditingId(null);
+        setEditFormData({
+            title: '',
+            description: '',
+            numberOfInterns: '',
+            domain: '',
+            requirements: '',
+            duration: '',
+            status: 'Active'
+        });
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditFormData({
+            ...editFormData,
+            [name]: value
+        });
     };
 
     const getStatusColor = (status) => {
@@ -159,75 +225,173 @@ const ProfessorViewProjects = () => {
                                     {/* Project Header */}
                                     <div className="p-6 border-b border-orange-200/60">
                                         <div className="flex justify-between items-start mb-3">
-                                            <div>
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-                                                    {project.status}
-                                                </span>
-                                            </div>
+                                            {editingId === project.id ? (
+                                                <div>
+                                                    <select
+                                                        name="status"
+                                                        value={editFormData.status}
+                                                        onChange={handleInputChange}
+                                                        className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(editFormData.status)} border-0 focus:ring-0 focus:outline-none`}
+                                                    >
+                                                        <option value="Active">Active</option>
+                                                        <option value="Completed">Completed</option>
+                                                        <option value="Pending">Pending</option>
+                                                    </select>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                                                        {project.status}
+                                                    </span>
+                                                </div>
+                                            )}
                                             <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleEdit(project.id)}
-                                                    className="p-2 rounded-lg text-amber-700 hover:bg-orange-100 hover:text-orange-600 transition-all duration-300"
-                                                    title="Edit Project"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(project.id)}
-                                                    className="p-2 rounded-lg text-rose-700 hover:bg-rose-100 hover:text-rose-600 transition-all duration-300"
-                                                    title="Delete Project"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </button>
+                                                {editingId === project.id ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleSaveEdit(project.id)}
+                                                            className="p-2 rounded-lg text-green-700 hover:bg-green-100 hover:text-green-600 transition-all duration-300"
+                                                            title="Save Changes"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        </button>
+                                                        <button
+                                                            onClick={handleCancelEdit}
+                                                            className="p-2 rounded-lg text-amber-700 hover:bg-amber-100 hover:text-amber-600 transition-all duration-300"
+                                                            title="Cancel"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleEdit(project)}
+                                                            className="p-2 rounded-lg text-amber-700 hover:bg-orange-100 hover:text-orange-600 transition-all duration-300"
+                                                            title="Edit Project"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                            </svg>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(project.id)}
+                                                            className="p-2 rounded-lg text-rose-700 hover:bg-rose-100 hover:text-rose-600 transition-all duration-300"
+                                                            title="Delete Project"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
-                                        <h3 className="text-lg font-bold text-amber-800 line-clamp-1">{project.title}</h3>
-                                        <p className="text-sm text-amber-600/70 mt-2 line-clamp-2">{project.description}</p>
+                                        {editingId === project.id ? (
+                                            <>
+                                                <input
+                                                    type="text"
+                                                    name="title"
+                                                    value={editFormData.title}
+                                                    onChange={handleInputChange}
+                                                    className="text-lg font-bold text-amber-800 w-full p-2 border border-amber-200 rounded-lg mb-2 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                                                />
+                                                <textarea
+                                                    name="description"
+                                                    value={editFormData.description}
+                                                    onChange={handleInputChange}
+                                                    className="text-sm text-amber-600/70 w-full p-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                                                    rows="2"
+                                                />
+                                            </>
+                                        ) : (
+                                            <>
+                                                <h3 className="text-lg font-bold text-amber-800 line-clamp-1">{project.title}</h3>
+                                                <p className="text-sm text-amber-600/70 mt-2 line-clamp-2">{project.description}</p>
+                                            </>
+                                        )}
                                     </div>
 
                                     {/* Project Details */}
                                     <div className="p-6">
                                         <div className="space-y-4">
+                                            {/* Interns Needed */}
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
                                                     <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                                     </svg>
                                                 </div>
-                                                <div>
+                                                <div className="flex-1">
                                                     <p className="text-xs text-amber-600/70">Interns Needed</p>
-                                                    <p className="text-sm font-medium text-amber-800">{project.numberOfInterns} positions</p>
+                                                    {editingId === project.id ? (
+                                                        <input
+                                                            type="number"
+                                                            name="numberOfInterns"
+                                                            value={editFormData.numberOfInterns}
+                                                            onChange={handleInputChange}
+                                                            className="text-sm font-medium text-amber-800 w-full p-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                                            min="1"
+                                                        />
+                                                    ) : (
+                                                        <p className="text-sm font-medium text-amber-800">{project.numberOfInterns} positions</p>
+                                                    )}
                                                 </div>
                                             </div>
 
+                                            {/* Domain */}
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center">
                                                     <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                                     </svg>
                                                 </div>
-                                                <div>
+                                                <div className="flex-1">
                                                     <p className="text-xs text-amber-600/70">Domain</p>
-                                                    <p className="text-sm font-medium text-amber-800">{project.domain}</p>
+                                                    {editingId === project.id ? (
+                                                        <input
+                                                            type="text"
+                                                            name="domain"
+                                                            value={editFormData.domain}
+                                                            onChange={handleInputChange}
+                                                            className="text-sm font-medium text-amber-800 w-full p-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                                        />
+                                                    ) : (
+                                                        <p className="text-sm font-medium text-amber-800">{project.domain}</p>
+                                                    )}
                                                 </div>
                                             </div>
 
+                                            {/* Duration */}
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
                                                     <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                     </svg>
                                                 </div>
-                                                <div>
+                                                <div className="flex-1">
                                                     <p className="text-xs text-amber-600/70">Duration</p>
-                                                    <p className="text-sm font-medium text-amber-800">{project.duration} weeks</p>
+                                                    {editingId === project.id ? (
+                                                        <input
+                                                            type="number"
+                                                            name="duration"
+                                                            value={editFormData.duration}
+                                                            onChange={handleInputChange}
+                                                            className="text-sm font-medium text-amber-800 w-full p-1 border border-amber-200 rounded-md focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                                            min="1"
+                                                            step="1"
+                                                        />
+                                                    ) : (
+                                                        <p className="text-sm font-medium text-amber-800">{project.duration} weeks</p>
+                                                    )}
                                                 </div>
                                             </div>
 
+                                            {/* Applicants */}
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
                                                     <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,27 +408,30 @@ const ProfessorViewProjects = () => {
                                         {/* Requirements Preview */}
                                         <div className="mt-6">
                                             <p className="text-xs text-amber-600/70 mb-2">Skills Required</p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {project.requirements.split(', ').slice(0, 3).map((skill, index) => (
-                                                    <span key={index} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded-lg border border-amber-200">
-                                                        {skill}
-                                                    </span>
-                                                ))}
-                                                {project.requirements.split(', ').length > 3 && (
-                                                    <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-lg">
-                                                        +{project.requirements.split(', ').length - 3} more
-                                                    </span>
-                                                )}
-                                            </div>
+                                            {editingId === project.id ? (
+                                                <textarea
+                                                    name="requirements"
+                                                    value={editFormData.requirements}
+                                                    onChange={handleInputChange}
+                                                    className="w-full p-2 border border-amber-200 rounded-lg text-sm text-amber-800 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                                                    rows="2"
+                                                    placeholder="Enter skills separated by commas"
+                                                />
+                                            ) : (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {project.requirements.split(', ').slice(0, 3).map((skill, index) => (
+                                                        <span key={index} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded-lg border border-amber-200">
+                                                            {skill}
+                                                        </span>
+                                                    ))}
+                                                    {project.requirements.split(', ').length > 3 && (
+                                                        <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-lg">
+                                                            +{project.requirements.split(', ').length - 3} more
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
-
-                                        {/* View Details Button */}
-                                        {/* <button className="w-full mt-6 px-4 py-2 bg-gradient-to-r from-orange-50 to-rose-50 text-amber-800 font-medium rounded-xl border border-orange-200 hover:from-orange-100 hover:to-rose-100 transition-all duration-300 flex items-center justify-center gap-2">
-                                            <span>View Details</span>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                            </svg>
-                                        </button> */}
                                     </div>
                                 </div>
                             ))}
