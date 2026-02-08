@@ -10,8 +10,7 @@ import SubmitApplication from './pages/SubmitAppliation';
 import YourApplications from './pages/YourApplications';
 import ProfessorFinalAllocation from './pages/Professor_final_allocation';
 import Professor_student_request from './pages/Professor_student_request';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
+import Dept_view_allocatoins from './pages/Dept_view_allocatoins';
 function App() {
     return (
     <>
@@ -27,6 +26,8 @@ function App() {
         <Route path='/student_applications' element={<YourApplications/>}/>
         <Route path='/professor_final_allocation' element={<ProfessorFinalAllocation/>}/>  
         <Route path='/professor_student_request' element={<Professor_student_request/>}/> 
+        <Route path='/dept_view_allocations' element={<Dept_view_allocatoins/>}/> 
+      
       </Routes>
     </>
   )
