@@ -11,6 +11,7 @@ import YourApplications from './pages/YourApplications';
 import ProfessorFinalAllocation from './pages/Professor_final_allocation';
 import Professor_student_request from './pages/Professor_student_request';
 import Dept_view_allocatoins from './pages/Dept_view_allocatoins';
+import Dept_enforce_deadlines from './pages/Dept_enforce_deadlines';
 function App() {
     return (
     <>
@@ -27,6 +28,7 @@ function App() {
         <Route path='/professor_final_allocation' element={<ProfessorFinalAllocation/>}/>  
         <Route path='/professor_student_request' element={<Professor_student_request/>}/> 
         <Route path='/dept_view_allocations' element={<Dept_view_allocatoins/>}/> 
+        <Route path='/dept_enforce_deadlines' element={<Dept_enforce_deadlines/>}/>
       
       </Routes>
     </>
