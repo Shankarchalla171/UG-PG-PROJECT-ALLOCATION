@@ -49,7 +49,7 @@ const Sidebar = () => {
 
                 {role === "student" && (
                     <>
-                        <NavLink to="/projects" className={navLinkClasses}>
+                        <NavLink to="/student_view_projects" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                             </svg>
@@ -96,7 +96,7 @@ const Sidebar = () => {
                             <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Student Requests</span>
                         </NavLink>
 
-                        <NavLink to="/professor_final_allocations" className={navLinkClasses}>
+                        <NavLink to="/professor_final_allocation" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                             </svg>
