@@ -1,29 +1,33 @@
-import React, { useState } from 'react';
-import Navbar from '../components/Navbar';
-import Sidebar from '../components/Sidebar';
+import React, { useState } from "react";
+import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
 
 const ProfessorCreateProject = () => {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    numberOfInterns: '',
-    domain: '',
-    requirements: '',
-    duration: ''
-  });
+  const initialFormState = {
+    title: "",
+    description: "",
+    numberOfInterns: "",
+    domain: "",
+    requirements: "",
+    duration: "",
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
+    setFormData((prevState) => ({
       ...prevState,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted:', formData);
+
+    console.log("Form submitted:", formData);
+
+    setFormData(initialFormState); // clears form
   };
 
   return (
@@ -34,14 +38,24 @@ const ProfessorCreateProject = () => {
         <div className="flex-1 p-6 ml-0 md:ml-0">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-amber-800">Create New Project</h1>
-              <p className="text-amber-600/70 mt-2">Fill in the details below to create a new project</p>
+              <h1 className="text-3xl font-bold text-amber-800">
+                Create New Project
+              </h1>
+              <p className="text-amber-600/70 mt-2">
+                Fill in the details below to create a new project
+              </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-6 border border-orange-200/60">
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white rounded-2xl shadow-lg p-6 border border-orange-200/60"
+            >
               {/* Title Field */}
               <div className="mb-6">
-                <label htmlFor="title" className="block text-amber-800 font-medium mb-2">
+                <label
+                  htmlFor="title"
+                  className="block text-amber-800 font-medium mb-2"
+                >
                   Project Title *
                 </label>
                 <input
@@ -58,7 +72,10 @@ const ProfessorCreateProject = () => {
 
               {/* Description Field */}
               <div className="mb-6">
-                <label htmlFor="description" className="block text-amber-800 font-medium mb-2">
+                <label
+                  htmlFor="description"
+                  className="block text-amber-800 font-medium mb-2"
+                >
                   Project Description *
                 </label>
                 <textarea
@@ -76,8 +93,11 @@ const ProfessorCreateProject = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {/* Number of Interns Field */}
                 <div>
-                  <label htmlFor="numberOfInterns" className="block text-amber-800 font-medium mb-2">
-                    Number of Interns Needed *
+                  <label
+                    htmlFor="numberOfInterns"
+                    className="block text-amber-800 font-medium mb-2"
+                  >
+                    Number of Slots *
                   </label>
                   <input
                     type="number"
@@ -94,7 +114,10 @@ const ProfessorCreateProject = () => {
 
                 {/* Domain Field - Changed to text input */}
                 <div>
-                  <label htmlFor="domain" className="block text-amber-800 font-medium mb-2">
+                  <label
+                    htmlFor="domain"
+                    className="block text-amber-800 font-medium mb-2"
+                  >
                     Domain *
                   </label>
                   <input
@@ -112,7 +135,10 @@ const ProfessorCreateProject = () => {
 
               {/* Requirements Field */}
               <div className="mb-6">
-                <label htmlFor="requirements" className="block text-amber-800 font-medium mb-2">
+                <label
+                  htmlFor="requirements"
+                  className="block text-amber-800 font-medium mb-2"
+                >
                   Requirements & Skills Needed
                 </label>
                 <textarea
@@ -128,7 +154,10 @@ const ProfessorCreateProject = () => {
 
               {/* Duration Field */}
               <div className="mb-8">
-                <label htmlFor="duration" className="block text-amber-800 font-medium mb-2">
+                <label
+                  htmlFor="duration"
+                  className="block text-amber-800 font-medium mb-2"
+                >
                   Project Duration (in weeks)
                 </label>
                 <input
@@ -153,6 +182,7 @@ const ProfessorCreateProject = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setFormData(initialFormState)}
                   className="px-6 py-3 border border-orange-300 text-amber-700 font-medium rounded-xl hover:bg-orange-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                 >
                   Cancel
