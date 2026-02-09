@@ -3,7 +3,9 @@ import React from 'react';
 const ProjectCard = ({ project, activeProjectId, setActiveProjectId }) => {
     const { id,projectTitle, facultyName, domains, availableSlots } = project;
     return (
-        <div className='group bg-white rounded-xl border border-orange-200/60 shadow-sm hover:shadow-xl hover:border-orange-300 hover:scale-[1.02] transition-all duration-200 ease-out overflow-hidden'>
+        <div className='group bg-white rounded-xl border border-orange-200/60 shadow-sm hover:shadow-xl hover:border-orange-300 hover:scale-[1.02] transition-all duration-200 ease-out overflow-hidden hover:cursor-pointer'
+          onClick={()=>setActiveProjectId(id)}
+        >
             {/* Header */}
             <div className='p-5 pb-4'>
                 <div className='flex items-start justify-between gap-3 mb-3'>
