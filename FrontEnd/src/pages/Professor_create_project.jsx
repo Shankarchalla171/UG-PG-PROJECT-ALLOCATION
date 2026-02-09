@@ -29,7 +29,7 @@ const ProfessorCreateProject = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
       <Navbar />
-      <div className="flex pt-16">
+      <div className="flex">
         <Sidebar />
         <div className="flex-1 p-6 ml-0 md:ml-0">
           <div className="max-w-4xl mx-auto">
