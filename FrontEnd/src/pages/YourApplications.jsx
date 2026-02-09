@@ -60,7 +60,7 @@ const YourApplications = () => {
                                 <svg className="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/>
                                 </svg>
-                                <label className='text-xs text-amber-600 font-medium'>Sort by:</label>
+                                <label className='text-xs text-amber-600 font-medium'>Filter by:</label>
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
