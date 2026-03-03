@@ -6,9 +6,9 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-@Table(name="project")
+@Table(name="projects")
 @Data
-public class project {
+public class Project {
 
 
 
