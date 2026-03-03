@@ -4,15 +4,17 @@ package com.selab.backend.models;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Entity
-@Table(name="faculty_cordinator")
+@Table(name="dept_cordinator")
 @Data
 
-public class FacultyCordinator {
+public class DeptCordinator {
     @Id
+    private Long deptCordinatorId;
+
+
     private String email;
 
 //    @NotBlank

@@ -15,20 +15,19 @@ import jakarta.validation.constraints.NotBlank;
 public class Student {
 
     @Id
+    private Long studentId;
+
     private String rollNumber;
 //    @NotBlank
     private String userName;
 
-//    @NotBlank
     private String name;
 
-//    @NotBlank
     @Email
     private String collegeEmailId;
-//    @NotBlank
     private String departmentName;
 
-//    @NotBlank
+
     private  String resumePath;
 
 

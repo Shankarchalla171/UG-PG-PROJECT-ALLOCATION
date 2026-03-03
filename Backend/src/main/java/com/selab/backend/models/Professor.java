@@ -13,7 +13,11 @@ import lombok.Data;
 public class Professor {
 
     @Id
+    private Long professorId;
+
+
     @Email
+
     private String email;
 //    @NotBlank
     private String userName;
