@@ -1,9 +1,6 @@
 package com.selab.backend.models;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -15,6 +12,7 @@ import jakarta.validation.constraints.NotBlank;
 public class Student {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long studentId;
 
     private String rollNumber;
@@ -29,6 +27,10 @@ public class Student {
 
 
     private  String resumePath;
+
+    @ManyToOne
+    @JoinColumn(name="teamId")
+    private Team team;
 
 
 

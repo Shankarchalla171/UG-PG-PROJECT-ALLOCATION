@@ -1,24 +1,30 @@
 package com.selab.backend.models;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 @Entity
-@Table(name="dept_cordinator")
+@Table(name="dept_coordinators")
 @Data
 
-public class DeptCordinator {
+public class DeptCoordinator {
     @Id
-    private Long deptCordinatorId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long deptCoordinatorId;
 
 
     private String email;
 
 //    @NotBlank
     private String DeptName;
+
+
+    @OneToMany(mappedBy = "deptCoordinator", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
+    private List<Project> projects;
+
 
 
 
