@@ -1,10 +1,11 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import mainGate from "../assets/mainGate.png";
 import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
-    const {isloggedIn,email,password,role,token,authDispatch} = useContext(AuthContext);
+    const {
+        isloggedIn,email,password,role,token,authDispatch} = useContext(AuthContext);
     const navigate= useNavigate();
     
     // State for form mode and form fields
@@ -12,7 +13,59 @@ const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [err, setErr] = useState("");
     
+    
+
+
+    useEffect(() => {
+        if (isloggedIn) {
+            if (role === "admin") {
+                navigate("/admin/dashboard");
+            } else {
+                navigate("/dashboard");
+            }
+        }
+        else{
+            const loginUser = async () => {
+        if (!email || !password || !isLoading) return;
+        
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
+
+            authDispatch({
+                type: "loginSuccess",
+                payload: {
+                    token: data.token,
+                    role: data.role || "home",
+                }
+            });
+            
+            setIsLoading(false);
+            navigate(`/${data.role || "home"}`);
+            
+        } catch (err) {
+            console.error("Login error:", err);
+            setError(err.message || "Login failed. Please try again.");
+            setIsLoading(false);
+        }
+    };
+
+    loginUser();
+        }
+    }, [isloggedIn, role, navigate]);
     const handleEmailChange =(e) =>{
         console.log(e.target.value);
         authDispatch(
@@ -37,16 +90,13 @@ const LoginPage = () => {
 
     const handleLogin =(e) =>{
         e.preventDefault();
-        console.log("login button clicked");
-        authDispatch({
-            type:"loginSuccess",
-            payload:{
-                token:"this is a dummy token",
-                role:"home",
-            }
-        })
-        console.log(role);
-        navigate(`/${role}`);
+        if(!email || !password){
+            alert("Please fill in all fields");
+            return;
+        }
+
+        setErr("");
+        
     }
 
     const handleRegister = (e) => {
