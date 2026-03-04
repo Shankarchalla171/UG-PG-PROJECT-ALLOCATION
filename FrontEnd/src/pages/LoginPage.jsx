@@ -14,11 +14,11 @@ const LoginPage = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState("");
     const [err, setErr] = useState("");
+    const [loading, setLoading] = useState(false);
     
     
 
-
-    useEffect(() => {
+  useEffect(() => {
         if (isloggedIn) {
             if (role === "admin") {
                 navigate("/admin/dashboard");
@@ -26,48 +26,10 @@ const LoginPage = () => {
                 navigate("/dashboard");
             }
         }
-        else{
-            const loginUser = async () => {
-        if (!email || !password || !isLoading) return;
-        
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
-            }
-
-            authDispatch({
-                type: "loginSuccess",
-                payload: {
-                    token: data.token,
-                    role: data.role || "home",
-                }
-            });
-            
-            setIsLoading(false);
-            navigate(`/${data.role || "home"}`);
-            
-        } catch (err) {
-            console.error("Login error:", err);
-            setError(err.message || "Login failed. Please try again.");
-            setIsLoading(false);
-        }
-    };
-
-    loginUser();
-        }
     }, [isloggedIn, role, navigate]);
+
     const handleEmailChange =(e) =>{
-        console.log(e.target.value);
+        // console.log(e.target.value);
         authDispatch(
             {
                type:"setEmail",
@@ -77,7 +39,7 @@ const LoginPage = () => {
     }
 
     const handlePasswordChange =(e) =>{
-        console.log(e.target.value);
+        // console.log(e.target.value);
         authDispatch({
             type:"setPassword",
             payload:e.target.value,
@@ -88,33 +50,109 @@ const LoginPage = () => {
         setConfirmPassword(e.target.value);
     }
 
-    const handleLogin =(e) =>{
-        e.preventDefault();
-        if(!email || !password){
-            alert("Please fill in all fields");
-            return;
-        }
-
-        setErr("");
-        
+const handleLogin = async (e) => {
+    // console.log("login button clicked");
+    e.preventDefault();
+    if (!email || !password) {
+        alert("Please fill in all fields");
+        return;
     }
 
-    const handleRegister = (e) => {
-        e.preventDefault();
-        console.log("register button clicked");
-        console.log("Email:", email);
-        console.log("Password:", password);
-        console.log("Confirm Password:", confirmPassword);
+    setErr("");
+    setLoading(true);
+    
+    try {
+        // const response = await fetch('/api/auth/login', {
+            const response = await fetch('/api/auth/login', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                username: email,
+                password: password
+            }),
+        });
         
-        // Add your registration logic here
-        // For now, we'll simulate successful registration and switch to login
-        alert("We have sent a verification link to your email. Please verify to login.");
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || "Login failed");
+        }
+        
+        authDispatch({
+            type: "loginSuccess",
+            payload: {
+                token: data.token,
+                role: data.role,
+                email: data.email,
+            }
+        });
+        
+        setLoading(false);
+        
+    } catch (err) {
+        console.error("Login error:", err);
+        setErr(err.message || "Login failed. Please try again.");
+        setLoading(false);
+    }
+};
+const handleRegister = async (e) => {
+    e.preventDefault();
+    console.log("register button clicked");
+    
+    // Validation
+    if (!email || !password || !confirmPassword) {
+        alert("Please fill in all fields");
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        alert("Passwords do not match");
+        return;
+    }
+    
+    if (password.length < 3) {
+        alert("Password must be at least 3 characters long");
+        return;
+    }
+
+    setErr("");
+    setLoading(true);
+    
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                username: email,
+                email: email,
+                password: password
+            }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || "Registration failed");
+        }
+        
+        // Registration successful
+        alert("Registration successful! Please login with your credentials.");
         
         // Clear form and switch to login
         clearForm();
         setIsRegistering(false);
+        setLoading(false);
+        
+    } catch (err) {
+        console.error("Registration error:", err);
+        setErr(err.message || "Registration failed. Please try again.");
+        setLoading(false);
     }
-
+};
     const clearForm = () => {
         authDispatch({ type: "setEmail", payload: "" });
         authDispatch({ type: "setPassword", payload: "" });
