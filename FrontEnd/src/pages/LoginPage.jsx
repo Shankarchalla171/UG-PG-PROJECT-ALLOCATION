@@ -20,8 +20,8 @@ const LoginPage = () => {
 
   useEffect(() => {
         if (isloggedIn) {
-            if (role === "admin") {
-                navigate("/admin/dashboard");
+            if (role === "STUDENT") {
+                navigate("/student_view_projects");
             } else {
                 navigate("/dashboard");
             }
