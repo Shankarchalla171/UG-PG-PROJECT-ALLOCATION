@@ -5,5 +5,6 @@ public enum Role {
     ADMIN,
     STUDENT,
     PROFF,
-    DEPTCORDINATOR
+    DEPTCORDINATOR,
+    UNVERIFIED,
 }
