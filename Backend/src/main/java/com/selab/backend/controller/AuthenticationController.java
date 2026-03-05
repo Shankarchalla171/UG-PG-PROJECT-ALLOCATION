@@ -4,13 +4,12 @@ package com.selab.backend.controller;
 import com.selab.backend.auth.AuthenticationRequest;
 import com.selab.backend.auth.AuthenticationResponse;
 import com.selab.backend.auth.RegisterRequest;
-import com.selab.backend.auth.AuthenticationService;
+import com.selab.backend.services.AuthenticationService;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.models.User;
-import com.selab.backend.services.EmailServiceInterface;
 import lombok.RequiredArgsConstructor;
-import org.aspectj.lang.annotation.RequiredTypes;
+import org.antlr.v4.runtime.Token;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
@@ -35,6 +34,11 @@ public class AuthenticationController {
         return  ResponseEntity.ok(authenticationService.authenticate(request));
     }
 
+    @PostMapping("/verify-email")
+    public ResponseEntity<AuthenticationResponse> verifyEmail(@RequestParam String token){
+        return ResponseEntity.ok(authenticationService.verifyEmail(token));
+    }
+
     @GetMapping("/parse")
     public ResponseEntity<Map<String, String>> parseToken(@RequestHeader(value = "Authorization", required = true) String authorizationHeader){
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
@@ -56,5 +60,10 @@ public class AuthenticationController {
         resp.put("role", user.getRole().toString());
         return ResponseEntity.ok(resp);
     }
+
+
+
+
+
 
 }
