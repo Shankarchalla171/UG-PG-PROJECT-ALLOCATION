@@ -8,6 +8,7 @@ import com.selab.backend.auth.AuthenticationService;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.models.User;
+import com.selab.backend.services.EmailServiceInterface;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.annotation.RequiredTypes;
 import org.springframework.http.ResponseEntity;
@@ -54,15 +55,6 @@ public class AuthenticationController {
         resp.put("email", user.getEmail());
         resp.put("role", user.getRole().toString());
         return ResponseEntity.ok(resp);
-    }
-    @GetMapping("/verify-email")
-    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
-        try {
-            String result = authenticationService.verifyEmail(token);
-            return ResponseEntity.ok(result);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
     }
 
 }
