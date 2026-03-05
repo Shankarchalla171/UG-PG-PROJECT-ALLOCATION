@@ -55,5 +55,14 @@ public class AuthenticationController {
         resp.put("role", user.getRole().toString());
         return ResponseEntity.ok(resp);
     }
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        try {
+            String result = authenticationService.verifyEmail(token);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
 }

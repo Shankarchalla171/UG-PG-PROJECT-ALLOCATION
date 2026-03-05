@@ -1,12 +1,12 @@
 package com.selab.backend.services;
-import com.SpringBootEmail.Entity.EmailDetails;
+import com.selab.backend.models.EmailDetails;
 
 
-public interface EmailService {
+public interface EmailServiceInterface {
 
     String sendSimpleMail(EmailDetails details);
 
-    
+    void sendVerificationEmail(String to, String username, String token);
     String sendMailWithAttachment(EmailDetails details);
 
 }

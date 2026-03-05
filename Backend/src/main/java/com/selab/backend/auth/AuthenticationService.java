@@ -11,6 +11,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.selab.backend.repositories.UserRepository;
+
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 
@@ -59,5 +62,21 @@ public class AuthenticationService
                 .token(jwtToken)
                 .build();
     }
+    public String verifyEmail(String token) {
+        
+        User user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
 
+        if (user.getTokenExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Verification token has expired");
+        }
+
+        user.setRole(Role.STUDENT);
+        user.setVerificationToken(null);
+        user.setTokenExpiryDate(null);
+
+        userRepository.save(user);
+
+        return "Email verified successfully! You can now login.";
+    }
 }

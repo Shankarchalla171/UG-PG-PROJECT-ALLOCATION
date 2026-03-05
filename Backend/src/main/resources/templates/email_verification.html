@@ -1,10 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
+<html>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+<h2 style="color: #059669;">Welcome to EduProject!</h2>
+<p>Hello <strong th:text="${username}">User</strong>,</p>
+<p>Thank you for registering. Please verify your email address by clicking the button below:</p>
+<p style="text-align: center;">
+    <a th:href="${verificationLink}" style="background-color: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Verify Email</a>
+</p>
+<p>Or copy and paste this link in your browser:</p>
+<p th:text="${verificationLink}"></p>
+<p>This link will expire in 24 hours.</p>
+<p>If you didn't register for EduProject, please ignore this email.</p>
+<br>
+<p>Best regards,<br>EduProject Team</p>
 </body>
 </html>
