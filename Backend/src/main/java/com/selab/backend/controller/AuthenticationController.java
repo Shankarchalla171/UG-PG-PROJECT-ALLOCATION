@@ -4,7 +4,7 @@ package com.selab.backend.controller;
 import com.selab.backend.auth.AuthenticationRequest;
 import com.selab.backend.auth.AuthenticationResponse;
 import com.selab.backend.auth.RegisterRequest;
-import com.selab.backend.auth.AuthenticationService;
+import com.selab.backend.services.AuthenticationService;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.models.User;
@@ -33,6 +33,10 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request){
         return  ResponseEntity.ok(authenticationService.authenticate(request));
+    }
+    @PostMapping("/verify-email")
+    public ResponseEntity<AuthenticationResponse> verifyEmail(@RequestParam String token){
+        return ResponseEntity.ok(authenticationService.verifyEmail(token));
     }
 
     @GetMapping("/parse")

@@ -14,6 +14,7 @@ import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 
 @Service
 @RequiredArgsConstructor
@@ -24,8 +25,7 @@ public class EmailService implements EmailServiceInterface {
 
     @Value("${spring.mail.username}")
     private String sender;
-
-    @Value("${app.base.url:http://localhost:5173}")
+    @Value("${frontendUrl}")
     private String baseUrl;
 
     private String loadEmailTemplate() {
