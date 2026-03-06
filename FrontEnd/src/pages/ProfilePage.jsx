@@ -12,11 +12,21 @@ const ProfilePage = () => {
 
     // Initialize profile based on role
     const [profile, setProfile] = useState({});
+    const [isEditing, setIsEditing] = useState(false);
+    const [draftProfile, setDraftProfile] = useState({});
+
 
     useEffect(() => {
         const data = role === 'student' ? studentData : facultyData;
         setProfile({ ...data });
     }, [role]);
+
+    // whenever edit starts, clone current profile
+    useEffect(() => {
+        if (isEditing) {
+            setDraftProfile({ ...profile });
+        }
+    }, [isEditing, profile]);
 
     // Field configuration
     const fieldConfig = {
@@ -59,7 +69,7 @@ const ProfilePage = () => {
     };
 
     const renderFieldValue = (field) => {
-        const value = profile[field] || '-';
+        const value = (isEditing ? draftProfile[field] : profile[field]) || '-';
 
         if (field === 'gScholarLink' && value !== '-') {
             return (
@@ -106,6 +116,7 @@ const ProfilePage = () => {
                                         <p className='text-amber-600 mt-0.5'>
                                             {role === 'student' ? 'Your student information' : 'Your faculty information'}
                                         </p>
+                                      
                                     </div>
                                 </div>
                             </div>
@@ -131,6 +142,35 @@ const ProfilePage = () => {
 
                                         {/* Name and Info */}
                                         <div className='flex-1 text-center sm:text-left sm:pb-2'>
+                                              {/* edit controls */}
+                                        <div className='mt-2'>
+                                            {isEditing ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => {
+                                                            setProfile(draftProfile);
+                                                            setIsEditing(false);
+                                                        }}
+                                                        className='mr-2 px-4 py-1 rounded bg-green-500 text-white hover:bg-green-600'
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setIsEditing(false)}
+                                                        className='px-4 py-1 rounded bg-gray-300 text-gray-700 hover:bg-gray-400'
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setIsEditing(true)}
+                                                    className='px-4 py-1 rounded bg-blue-500 text-white hover:bg-blue-600'
+                                                >
+                                                    Edit Profile
+                                                </button>
+                                            )}
+                                        </div>
                                             <h2 className='text-2xl sm:text-3xl font-bold text-amber-900'>
                                                 {profile.name || 'User Name'}
                                             </h2>
@@ -178,7 +218,18 @@ const ProfilePage = () => {
                                                     {fieldConfig[field].label}
                                                 </div>
                                                 <div className='px-4 py-3.5 bg-gradient-to-r from-amber-50/50 to-orange-50/50 border border-orange-100 rounded-xl text-amber-900'>
-                                                    {renderFieldValue(field)}
+                                                    {isEditing && field !== 'gScholarLink' && field !== 'experience' ? (
+                                                        <input
+                                                            type="text"
+                                                            value={draftProfile[field] || ''}
+                                                            onChange={(e) =>
+                                                                setDraftProfile((prev) => ({ ...prev, [field]: e.target.value }))
+                                                            }
+                                                            className="w-full bg-transparent focus:outline-none"
+                                                        />
+                                                    ) : (
+                                                        renderFieldValue(field)
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}

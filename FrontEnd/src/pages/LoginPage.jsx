@@ -21,7 +21,7 @@ const LoginPage = () => {
   useEffect(() => {
         if (isloggedIn) {
             if (role === "STUDENT") {
-                navigate("/student_view_projects");
+                navigate("/profile");
             } else {
                 navigate("/dashboard");
             }

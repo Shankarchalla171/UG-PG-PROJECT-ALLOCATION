@@ -18,9 +18,7 @@ const VerifyEmail = () => {
 
         const verify = async () => {
             try {
-                const res = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`, {
-                    method: "POST",
-                });
+                const res = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
                 const data = await res.json();
 
                 if (res.ok) {
