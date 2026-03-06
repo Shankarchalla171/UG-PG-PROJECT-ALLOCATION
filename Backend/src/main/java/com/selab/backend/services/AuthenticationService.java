@@ -227,7 +227,8 @@ public class AuthenticationService
             SecureRandom random = new SecureRandom();
             int otp = 0;
             for (int i = 0; i < 6; i++) {
-                otp = otp * 10 + random.nextInt(9);
+                if(i==0) otp = otp * 10 + random.nextInt(1, 10);
+                else otp=otp*10+random.nextInt(10);
             }
             OTPStore otpStore = new OTPStore();
             otpStore.setOtp(otp);
