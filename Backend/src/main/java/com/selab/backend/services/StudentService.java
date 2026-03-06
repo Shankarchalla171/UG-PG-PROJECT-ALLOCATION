@@ -7,7 +7,7 @@ public class StudentService {
 
 
     public StudentProfileResponse getStudentProfile(String token){
-
+    return 
 
     }
 }
