@@ -1,4 +1,4 @@
 package com.selab.backend.services;
 
-public class Services {
+public class StudentService {
 }
