@@ -56,29 +56,30 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to EduProject!</h1>
-        
-        <p>Hello <strong>${username}</strong>,</p>
-        
-        <p>Thank you for registering with EduProject. To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
-        
-        <div class="verification-box">
-            <p><strong>Verify Your Email:</strong></p>
-            <a href="${verificationLink}" class="button">Verify Email Address</a>
-            
-            <p style="margin-top: 20px; color: #666; font-size: 14px;">Or copy and paste this link in your browser:</p>
-            <p class="link-text">${verificationLink}</p>
-        </div>
-        
-        <p>This verification link will expire in 24 hours.</p>
-        
-        <p>If you did not create this account, please ignore this email.</p>
-        
-        <div class="footer">
-            <p>&copy; 2026 EduProject. All rights reserved.</p>
-            <p>This is an automated email. Please do not reply to this message.</p>
-        </div>
+<div class="container">
+    <h1>Welcome to EduProject!</h1>
+
+    <p>Hello <strong>${username}</strong>,</p>
+
+    <p>Thank you for registering with EduProject. To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
+
+    <div class="verification-box">
+        <p><strong>Verify Your Email:</strong></p>
+        <a href="${verificationLink}" class="button">Verify Email Address</a>
+        ${verificationLink}
+
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">Or copy and paste this link in your browser:</p>
+        <p class="link-text">${verificationLink}</p>
     </div>
+
+    <p>This verification link will expire in 24 hours.</p>
+
+    <p>If you did not create this account, please ignore this email.</p>
+
+    <div class="footer">
+        <p>&copy; 2026 EduProject. All rights reserved.</p>
+        <p>This is an automated email. Please do not reply to this message.</p>
+    </div>
+</div>
 </body>
 </html>
