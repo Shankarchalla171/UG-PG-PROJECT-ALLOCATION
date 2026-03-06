@@ -20,9 +20,8 @@ const LoginPage = () => {
 
   useEffect(() => {
         if (isloggedIn) {
-            if (role === "STUDENT") {
-                navigate("/profile");
-            } else {
+            const normalized = role?.toString().toLowerCase();
+            if (normalized === "student") {
                 navigate("/dashboard");
             }
         }

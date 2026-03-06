@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 @Entity
 @Table(name = "students")
 @Data
-public class Student {
+public class Student extends User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,7 +17,10 @@ public class Student {
 
     private String rollNumber;
 //    @NotBlank
-    private String userName;
+    @OneToOne()
+    @JoinColumn(name = "user_id")
+    private User user;
+//    private Long userId;
 
     private String name;
 

@@ -8,18 +8,45 @@ import studentData from '../../public/dummyData/student.js';
 import facultyData from '../../public/dummyData/faculty.js';
 
 const ProfilePage = () => {
-    const { role } = useContext(AuthContext);
+    const { role, token } = useContext(AuthContext);
 
-    // Initialize profile based on role
+    // Initialize profile based on role + token
     const [profile, setProfile] = useState({});
     const [isEditing, setIsEditing] = useState(false);
     const [draftProfile, setDraftProfile] = useState({});
 
-
     useEffect(() => {
+        // fallback to dummy data while loading or if fetch fails
         const data = role === 'student' ? studentData : facultyData;
         setProfile({ ...data });
-    }, [role]);
+
+        // build endpoint path depending on role
+        var pathRole = role === 'student' ? 'students' : role === 'faculty' ? 'faculty' : role;
+        // pathRole=pathRole.toUpperCase();`
+        
+        const url = `/api/${pathRole}/profile`;
+        console.log(url);
+        if (token) {
+
+                    console.log("api is sending ")
+            fetch(url, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+                .then((res) => {
+                    if (!res.ok) throw new Error('Failed to fetch profile');
+                    return res.json();
+                })
+                .then((data) => {
+                    console.log("api is sending ")
+                    setProfile(data);
+                })
+                .catch((err) => {
+                    console.error('Profile fetch error', err);
+                });
+        }
+    }, [role, token]);
 
     // whenever edit starts, clone current profile
     useEffect(() => {

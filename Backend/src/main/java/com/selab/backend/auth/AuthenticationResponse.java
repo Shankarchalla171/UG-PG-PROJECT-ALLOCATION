@@ -1,5 +1,6 @@
 package com.selab.backend.auth;
 
+import com.selab.backend.models.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
