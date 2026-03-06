@@ -6,4 +6,5 @@ target/
 build/
 *.log
 # Dockerfile*
+.idea/
 # docker-compose*
