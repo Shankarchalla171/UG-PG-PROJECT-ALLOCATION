@@ -2,7 +2,9 @@ package com.selab.backend.services;
 
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.models.Student;
+import com.selab.backend.models.User;
 import com.selab.backend.repositories.StudentRepository;
+import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.student.StudentProfileResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,10 +17,12 @@ public class StudentService {
 
     private final StudentRepository studentRepository;
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
     public StudentProfileResponse getStudentProfile(String token) {
         String username = jwtService.extractUsername(token);
-        Student student = studentRepository.findByUserName(username)
+        User user = userRepository.findByUsername(username).get();
+        Student student = studentRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         StudentProfileResponse resp = new StudentProfileResponse();
         resp.setName(student.getName());
