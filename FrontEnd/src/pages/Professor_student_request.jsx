@@ -361,6 +361,7 @@ const ProfessorStudentRequest = () => {
                               e.stopPropagation();
                               setSelectedRequest(request);
                               setViewMode('details');
+                              if (!request.read) handleMarkAsRead(request.id);
                             }}
                             className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300"
                           >

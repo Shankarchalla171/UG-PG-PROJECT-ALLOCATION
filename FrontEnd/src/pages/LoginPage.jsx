@@ -42,11 +42,10 @@ const LoginPage = () => {
             type:"loginSuccess",
             payload:{
                 token:"this is a dummy token",
-                role:"home",
             }
         })
         console.log(role);
-        navigate(`/${role}`);
+        navigate("/home");
     }
 
     const handleRegister = (e) => {
