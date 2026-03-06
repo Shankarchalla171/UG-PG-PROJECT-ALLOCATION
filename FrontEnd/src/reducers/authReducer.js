@@ -20,7 +20,6 @@ export const authReducer = (state, action) =>{
                 ...state,
                 isloggedIn:true,
                 token:action.payload.token,
-                role:action.payload.role,
             }
         }
 
