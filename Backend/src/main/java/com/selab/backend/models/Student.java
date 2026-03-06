@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 @Entity
 @Table(name = "students")
 @Data
-public class Student extends User {
+public class Student  {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
