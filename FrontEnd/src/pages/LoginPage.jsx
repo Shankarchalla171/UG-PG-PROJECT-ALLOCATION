@@ -1,10 +1,11 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import mainGate from "../assets/mainGate.png";
 import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
-    const {isloggedIn,email,password,role,token,authDispatch} = useContext(AuthContext);
+    const {
+        isloggedIn,email,password,role,token,authDispatch} = useContext(AuthContext);
     const navigate= useNavigate();
     
     // State for form mode and form fields
@@ -12,9 +13,22 @@ const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [err, setErr] = useState("");
+    const [loading, setLoading] = useState(false);
     
+    
+
+  useEffect(() => {
+        if (isloggedIn) {
+            const normalized = role?.toString().toLowerCase();
+            if (normalized === "student") {
+                navigate("/dashboard");
+            }
+        }
+    }, [isloggedIn, role, navigate]);
+
     const handleEmailChange =(e) =>{
-        console.log(e.target.value);
+        // console.log(e.target.value);
         authDispatch(
             {
                type:"setEmail",
@@ -24,7 +38,7 @@ const LoginPage = () => {
     }
 
     const handlePasswordChange =(e) =>{
-        console.log(e.target.value);
+        // console.log(e.target.value);
         authDispatch({
             type:"setPassword",
             payload:e.target.value,
@@ -35,35 +49,114 @@ const LoginPage = () => {
         setConfirmPassword(e.target.value);
     }
 
-    const handleLogin =(e) =>{
-        e.preventDefault();
-        console.log("login button clicked");
-        authDispatch({
-            type:"loginSuccess",
-            payload:{
-                token:"this is a dummy token",
-            }
-        })
-        console.log(role);
-        navigate("/home");
+const handleLogin = async (e) => {
+    // console.log("login button clicked");
+    e.preventDefault();
+    if (!email || !password) {
+        alert("Please fill in all fields");
+        return;
     }
 
-    const handleRegister = (e) => {
-        e.preventDefault();
-        console.log("register button clicked");
-        console.log("Email:", email);
-        console.log("Password:", password);
-        console.log("Confirm Password:", confirmPassword);
+    setErr("");
+    setLoading(true);
+    
+    try {
+        // const response = await fetch('/api/auth/login', {
+            const response = await fetch('/api/auth/login', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                username: email,
+                password: password
+            }),
+        });
         
-        // Add your registration logic here
-        // For now, we'll simulate successful registration and switch to login
-        alert("We have sent a verification link to your email. Please verify to login.");
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || "Login failed");
+        }
+         localStorage.setItem('token', data.token);
+        localStorage.setItem('role', data.role);
+        // localStorage.setItem('email', email);
+        console.log(data);
+        
+        authDispatch({
+            type: "loginSuccess",
+            payload: {
+                token: data.token,
+                role: data.role,
+                email: email,
+            }
+        });
+
+        
+        setLoading(false);
+        
+    } catch (err) {
+        console.error("Login error:", err);
+        setErr(err.message || "Login failed. Please try again.");
+        setLoading(false);
+    }
+};
+const handleRegister = async (e) => {
+    e.preventDefault();
+    console.log("register button clicked");
+    
+    // Validation
+    if (!email || !password || !confirmPassword) {
+        alert("Please fill in all fields");
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        alert("Passwords do not match");
+        return;
+    }
+    
+    if (password.length < 3) {
+        alert("Password must be at least 3 characters long");
+        return;
+    }
+
+    setErr("");
+    setLoading(true);
+    
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                username: email,
+                email: email,
+                password: password
+            }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || "Registration failed");
+        }
+        
+        // Registration successful
+        alert("Please check you inbox we have sent you one verification link");
         
         // Clear form and switch to login
         clearForm();
         setIsRegistering(false);
+        setLoading(false);
+        
+    } catch (err) {
+        console.error("Registration error:", err);
+        setErr(err.message || "Registration failed. Please try again.");
+        setLoading(false);
     }
-
+};
     const clearForm = () => {
         authDispatch({ type: "setEmail", payload: "" });
         authDispatch({ type: "setPassword", payload: "" });
