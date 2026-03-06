@@ -9,7 +9,6 @@ import com.selab.backend.auth.JwtService;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.models.User;
 import lombok.RequiredArgsConstructor;
-import org.antlr.v4.runtime.Token;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
@@ -33,7 +32,8 @@ public class AuthenticationController {
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request){
         return  ResponseEntity.ok(authenticationService.authenticate(request));
     }
-    @PostMapping("/verify-email")
+    // allow GET so users clicking the link in email works directly
+    @GetMapping("/verify-email")
     public ResponseEntity<AuthenticationResponse> verifyEmail(@RequestParam String token){
         return ResponseEntity.ok(authenticationService.verifyEmail(token));
     }
