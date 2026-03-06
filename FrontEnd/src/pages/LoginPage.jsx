@@ -140,7 +140,7 @@ const handleRegister = async (e) => {
         }
         
         // Registration successful
-        alert("Registration successful! Please login with your credentials.");
+        alert("Please check you inbox we have sent you one verification link");
         
         // Clear form and switch to login
         clearForm();
