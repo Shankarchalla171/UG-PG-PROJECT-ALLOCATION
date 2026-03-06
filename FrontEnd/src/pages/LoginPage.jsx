@@ -78,15 +78,20 @@ const handleLogin = async (e) => {
         if (!response.ok) {
             throw new Error(data.message || "Login failed");
         }
+         localStorage.setItem('token', data.token);
+        localStorage.setItem('role', data.role);
+        // localStorage.setItem('email', email);
+        console.log(data);
         
         authDispatch({
             type: "loginSuccess",
             payload: {
                 token: data.token,
                 role: data.role,
-                email: data.email,
+                email: email,
             }
         });
+
         
         setLoading(false);
         

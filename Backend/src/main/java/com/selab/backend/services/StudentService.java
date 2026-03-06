@@ -21,7 +21,9 @@ public class StudentService {
 
     public StudentProfileResponse getStudentProfile(String token) {
         String username = jwtService.extractUsername(token);
-        User user = userRepository.findByUsername(username).get();
+        System.out.println(username);
+        User user = userRepository.findByUsername(username).orElseThrow(RuntimeException::new);
+        System.out.println(user);
         Student student = studentRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         StudentProfileResponse resp = new StudentProfileResponse();
