@@ -38,10 +38,6 @@ public class AuthenticationController {
         return ResponseEntity.ok(authenticationService.verifyEmail(token));
     }
 
-    @PostMapping("/verify-email")
-    public ResponseEntity<AuthenticationResponse> verifyEmail(@RequestParam String token){
-        return ResponseEntity.ok(authenticationService.verifyEmail(token));
-    }
 
     @GetMapping("/parse")
     public ResponseEntity<Map<String, String>> parseToken(@RequestHeader(value = "Authorization", required = true) String authorizationHeader){
