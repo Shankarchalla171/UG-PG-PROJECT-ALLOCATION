@@ -384,7 +384,7 @@ const DeptViewAllocations = () => {
                         </span>
                       </div>
                       <div className="text-sm text-amber-600/70">
-                        Updated: {allocation.lastUpdated}
+                        {/* Updated: {allocation.lastUpdated} */}
                       </div>
                     </div>
                     <h3 className="text-xl font-bold text-amber-800 mb-2">{allocation.teamName}</h3>

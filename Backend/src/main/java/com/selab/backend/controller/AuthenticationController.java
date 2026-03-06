@@ -4,12 +4,11 @@ package com.selab.backend.controller;
 import com.selab.backend.auth.AuthenticationRequest;
 import com.selab.backend.auth.AuthenticationResponse;
 import com.selab.backend.auth.RegisterRequest;
-import com.selab.backend.auth.AuthenticationService;
+import com.selab.backend.services.AuthenticationService;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.models.User;
 import lombok.RequiredArgsConstructor;
-import org.aspectj.lang.annotation.RequiredTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
@@ -33,6 +32,12 @@ public class AuthenticationController {
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request){
         return  ResponseEntity.ok(authenticationService.authenticate(request));
     }
+    // allow GET so users clicking the link in email works directly
+    @GetMapping("/verify-email")
+    public ResponseEntity<AuthenticationResponse> verifyEmail(@RequestParam String token){
+        return ResponseEntity.ok(authenticationService.verifyEmail(token));
+    }
+
 
     @GetMapping("/parse")
     public ResponseEntity<Map<String, String>> parseToken(@RequestHeader(value = "Authorization", required = true) String authorizationHeader){
@@ -55,5 +60,10 @@ public class AuthenticationController {
         resp.put("role", user.getRole().toString());
         return ResponseEntity.ok(resp);
     }
+
+
+
+
+
 
 }
