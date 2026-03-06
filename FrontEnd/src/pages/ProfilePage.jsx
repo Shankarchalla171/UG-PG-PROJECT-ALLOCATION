@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import Navbar from '../components/Navbar.jsx';
 
@@ -8,45 +7,86 @@ import studentData from '../../public/dummyData/student.js';
 import facultyData from '../../public/dummyData/faculty.js';
 
 const ProfilePage = () => {
-    const { role, token } = useContext(AuthContext);
-
-    // Initialize profile based on role + token
     const [profile, setProfile] = useState({});
     const [isEditing, setIsEditing] = useState(false);
     const [draftProfile, setDraftProfile] = useState({});
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // fallback to dummy data while loading or if fetch fails
-        const data = role === 'student' ? studentData : facultyData;
-        setProfile({ ...data });
+        // Get values from localStorage
+        var role = localStorage.getItem('role');
+        role=role.toLowerCase();
+        const token = localStorage.getItem('token');
 
-        // build endpoint path depending on role
-        var pathRole = role === 'student' ? 'students' : role === 'faculty' ? 'faculty' : role;
-        // pathRole=pathRole.toUpperCase();`
+        console.log('Role from localStorage:', role);
+        console.log('Token from localStorage:', token ? 'Present' : 'Missing');
+
+        // Set dummy data as fallback based on role
+        let dummyData;
+        if (role === 'student') {
+            dummyData = studentData;
+        } else if (role === 'faculty') {
+            dummyData = facultyData;
+        } else {
+            dummyData = studentData; // Default fallback
+        }
+        
+        console.log('Setting dummy data:', dummyData);
+        setProfile({ ...dummyData });
+
+        // Check if we have token and role
+        if (!token) {
+            console.log('No token available, using dummy data only');
+            setLoading(false);
+            return;
+        }
+
+        if (!role) {
+            console.log('No role available, using dummy data only');
+            setLoading(false);
+            return;
+        }
+
+        // Build endpoint path
+        let pathRole;
+        if (role === 'student') {
+            pathRole = 'students';
+        } else if (role === 'faculty') {
+            pathRole = 'faculty';
+        } else {
+            console.error('Unknown role:', role);
+            setLoading(false);
+            return;
+        }
         
         const url = `/api/${pathRole}/profile`;
-        console.log(url);
-        if (token) {
+        console.log('Fetching from URL:', url);
+        console.log('Using token:', token.substring(0, 20) + '...');
 
-                    console.log("api is sending ")
-            fetch(url, {
-                headers: { 
-                    Authorization: `Bearer ${token}`,
-                },
+        // Make API call
+        fetch(url, {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        })
+            .then((res) => {
+                console.log('Response status:', res.status);
+                if (!res.ok) throw new Error(`Failed to fetch profile: ${res.status}`);
+                return res.json();
             })
-                .then((res) => {
-                    if (!res.ok) throw new Error('Failed to fetch profile');
-                    return res.json();
-                })
-                .then((data) => {
-                    console.log("api is sending ")
-                    setProfile(data);
-                })
-                .catch((err) => {
-                    console.error('Profile fetch error', err);
-                });
-        }
-    }, [role, token]);
+            .then((data) => {
+                console.log('API response data:', data);
+                setProfile(data);
+                setLoading(false);
+            })
+            .catch((err) => {
+                console.error('Profile fetch error:', err);
+                setLoading(false);
+                // Keep using dummy data (already set)
+            });
+
+    }, []); // Empty dependency array - runs once on mount
 
     // whenever edit starts, clone current profile
     useEffect(() => {
@@ -87,8 +127,9 @@ const ProfilePage = () => {
         }
     };
 
-    // Get fields to display based on role
+    // Get fields to display based on role from localStorage
     const getDisplayFields = () => {
+        const role = localStorage.getItem('role');
         if (role === 'student') {
             return ['name', 'rollNo', 'email', 'department'];
         }
@@ -118,6 +159,26 @@ const ProfilePage = () => {
         return value;
     };
 
+    // Loading state
+    if (loading) {
+        return (
+            <>
+                <Navbar />
+                <div className='flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100'>
+                    <Sidebar />
+                    <main className='flex-1 flex items-center justify-center'>
+                        <div className='text-center'>
+                            <div className='w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4'></div>
+                            <p className='text-amber-700'>Loading profile...</p>
+                        </div>
+                    </main>
+                </div>
+            </>
+        );
+    }
+
+    const role = localStorage.getItem('role');
+
     return (
         <>
             <Navbar />
@@ -125,9 +186,9 @@ const ProfilePage = () => {
                 <Sidebar />
 
                 {/* Main Content */}
-                <main className='flex-1 w-full p-4  '>
+                <main className='flex-1 w-full p-4'>
                     <div className='p-4 sm:p-6 lg:p-8 w-full flex justify-center'>
-                        <div className='w-full  '>
+                        <div className='w-full'>
                             {/* Page Header */}
                             <div className='mb-8'>
                                 <div className='flex items-center gap-4 mb-2'>
@@ -143,20 +204,16 @@ const ProfilePage = () => {
                                         <p className='text-amber-600 mt-0.5'>
                                             {role === 'student' ? 'Your student information' : 'Your faculty information'}
                                         </p>
-                                      
                                     </div>
                                 </div>
                             </div>
 
                             {/* Profile Card */}
                             <div className='bg-white rounded-3xl shadow-xl shadow-orange-100/50 border border-orange-100/50 overflow-hidden'>
-                                {/* Profile Header Banner */}
-
-
                                 {/* Profile Info Section */}
                                 <div className='relative p-6 sm:px-8 pb-8'>
-                                    {/* Profile Photo - Positioned to overlap banner */}
-                                    <div className='flex flex-col sm:flex-row items-center sm:items-end gap-4  mb-6'>
+                                    {/* Profile Photo */}
+                                    <div className='flex flex-col sm:flex-row items-center sm:items-end gap-4 mb-6'>
                                         <div className='relative'>
                                             <div className='w-28 h-28 p-2 sm:w-32 sm:h-32 rounded-2xl border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-orange-100 to-amber-100'>
                                                 <img
@@ -169,35 +226,35 @@ const ProfilePage = () => {
 
                                         {/* Name and Info */}
                                         <div className='flex-1 text-center sm:text-left sm:pb-2'>
-                                              {/* edit controls */}
-                                        <div className='mt-2'>
-                                            {isEditing ? (
-                                                <>
+                                            {/* edit controls */}
+                                            <div className='mt-2'>
+                                                {isEditing ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => {
+                                                                setProfile(draftProfile);
+                                                                setIsEditing(false);
+                                                            }}
+                                                            className='mr-2 px-4 py-1 rounded bg-green-500 text-white hover:bg-green-600'
+                                                        >
+                                                            Save
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setIsEditing(false)}
+                                                            className='px-4 py-1 rounded bg-gray-300 text-gray-700 hover:bg-gray-400'
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </>
+                                                ) : (
                                                     <button
-                                                        onClick={() => {
-                                                            setProfile(draftProfile);
-                                                            setIsEditing(false);
-                                                        }}
-                                                        className='mr-2 px-4 py-1 rounded bg-green-500 text-white hover:bg-green-600'
+                                                        onClick={() => setIsEditing(true)}
+                                                        className='px-4 py-1 rounded bg-blue-500 text-white hover:bg-blue-600'
                                                     >
-                                                        Save
+                                                        Edit Profile
                                                     </button>
-                                                    <button
-                                                        onClick={() => setIsEditing(false)}
-                                                        className='px-4 py-1 rounded bg-gray-300 text-gray-700 hover:bg-gray-400'
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <button
-                                                    onClick={() => setIsEditing(true)}
-                                                    className='px-4 py-1 rounded bg-blue-500 text-white hover:bg-blue-600'
-                                                >
-                                                    Edit Profile
-                                                </button>
-                                            )}
-                                        </div>
+                                                )}
+                                            </div>
                                             <h2 className='text-2xl sm:text-3xl font-bold text-amber-900'>
                                                 {profile.name || 'User Name'}
                                             </h2>
@@ -261,6 +318,7 @@ const ProfilePage = () => {
                                             </div>
                                         ))}
                                     </div>
+                                    
                                     {/* Quick Links Card for Faculty */}
                                     {role === 'faculty' && profile.gScholarLink && (
                                         <div className='mt-6 bg-white rounded-2xl shadow-lg shadow-orange-100/30 border border-orange-100/50 p-6'>
@@ -324,8 +382,6 @@ const ProfilePage = () => {
                                     )}
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
                 </main>
