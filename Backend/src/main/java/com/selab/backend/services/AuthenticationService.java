@@ -4,8 +4,12 @@ import com.selab.backend.auth.AuthenticationRequest;
 import com.selab.backend.auth.AuthenticationResponse;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.auth.RegisterRequest;
+import com.selab.backend.exceptions.InvalidOtpException;
+import com.selab.backend.exceptions.UserNotFoundException;
+import com.selab.backend.models.OTPStore;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.User;
+import com.selab.backend.repositories.OtpRepo;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,8 +20,14 @@ import org.springframework.stereotype.Service;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.services.EmailService;
 
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAmount;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +38,7 @@ public class AuthenticationService
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final OtpRepo otpRepo;
 
     @Transactional
     public AuthenticationResponse register(RegisterRequest registerRequest) {
@@ -194,5 +205,58 @@ public class AuthenticationService
                     .message("An unexpected error occurred during verification")
                     .build();
         }
+    }
+
+    @Transactional
+    public String sendOtp(String email) {
+        if(!userRepository.existsByEmail(email)) {
+            throw new UserNotFoundException("There's no user with this email address. Try signing up.");
+        }
+        boolean otpExists=false;
+        if(otpRepo.existsByEmail(email)) {
+            OTPStore otpStore=otpRepo.findByEmail(email);
+            if(otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())) {
+                emailService.sendOtpEmail(email, userRepository.findByEmail(email).get().getUsername(), otpStore.getOtp());
+                otpExists=true;
+            }
+            else {
+                otpRepo.delete(otpStore);
+            }
+        }
+        if(!otpExists) {
+            SecureRandom random = new SecureRandom();
+            int otp = 0;
+            for (int i = 0; i < 6; i++) {
+                if(i==0) otp = otp * 10 + random.nextInt(1, 10);
+                else otp=otp*10+random.nextInt(10);
+            }
+            OTPStore otpStore = new OTPStore();
+            otpStore.setOtp(otp);
+            otpStore.setEmail(email);
+            otpStore.setTime(Instant.now());
+            otpRepo.save(otpStore);
+
+            emailService.sendOtpEmail(email, userRepository.findByEmail(email).get().getUsername(), otp);
+        }
+        return "Kindly check your mail for the OTP.";
+    }
+
+    @Transactional
+    public Map<String, String> validateOtp(String email, Integer otp) {
+        OTPStore otpStore=otpRepo.findByEmail(email);
+        int validOtp=otpStore.getOtp();
+        if(otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())&&validOtp==otp) {
+            User u=userRepository.findByEmail(email).get();
+            String token=jwtService.generateToken(u);
+            otpRepo.delete(otpStore);
+            Map<String, String> map=new HashMap<>();
+            map.put("token", token);
+            map.put("Status", "Verification success");
+            return map;
+        }
+        if(!otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())) {
+            otpRepo.delete(otpStore);
+        }
+        throw new InvalidOtpException("This otp is either invalid or expired. please request a new otp");
     }
 }
