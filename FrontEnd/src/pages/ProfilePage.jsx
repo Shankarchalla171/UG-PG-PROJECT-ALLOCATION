@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import Navbar from '../components/Navbar.jsx';
+import { Button } from "../components/button";
 
 // Import dummy data
 import studentData from '../../public/dummyData/student.js';
@@ -262,33 +263,31 @@ const ProfilePage = () => {
                                         {/* Name and Info */}
                                         <div className='flex-1 text-center sm:text-left sm:pb-2'>
                                             {/* edit controls */}
-                                            <div className='mt-2'>
+                                            <div className='flex gap-1.5 mt-2'>
                                                 {isEditing ? (
                                                     <>
-                                                        <button
+                                                        <Button
                                                             onClick={() => {
-                                                                // TODO: Implement save to API
                                                                 setProfile(draftProfile);
                                                                 setIsEditing(false);
                                                             }}
-                                                            className='mr-2 px-4 py-1 rounded bg-green-500 text-white hover:bg-green-600'
+                                                            variant="success"
                                                         >
                                                             Save
-                                                        </button>
-                                                        <button
+                                                        </Button>
+                                                        <Button
                                                             onClick={() => setIsEditing(false)}
-                                                            className='px-4 py-1 rounded bg-gray-300 text-gray-700 hover:bg-gray-400'
+                                                            variant="destructive"
                                                         >
                                                             Cancel
-                                                        </button>
+                                                        </Button>
                                                     </>
                                                 ) : (
-                                                    <button
+                                                    <Button
                                                         onClick={() => setIsEditing(true)}
-                                                        className='px-4 py-1 rounded bg-blue-500 text-white hover:bg-blue-600'
                                                     >
                                                         Edit Profile
-                                                    </button>
+                                                    </Button>
                                                 )}
                                             </div>
                                             <h2 className='text-2xl sm:text-3xl font-bold text-amber-900'>
