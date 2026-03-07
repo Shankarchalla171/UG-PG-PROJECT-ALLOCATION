@@ -5,8 +5,11 @@ import com.selab.backend.auth.*;
 import com.selab.backend.services.AuthenticationService;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.models.User;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +21,7 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
 
     @PostMapping("/register")
@@ -64,6 +68,14 @@ public class AuthenticationController {
             return ResponseEntity.ok(authenticationService.sendOtp(req.getEmail()));
         }
         return ResponseEntity.ok(authenticationService.validateOtp(req.getEmail(), req.getOtp()));
+    }
+    @PostMapping("/change-password")
+    @Transactional
+    public ResponseEntity<Object> changePassword(@RequestBody NewPassword newPassword, @AuthenticationPrincipal User user) {
+        User u=userRepository.findById(user.getId()).get();
+        u.setPassword(passwordEncoder.encode(newPassword.getNewPassword()));
+        userRepository.save(u);
+        return ResponseEntity.ok("Password Changed successfully.");
     }
 
 }
