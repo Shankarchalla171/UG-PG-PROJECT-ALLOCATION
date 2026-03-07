@@ -1,11 +1,10 @@
 package com.selab.backend.models;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+
+import java.util.List;
 
 @Entity
 @Table(name="professors")
@@ -13,7 +12,12 @@ import lombok.Data;
 public class Professor {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long professorId;
+
+
     @Email
+
     private String email;
 //    @NotBlank
     private String userName;
@@ -28,5 +32,10 @@ public class Professor {
     private String googleScholarLink;
 //    @NotBlank
     private  String officeNumber;
+
+
+    @OneToMany(mappedBy = "professor" , cascade = CascadeType.ALL,fetch = FetchType.LAZY)
+    private List<Project> projects;
+
 
 }
