@@ -1,11 +1,8 @@
 package com.selab.backend.controller;
 
 
-import com.selab.backend.auth.AuthenticationRequest;
-import com.selab.backend.auth.AuthenticationResponse;
-import com.selab.backend.auth.RegisterRequest;
+import com.selab.backend.auth.*;
 import com.selab.backend.services.AuthenticationService;
-import com.selab.backend.auth.JwtService;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.models.User;
 import lombok.RequiredArgsConstructor;
@@ -61,9 +58,12 @@ public class AuthenticationController {
         return ResponseEntity.ok(resp);
     }
 
-
-
-
-
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Object> forgotPassword(@RequestBody PasswordChangeRequest req) {
+        if (req.getOtp() == null) {
+            return ResponseEntity.ok(authenticationService.sendOtp(req.getEmail()));
+        }
+        return ResponseEntity.ok(authenticationService.validateOtp(req.getEmail(), req.getOtp()));
+    }
 
 }
