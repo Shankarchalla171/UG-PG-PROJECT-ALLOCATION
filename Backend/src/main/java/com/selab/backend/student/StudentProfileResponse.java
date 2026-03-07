@@ -9,4 +9,5 @@ public class StudentProfileResponse {
     private String departmentName;
     private String rollNumber;
     private String resumePath;
+    private String profilePhotoLink;
 }
