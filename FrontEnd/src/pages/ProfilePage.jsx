@@ -11,81 +11,90 @@ const ProfilePage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [draftProfile, setDraftProfile] = useState({});
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        // Get values from localStorage
-        var role = localStorage.getItem('role');
-        role=role.toLowerCase();
-        const token = localStorage.getItem('token');
+        const fetchProfileData = async () => {
+            try {
+                // Get values from localStorage with null checks
+                let role = localStorage.getItem('role');
+                const token = localStorage.getItem('token');
 
-        console.log('Role from localStorage:', role);
-        console.log('Token from localStorage:', token ? 'Present' : 'Missing');
+                // Handle null role
+                if (role) {
+                    role = role.toLowerCase();
+                } else {
+                    role = 'student'; // Default fallback
+                }
 
-        // Set dummy data as fallback based on role
-        let dummyData;
-        if (role === 'student') {
-            dummyData = studentData;
-        } else if (role === 'faculty') {
-            dummyData = facultyData;
-        } else {
-            dummyData = studentData; // Default fallback
-        }
-        
-        console.log('Setting dummy data:', dummyData);
-        setProfile({ ...dummyData });
+                console.log('Role from localStorage:', role);
+                console.log('Token from localStorage:', token ? 'Present' : 'Missing');
 
-        // Check if we have token and role
-        if (!token) {
-            console.log('No token available, using dummy data only');
-            setLoading(false);
-            return;
-        }
+                // Set dummy data as fallback based on role
+                let dummyData;
+                if (role === 'student') {
+                    dummyData = studentData;
+                } else if (role === 'faculty') {
+                    dummyData = facultyData;
+                } else {
+                    dummyData = studentData; // Default fallback
+                }
+                
+                console.log('Setting dummy data:', dummyData);
+                setProfile({ ...dummyData });
 
-        if (!role) {
-            console.log('No role available, using dummy data only');
-            setLoading(false);
-            return;
-        }
+                // Check if we have token
+                if (!token) {
+                    console.log('No token available, using dummy data only');
+                    setLoading(false);
+                    return;
+                }
 
-        // Build endpoint path
-        let pathRole;
-        if (role === 'student') {
-            pathRole = 'students';
-        } else if (role === 'faculty') {
-            pathRole = 'faculty';
-        } else {
-            console.error('Unknown role:', role);
-            setLoading(false);
-            return;
-        }
-        
-        const url = `/api/${pathRole}/profile`;
-        console.log('Fetching from URL:', url);
-        console.log('Using token:', token.substring(0, 20) + '...');
+                // Build endpoint path
+                let pathRole;
+                if (role === 'student') {
+                    pathRole = 'students';
+                } else if (role === 'faculty') {
+                    pathRole = 'faculty';
+                } else {
+                    console.error('Unknown role:', role);
+                    setLoading(false);
+                    return;
+                }
+                
+                const url = `/api/${pathRole}/profile`;
+                console.log('Fetching from URL:', url);
+                console.log('Using token:', token.substring(0, 20) + '...');
 
-        // Make API call
-        fetch(url, {
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        })
-            .then((res) => {
-                console.log('Response status:', res.status);
-                if (!res.ok) throw new Error(`Failed to fetch profile: ${res.status}`);
-                return res.json();
-            })
-            .then((data) => {
+                // Make API call
+                const response = await fetch(url, {
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch profile: ${response.status}`);
+                }
+
+                const data = await response.json();
                 console.log('API response data:', data);
                 setProfile(data);
-                setLoading(false);
-            })
-            .catch((err) => {
+                setError(null);
+                
+            } catch (err) {
                 console.error('Profile fetch error:', err);
-                setLoading(false);
+                setError(err.message);
                 // Keep using dummy data (already set)
-            });
+            } finally {
+                setLoading(false);
+            }
+        };
 
+        fetchProfileData();
     }, []); // Empty dependency array - runs once on mount
 
     // whenever edit starts, clone current profile
@@ -105,11 +114,11 @@ const ProfilePage = () => {
             label: 'Roll Number',
             icon: <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z" />
         },
-        email: {
+        collegeEmailId: {
             label: 'Email Address',
             icon: <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
         },
-        department: {
+        departmentName: {
             label: 'Department',
             icon: <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" />
         },
@@ -129,11 +138,11 @@ const ProfilePage = () => {
 
     // Get fields to display based on role from localStorage
     const getDisplayFields = () => {
-        const role = localStorage.getItem('role');
+        const role = localStorage.getItem('role') || 'student';
         if (role === 'student') {
-            return ['name', 'rollNo', 'email', 'department'];
+            return ['name', 'rollNo', 'collegeEmailId', 'departmentName'];
         }
-        return ['name', 'email', 'department', 'areaOfExpertise'];
+        return ['name', 'collegeEmailId', 'departmentName', 'areaOfExpertise', 'gScholarLink', 'experience'];
     };
 
     const renderFieldValue = (field) => {
@@ -177,7 +186,33 @@ const ProfilePage = () => {
         );
     }
 
-    const role = localStorage.getItem('role');
+    // Error state
+    if (error) {
+        return (
+            <>
+                <Navbar />
+                <div className='flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100'>
+                    <Sidebar />
+                    <main className='flex-1 flex items-center justify-center'>
+                        <div className='text-center bg-white p-8 rounded-2xl shadow-xl'>
+                            <p className='text-red-500 mb-4'>Error: {error}</p>
+                            <button 
+                                onClick={() => window.location.reload()}
+                                className='px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600'
+                            >
+                                Try Again
+                            </button>
+                        </div>
+                    </main>
+                </div>
+            </>
+        );
+    }
+
+    // Get role with safe null handling
+    let role = localStorage.getItem('role') || 'student';
+    role = role.toLowerCase();
+    console.log('Current role:', role);
 
     return (
         <>
@@ -232,6 +267,7 @@ const ProfilePage = () => {
                                                     <>
                                                         <button
                                                             onClick={() => {
+                                                                // TODO: Implement save to API
                                                                 setProfile(draftProfile);
                                                                 setIsEditing(false);
                                                             }}
@@ -263,7 +299,7 @@ const ProfilePage = () => {
                                                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                                         <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10z" />
                                                     </svg>
-                                                    {profile.department || 'Department'}
+                                                    {profile.departmentName || 'Department'}
                                                 </span>
                                                 <span className='inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 rounded-lg text-sm font-medium capitalize'>
                                                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">

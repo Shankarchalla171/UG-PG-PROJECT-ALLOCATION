@@ -22,7 +22,7 @@ const LoginPage = () => {
         if (isloggedIn) {
             const normalized = role?.toString().toLowerCase();
             if (normalized === "student") {
-                navigate("/dashboard");
+                navigate("/profile");
             }
         }
     }, [isloggedIn, role, navigate]);

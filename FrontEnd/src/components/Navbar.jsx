@@ -1,13 +1,20 @@
 import { React } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink,useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
+    const navigate= useNavigate();
     const navLinkClasses = ({ isActive }) =>
         `flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
             isActive
                 ? 'bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/30'
                 : 'text-amber-800 hover:bg-orange-100 hover:text-orange-600'
         }`;
+    const handleLogout = () =>{
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        navigate('/');
+        // window.location='/';
+    }
 
     return (
         <header className="sticky top-0 z-50 flex w-full justify-between items-center px-6 py-3 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 text-amber-900 border-b border-orange-200/60 shadow-sm hover:cursor-pointer">
@@ -67,6 +74,11 @@ const Navbar = () => {
                         />
                     </svg>
                 </NavLink>
+                <button onClick={
+                    handleLogout
+                }>
+                    logout
+                </button>
             </nav>
         </header>
     );
