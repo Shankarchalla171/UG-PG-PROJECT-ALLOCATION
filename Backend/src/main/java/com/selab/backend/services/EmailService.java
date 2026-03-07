@@ -39,6 +39,17 @@ public class EmailService implements EmailServiceInterface {
         }
     }
 
+    private String loadOtpTemplate() {
+        try {
+            ClassPathResource resource = new ClassPathResource("templates/otp-template.html");
+            byte[] bytes = StreamUtils.copyToByteArray(resource.getInputStream());
+            return new String(bytes, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.error("Failed to load email template", e);
+            throw new RuntimeException("Failed to load email template", e);
+        }
+    }
+
     @Override
     public void sendVerificationEmail(String to, String username, String token) {
         try {
@@ -56,6 +67,33 @@ public class EmailService implements EmailServiceInterface {
             String emailContent = template
                     .replace("${username}", username)
                     .replace("${verificationLink}", verificationLink);
+
+            helper.setText(emailContent, true);
+
+            javaMailSender.send(message);
+            log.info("Verification email sent to: {}", to);
+
+        } catch (MessagingException e) {
+            log.error("Failed to send verification email to: {}", to, e);
+            throw new RuntimeException("Failed to send verification email", e);
+        }
+    }
+
+    public void sendOtpEmail(String to, String username, int otp) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(sender);
+            helper.setTo(to);
+            helper.setSubject("Account Recovery - EduProject");
+
+
+            // Load and populate template
+            String template = loadOtpTemplate();
+            String emailContent = template
+                    .replace("${username}", username)
+                    .replace("${otp}", String.valueOf(otp));
 
             helper.setText(emailContent, true);
 
