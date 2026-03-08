@@ -16,10 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProfessorController {
 
 
-    @GetMapping("/profile")
-    public ResponseEntity<Professor> getProfessor(@RequestParam String email) {
-        return ResponseEntity.ok();
-    }
 
 
 

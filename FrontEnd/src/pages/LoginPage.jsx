@@ -103,8 +103,10 @@ const handleLogin = async (e) => {
             }
         });
 
+        navigate('/profile');
         
         setLoading(false);
+
         
     } catch (err) {
         console.error("Login error:", err);
