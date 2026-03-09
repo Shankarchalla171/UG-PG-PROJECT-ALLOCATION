@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import Navbar from '../components/Navbar.jsx';
 import { Button } from "../components/button";
+import profilePlaceholder from '../assets/profile_photo_placeholder.jpg';
 
 // Import dummy data
 import studentData from '../../public/dummyData/student.js';
@@ -253,7 +254,7 @@ const ProfilePage = () => {
                                         <div className='relative'>
                                             <div className='w-28 h-28 p-2 sm:w-32 sm:h-32 rounded-2xl border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-orange-100 to-amber-100'>
                                                 <img
-                                                    src={profile.profilePhoto || 'https://via.placeholder.com/150?text=User'}
+                                                    src={profile.profilePhoto || profilePlaceholder || 'https://via.placeholder.com/150?text=User'}
                                                     alt="Profile"
                                                     className='w-full h-full object-cover'
                                                 />
