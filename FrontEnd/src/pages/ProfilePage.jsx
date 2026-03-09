@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import Navbar from '../components/Navbar.jsx';
+import { Button } from "../components/button";
+import profilePlaceholder from '../assets/profile_photo_placeholder.jpg';
 
 // Import dummy data
 import studentData from '../../public/dummyData/student.js';
@@ -252,7 +254,7 @@ const ProfilePage = () => {
                                         <div className='relative'>
                                             <div className='w-28 h-28 p-2 sm:w-32 sm:h-32 rounded-2xl border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-orange-100 to-amber-100'>
                                                 <img
-                                                    src={profile.profilePhoto || 'https://via.placeholder.com/150?text=User'}
+                                                    src={profile.profilePhoto || profilePlaceholder || 'https://via.placeholder.com/150?text=User'}
                                                     alt="Profile"
                                                     className='w-full h-full object-cover'
                                                 />
@@ -262,33 +264,31 @@ const ProfilePage = () => {
                                         {/* Name and Info */}
                                         <div className='flex-1 text-center sm:text-left sm:pb-2'>
                                             {/* edit controls */}
-                                            <div className='mt-2'>
+                                            <div className='flex gap-1.5 mt-2'>
                                                 {isEditing ? (
                                                     <>
-                                                        <button
+                                                        <Button
                                                             onClick={() => {
-                                                                // TODO: Implement save to API
                                                                 setProfile(draftProfile);
                                                                 setIsEditing(false);
                                                             }}
-                                                            className='mr-2 px-4 py-1 rounded bg-green-500 text-white hover:bg-green-600'
+                                                            variant="success"
                                                         >
                                                             Save
-                                                        </button>
-                                                        <button
+                                                        </Button>
+                                                        <Button
                                                             onClick={() => setIsEditing(false)}
-                                                            className='px-4 py-1 rounded bg-gray-300 text-gray-700 hover:bg-gray-400'
+                                                            variant="destructive"
                                                         >
                                                             Cancel
-                                                        </button>
+                                                        </Button>
                                                     </>
                                                 ) : (
-                                                    <button
+                                                    <Button
                                                         onClick={() => setIsEditing(true)}
-                                                        className='px-4 py-1 rounded bg-blue-500 text-white hover:bg-blue-600'
                                                     >
                                                         Edit Profile
-                                                    </button>
+                                                    </Button>
                                                 )}
                                             </div>
                                             <h2 className='text-2xl sm:text-3xl font-bold text-amber-900'>
