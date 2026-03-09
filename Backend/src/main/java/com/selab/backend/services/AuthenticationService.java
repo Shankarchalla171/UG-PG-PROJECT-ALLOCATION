@@ -259,4 +259,27 @@ public class AuthenticationService
         }
         throw new InvalidOtpException("This otp is either invalid or expired. please request a new otp");
     }
+
+    @Transactional
+    public String resetPassword(String token, String newPassword) {
+        // Validate token
+        String username = jwtService.extractUsername(token);
+        if (username == null) {
+            throw new RuntimeException("Invalid token");
+        }
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        // Check if token is valid and has the correct purpose
+        if (!jwtService.isTokenValid(token, user)) {
+            throw new RuntimeException("Invalid or expired token");
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        return "Password reset successfully";
+    }
 }

@@ -16,6 +16,7 @@ import Student_teams from './pages/Student_teams';
 import Student_confirmations from './pages/Student_confirmations';
 import ProfilePage from './pages/ProfilePage';
 import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
 
 function App() {
     return (
@@ -37,6 +38,7 @@ function App() {
         <Route path='/dept_enforce_deadlines' element={<Dept_enforce_deadlines/>}/>
         <Route path='/profile' element={<ProfilePage/>}/>
         <Route path='/verify-email' element={<VerifyEmail/>}/>
+        <Route path='/forgot-password' element={<ForgotPassword/>}/>
       
       </Routes>
     </>
