@@ -1,64 +1,73 @@
-version: '3.8'
+# version: '3.8'
 
 services:
-  db:
-    image: mariadb:11.2
-    container_name: SELab-db
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-    ports:
-      - "3306:3306"
-    networks:
-      - selab-network  # Explicit network name
-    volumes:
-      - SELab-db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-db
     restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 5
 
   backend:
     build: ./Backend
-    container_name: SELab-backend
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 30000
-      # Add server properties
-      SERVER_PORT: 8080
-    ports:
-      - "8080:8080"
-    networks:
-      - selab-network
-    depends_on:
-      db:
-        condition: service_healthy
+    container_name: spring-backend
     restart: unless-stopped
-    # Add extra hosts
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    ports:
+      - "${BACKEND_PORT}:8080"
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      TZ: ${TZ}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
 
   frontend:
     build: ./FrontEnd
-    container_name: SELab-frontend
+    container_name: react-frontend
+    restart: unless-stopped
     ports:
-      - "5173:5173"
-    networks:
-      - selab-network
+      - "${FRONTEND_PORT}:5173"
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL}
     depends_on:
       - backend
-    restart: unless-stopped
+    networks:
+      - app-network
 
-networks:
-  selab-network:
-    driver: bridge
-    name: selab-network  # Explicit name
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT}:8080"
+    depends_on:
+      - mysql
+    networks:
+      - app-network
 
 volumes:
-  SELab-db-data:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
