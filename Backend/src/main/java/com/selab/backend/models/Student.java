@@ -30,6 +30,7 @@ public class Student  {
 
 
     private  String resumePath;
+    private  String profilePhotoLink;
 
     @ManyToOne
     @JoinColumn(name="teamId")

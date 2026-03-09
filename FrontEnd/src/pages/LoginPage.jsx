@@ -15,14 +15,25 @@ const LoginPage = () => {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [err, setErr] = useState("");
     const [loading, setLoading] = useState(false);
-    
-    
+
+
+    useEffect(() => {
+        if (loading) {
+            document.body.style.cursor = "wait";
+        } else {
+            document.body.style.cursor = "default";
+        }
+
+        return () => {
+            document.body.style.cursor = "default";
+        };
+    }, [loading]);
 
   useEffect(() => {
         if (isloggedIn) {
             const normalized = role?.toString().toLowerCase();
             if (normalized === "student") {
-                navigate("/dashboard");
+                navigate("/profile");
             }
         }
     }, [isloggedIn, role, navigate]);
@@ -92,8 +103,10 @@ const handleLogin = async (e) => {
             }
         });
 
+        navigate('/profile');
         
         setLoading(false);
+
         
     } catch (err) {
         console.error("Login error:", err);
@@ -101,6 +114,8 @@ const handleLogin = async (e) => {
         setLoading(false);
     }
 };
+
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const handleRegister = async (e) => {
     e.preventDefault();
     console.log("register button clicked");
@@ -123,7 +138,8 @@ const handleRegister = async (e) => {
 
     setErr("");
     setLoading(true);
-    
+    await delay(100);
+
     try {
         const response = await fetch('/api/auth/register', {
             method: "POST",
@@ -196,7 +212,7 @@ const handleRegister = async (e) => {
                             </p>
                         </div>
 
-                        <form className="space-y-5">
+                        <form className="space-y-5" onSubmit={isRegistering ? handleRegister : handleLogin}>
                             {/* Email Field */}
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
@@ -291,11 +307,25 @@ const handleRegister = async (e) => {
                             )}
 
                             {/* Submit Button */}
-                            <button 
-                                className="w-full font-semibold px-4 py-3.5 text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-lg shadow-lg hover:shadow-emerald-500/40 transform hover:-translate-y-0.5 transition-all duration-200 mt-2"
+                            <button
+                                disabled={loading}
+                                className={`w-full font-semibold px-4 py-3.5 text-white bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg shadow-lg transition-all duration-200 mt-2 flex justify-center items-center gap-2
+    ${loading ? "cursor-wait opacity-80" : "hover:from-emerald-600 hover:to-teal-600 hover:shadow-emerald-500/40 hover:-translate-y-0.5"}`}
+
                                 onClick={isRegistering ? handleRegister : handleLogin}
                             >
-                                {isRegistering ? "Create Account" : "Sign In"}
+                                {loading && (
+                                    <span
+                                        className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                )}
+
+                                {loading
+                                    ? isRegistering
+                                        ? "Creating Account..."
+                                        : "Signing In..."
+                                    : isRegistering
+                                        ? "Create Account"
+                                        : "Sign In"}
                             </button>
 
                             {/* Divider */}
@@ -321,6 +351,13 @@ const handleRegister = async (e) => {
                     {/* Footer */}
                     <p className="text-center text-white/80 text-xs mt-6 drop-shadow-md">© 2026 EduProject. All rights reserved.</p>
                 </div>
+
+                {/*add this if you want to block interaction when loading animation renders*/}
+                  {/*{loading && (*/}
+                {/*    <div className="fixed inset-0 z-50 cursor-wait bg-black/10 backdrop-blur-[1px] flex items-center justify-center">*/}
+                {/*        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>*/}
+                {/*    </div>*/}
+                {/*)}*/}
             </main>
         </>
     )
