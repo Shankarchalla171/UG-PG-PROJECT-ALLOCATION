@@ -53,7 +53,7 @@ const Sidebar = () => {
                     <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Dashboard</span>
                 </NavLink>
 
-                {role === "student" && (
+                {role === "STUDENT" && (
                     <>
                         <NavLink to="/student_view_projects" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +87,7 @@ const Sidebar = () => {
                     </>
                 )}
 
-                {role === "faculty" && (
+                {role === "PROF" && (
                     <>
                        <NavLink to="/professor_create_project" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,7 +116,7 @@ const Sidebar = () => {
                         </NavLink>
                     </>
                 )}
-                {role === "deptCoordinator" && (
+                {role === "DEPTCORDINATOR" && (
                     <>
                         <NavLink to="/dept_view_allocations" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
