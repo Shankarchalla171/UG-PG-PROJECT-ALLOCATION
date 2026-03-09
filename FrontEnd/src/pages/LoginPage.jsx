@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
     const {
-        isloggedIn,email,password,role,token,authDispatch} = useContext(AuthContext);
+        isloggedIn,email,role,token,authDispatch} = useContext(AuthContext);
     const navigate= useNavigate();
     
     // State for form mode and form fields
@@ -14,6 +14,7 @@ const LoginPage = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState("");
     const [err, setErr] = useState("");
+    const [password,setPassword]=useState("");
     const [loading, setLoading] = useState(false);
 
 
@@ -50,10 +51,7 @@ const LoginPage = () => {
 
     const handlePasswordChange =(e) =>{
         // console.log(e.target.value);
-        authDispatch({
-            type:"setPassword",
-            payload:e.target.value,
-        })
+        setPassword(e.target.value);
     }
 
     const handleConfirmPasswordChange = (e) => {
@@ -89,8 +87,8 @@ const handleLogin = async (e) => {
         if (!response.ok) {
             throw new Error(data.message || "Login failed");
         }
-         localStorage.setItem('token', data.token);
-        localStorage.setItem('role', data.role);
+        //  localStorage.setItem('token', data.token);
+        // localStorage.setItem('role', data.role);
         // localStorage.setItem('email', email);
         console.log(data);
         
@@ -175,7 +173,7 @@ const handleRegister = async (e) => {
 };
     const clearForm = () => {
         authDispatch({ type: "setEmail", payload: "" });
-        authDispatch({ type: "setPassword", payload: "" });
+        setPassword("");
         setConfirmPassword("");
     }
 
