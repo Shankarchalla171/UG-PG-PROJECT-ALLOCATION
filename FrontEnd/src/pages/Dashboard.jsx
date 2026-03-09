@@ -9,7 +9,7 @@ const Dashboard = () => {
     const navigate = useNavigate();
     // const { role } = useContext(AuthContext);
 
-     const role=localStorage.getItem('role')
+     const {role}= useContext(AuthContext);
 
 
 
