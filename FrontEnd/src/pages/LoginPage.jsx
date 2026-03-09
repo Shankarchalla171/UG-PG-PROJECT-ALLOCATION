@@ -33,7 +33,7 @@ const LoginPage = () => {
         if (isloggedIn) {
             const normalized = role?.toString().toLowerCase();
             if (normalized === "student") {
-                navigate("/profile");
+                navigate("/dashboard");
             }
         }
     }, [isloggedIn, role, navigate]);
@@ -103,7 +103,7 @@ const handleLogin = async (e) => {
             }
         });
 
-        navigate('/profile');
+        navigate('/dashboard');
         
         setLoading(false);
 
