@@ -1,6 +1,7 @@
 import { createContext } from "react";
 import { useReducer } from "react";
 import { authReducer } from "../reducers/authReducer";
+import student from "../../public/dummyData/student";
 
 const initialState = {
     isloggedIn: false,
