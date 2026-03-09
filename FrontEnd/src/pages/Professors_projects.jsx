@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import { useNavigate } from 'react-router-dom';
 
 const ProfessorViewProjects = () => {
     // Dummy projects data
+    const navigate = useNavigate();
     const [projects, setProjects] = useState([
         {
             id: 1,
@@ -327,7 +329,7 @@ const ProfessorViewProjects = () => {
                                                     </svg>
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="text-xs text-amber-600/70">Interns Needed</p>
+                                                    <p className="text-xs text-amber-600/70">Total Slots</p>
                                                     {editingId === project.id ? (
                                                         <input
                                                             type="number"
@@ -447,7 +449,7 @@ const ProfessorViewProjects = () => {
                                 </div>
                                 <h3 className="text-xl font-bold text-amber-800 mb-2">No Projects Yet</h3>
                                 <p className="text-amber-600/70 mb-6">Create your first project to get started</p>
-                                <button className="px-6 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-rose-600 transition-all duration-300 shadow-lg shadow-orange-500/25">
+                                <button className="px-6 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-rose-600 transition-all duration-300 shadow-lg shadow-orange-500/25" onClick={() => navigate('/professor_create_project')}>
                                     Create New Project
                                 </button>
                             </div>
