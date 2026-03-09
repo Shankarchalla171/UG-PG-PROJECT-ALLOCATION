@@ -7,7 +7,9 @@ import Professor_dashboard from "./Professor_dashboard";
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { role } = useContext(AuthContext);
+    // const { role } = useContext(AuthContext);
+
+    role=localStorage.getItem('role')
 
 
 
