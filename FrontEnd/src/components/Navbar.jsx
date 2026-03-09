@@ -1,7 +1,9 @@
-import { React } from "react";
+import { React, useContext } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 
 const Navbar = () => {
+  const {authDispatch}=useContext(AuthContext);
   const navigate = useNavigate();
   const navLinkClasses = ({ isActive }) =>
     `flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
@@ -10,8 +12,7 @@ const Navbar = () => {
         : "text-amber-800 hover:bg-orange-100 hover:text-orange-600"
     }`;
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+    authDispatch({type:"logout"});
     navigate("/");
     // window.location='/';
   };

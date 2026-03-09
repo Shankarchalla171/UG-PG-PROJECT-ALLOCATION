@@ -31,6 +31,7 @@ const LoginPage = () => {
     }, [loading]);
 
   useEffect(() => {
+      console.log(localStorage);
         if (isloggedIn) {
             const normalized = role?.toString().toLowerCase();
             if (normalized === "student") {
