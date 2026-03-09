@@ -12,7 +12,7 @@ import java.time.Instant;
 @Data
 public class OTPStore {
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private long id;
     private String email;
     private int otp;

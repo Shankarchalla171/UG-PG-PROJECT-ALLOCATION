@@ -302,7 +302,12 @@ const handleRegister = async (e) => {
                             {/* Forgot Password Link (only for login) */}
                             {!isRegistering && (
                                 <div className="flex justify-end">
-                                    <a href="#" className="text-sm text-emerald-300 hover:text-emerald-200 font-medium transition-colors">Forgot password?</a>
+                                    <button 
+                                        onClick={() => navigate('/forgot-password')}
+                                        className="text-sm text-emerald-300 hover:text-emerald-200 font-medium transition-colors"
+                                    >
+                                        Forgot password?
+                                    </button>
                                 </div>
                             )}
 
