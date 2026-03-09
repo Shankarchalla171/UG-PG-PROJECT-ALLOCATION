@@ -75,7 +75,7 @@ const ProfessorDashboard = () => {
           {/* Welcome Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-amber-900 mb-2">
-              Welcome back, {professorData.name.split(" ")[0]}! 👨‍🏫
+              Welcome back, {professorData.name.split(" ")[0]} Abhiram Rao
             </h1>
             <p className="text-amber-600">
               Manage your projects, review applications, and track student progress.
