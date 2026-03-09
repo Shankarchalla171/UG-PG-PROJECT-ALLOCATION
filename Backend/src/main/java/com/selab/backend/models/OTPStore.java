@@ -1,6 +1,7 @@
 package com.selab.backend.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,6 +16,6 @@ public class OTPStore {
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private long id;
     private String email;
-    private int otp;
+    private String otp;
     private Instant time;
 }
