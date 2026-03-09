@@ -48,6 +48,10 @@ const ProfessorFinalAllocation = () => {
     }
   ]);
 
+  // State for modal
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Stats for the dashboard
   const stats = {
     totalTeams: teams.length,
@@ -62,6 +66,22 @@ const ProfessorFinalAllocation = () => {
       case 'completed': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Function to open modal with selected team
+  const openTeamDetails = (team) => {
+    setSelectedTeam(team);
+    setIsModalOpen(true);
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+  };
+
+  // Function to close modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedTeam(null);
+    // Restore body scrolling
+    document.body.style.overflow = 'unset';
   };
 
   return (
@@ -176,7 +196,10 @@ const ProfessorFinalAllocation = () => {
 
                     {/* Team Actions */}
                     <div className="mt-6 pt-4 border-t border-orange-200/60 flex gap-3">
-                      <button className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-50 to-rose-50 text-amber-800 font-medium rounded-xl border border-orange-200 hover:from-orange-100 hover:to-rose-100 transition-all duration-300 flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => openTeamDetails(team)}
+                        className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-50 to-rose-50 text-amber-800 font-medium rounded-xl border border-orange-200 hover:from-orange-100 hover:to-rose-100 transition-all duration-300 flex items-center justify-center gap-2"
+                      >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -209,6 +232,149 @@ const ProfessorFinalAllocation = () => {
           </div>
         </div>
       </div>
+
+      {/* Team Details Modal - Fixed positioning */}
+      {isModalOpen && selectedTeam && (
+        <div 
+          className="fixed inset-0 z-[9999] overflow-y-auto" 
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+        >
+          <div className="flex items-center justify-center min-h-screen px-4 py-6">
+            {/* Modal panel */}
+            <div 
+              className="relative bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Team Details</h3>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="text-white/80 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Body - Scrollable */}
+              <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 120px)' }}>
+                <div className="px-6 py-6">
+                  {/* Team Basic Info */}
+                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-6 mb-6 border border-orange-200">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTeam.status)}`}>
+                          {selectedTeam.status}
+                        </span>
+                      </div>
+                      <div className="text-sm text-amber-600">
+                        <span className="font-medium">Allocation Date:</span> {selectedTeam.allocationDate}
+                      </div>
+                    </div>
+                    
+                    <h2 className="text-2xl font-bold text-amber-800 mb-2">{selectedTeam.teamName}</h2>
+                    <h3 className="text-lg font-medium text-orange-600 mb-4">{selectedTeam.projectTitle}</h3>
+                    
+                    <div className="bg-white/60 rounded-lg p-4 border border-orange-200">
+                      <h4 className="font-medium text-amber-800 mb-2">Project Description</h4>
+                      <p className="text-amber-700">{selectedTeam.teamDescription}</p>
+                    </div>
+                  </div>
+
+                  {/* Team Members Grid */}
+                  <div className="mb-6">
+                    <h4 className="text-lg font-bold text-amber-800 mb-4 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      Team Members ({selectedTeam.members.length})
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedTeam.members.map((member) => (
+                        <div key={member.id} className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200 hover:border-orange-300 transition-all">
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-300 to-amber-300 flex items-center justify-center flex-shrink-0">
+                              <span className="font-bold text-white text-lg">
+                                {member.name.split(' ').map(n => n[0]).join('')}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <h5 className="font-bold text-amber-800">{member.name}</h5>
+                                <span className="px-2 py-1 bg-orange-200 text-orange-800 text-xs rounded-lg font-medium">
+                                  {member.role}
+                                </span>
+                              </div>
+                              <p className="text-sm text-amber-600 mb-1">Roll No: {member.rollNo}</p>
+                              <p className="text-sm text-amber-600 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                {member.email}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Additional Info */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+                      <h5 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Timeline
+                      </h5>
+                      <p className="text-sm text-green-700">Project Duration: 6 months</p>
+                      <p className="text-sm text-green-700">Start Date: March 1, 2024</p>
+                    </div>
+                    
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                      <h5 className="font-medium text-purple-800 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        Supervisor
+                      </h5>
+                      <p className="text-sm text-purple-700">Dr. Sarah Johnson</p>
+                      <p className="text-sm text-purple-700">sarah.j@university.edu</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-orange-200 sticky bottom-0">
+                <button
+                  onClick={closeModal}
+                  className="px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 font-medium rounded-xl border border-gray-300 hover:from-gray-200 hover:to-gray-300 transition-all duration-300"
+                >
+                  Close
+                </button>
+                <button className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Generate Report
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
