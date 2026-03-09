@@ -37,13 +37,13 @@ const ForgotPassword = () => {
                 }),
             });
 
-            const data = await response.text();
+            const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data || "Failed to send OTP");
+                throw new Error(data.error || "Failed to send OTP");
             }
 
-            setMessage(data);
+            setMessage(data.message || "OTP sent to your email! Please check your inbox.");
             setStep("otp");
         } catch (err) {
             setError(err.message || "Failed to send OTP. Please try again.");
