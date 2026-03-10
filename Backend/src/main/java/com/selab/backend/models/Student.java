@@ -1,14 +1,20 @@
 package com.selab.backend.models;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.NoArgsConstructor;
 
 
 @Entity
 @Table(name = "students")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Student  {
 
     @Id
@@ -19,7 +25,7 @@ public class Student  {
     private String rollNumber;
 //    @NotBlank
     @OneToOne()
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id",nullable = false)
     private User user;
 //    private Long userId;
 
@@ -27,12 +33,11 @@ public class Student  {
     private String name;
 
     @Email
+    @Column(nullable = false)
     private String collegeEmailId;
     @Column(nullable = false)
     private String departmentName;
 
-    @Column(nullable = false)
     private  String resumePath;
-    @Column(nullable = false)
     private  String profilePhotoLink;
 }

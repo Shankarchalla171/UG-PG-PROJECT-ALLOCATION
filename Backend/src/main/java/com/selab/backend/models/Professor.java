@@ -16,10 +16,11 @@ public class Professor {
     private Long professorId;
 
     @Email
+    @Column(nullable = false)
     private String email;
 //    @NotBlank
     @Column(nullable = false)
-    private String userName;
+    private String name;
 
     @Column(nullable = false)
     private String departmentName;
