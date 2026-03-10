@@ -42,8 +42,8 @@ const CreateProfile = () => {
     email: "",
     departmentName: "",
     domain: "",
-    officeNumber: "",
     googleScholarLink: "",
+    officeNumber: "",
   };
 
   const [studentForm, setStudentForm] = useState(initialStudent);
@@ -89,7 +89,7 @@ const CreateProfile = () => {
 
       } else {
         console.log(professorForm);
-        const res = await fetch("/api/faculty/profile", {
+        const res = await fetch("/api/professors/profile", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
