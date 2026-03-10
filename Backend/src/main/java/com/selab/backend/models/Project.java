@@ -32,11 +32,6 @@ public class Project {
 
 
     @OneToMany(mappedBy = "project")
-    private List<AppliedProject> appliedProjects;
-
-
-
-
-
+    private List<AppliedProject> applications;
 
 }

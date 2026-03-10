@@ -14,16 +14,14 @@ public class Team {
     private Long teamId;
     private String teamName;
 
+    @OneToOne
+    @JoinColumn(name="team_lead_id")
+    private Student teamLead;
 
-    private int teamLeaderId;
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<TeamMembers> teamMembers;
 
-
-    @OneToMany(mappedBy = "team")
+    @OneToMany(mappedBy = "team",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<AppliedProject> appliedProjects;
-
-
-
-
-
 
 }

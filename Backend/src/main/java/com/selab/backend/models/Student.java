@@ -15,6 +15,7 @@ public class Student  {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long studentId;
 
+    @Column(nullable = false)
     private String rollNumber;
 //    @NotBlank
     @OneToOne()
@@ -22,20 +23,16 @@ public class Student  {
     private User user;
 //    private Long userId;
 
+    @Column(nullable = false)
     private String name;
 
     @Email
     private String collegeEmailId;
+    @Column(nullable = false)
     private String departmentName;
 
-
+    @Column(nullable = false)
     private  String resumePath;
+    @Column(nullable = false)
     private  String profilePhotoLink;
-
-    @ManyToOne
-    @JoinColumn(name="teamId")
-    private Team team;
-
-
-
 }
