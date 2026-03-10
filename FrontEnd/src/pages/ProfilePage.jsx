@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import Navbar from '../components/Navbar.jsx';
 import { Button } from "../components/button";
@@ -7,6 +7,7 @@ import profilePlaceholder from '../assets/profile_photo_placeholder.jpg';
 // Import dummy data
 import studentData from '../../public/dummyData/student.js';
 import facultyData from '../../public/dummyData/faculty.js';
+import { AuthContext } from '../context/AuthContext.jsx';
 
 const ProfilePage = () => {
     const [profile, setProfile] = useState({});
@@ -14,29 +15,30 @@ const ProfilePage = () => {
     const [draftProfile, setDraftProfile] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const {role,token}=useContext(AuthContext);
 
     useEffect(() => {
         const fetchProfileData = async () => {
             try {
                 // Get values from localStorage with null checks
-                let role = localStorage.getItem('role');
-                const token = localStorage.getItem('token');
+                // let role = localStorage.getItem('role');
+                // const token = localStorage.getItem('token');
 
                 // Handle null role
-                if (role) {
-                    role = role.toLowerCase();
-                } else {
-                    role = 'student'; // Default fallback
-                }
+                // if (role) {
+                //     role = role.toLowerCase();
+                // } else {
+                //     role = 'student'; // Default fallback
+                // }
 
                 console.log('Role from localStorage:', role);
                 console.log('Token from localStorage:', token ? 'Present' : 'Missing');
 
                 // Set dummy data as fallback based on role
                 let dummyData;
-                if (role === 'student') {
+                if (role?.toLowerCase() === 'student') {
                     dummyData = studentData;
-                } else if (role === 'faculty') {
+                } else if (role?.toLowerCase() === 'faculty') {
                     dummyData = facultyData;
                 } else {
                     dummyData = studentData; // Default fallback
@@ -54,9 +56,9 @@ const ProfilePage = () => {
 
                 // Build endpoint path
                 let pathRole;
-                if (role === 'student') {
+                if (role?.toLowerCase() === 'student') {
                     pathRole = 'students';
-                } else if (role === 'faculty') {
+                } else if (role?.toLowerCase() === 'faculty') {
                     pathRole = 'faculty';
                 } else {
                     console.error('Unknown role:', role);
@@ -140,8 +142,8 @@ const ProfilePage = () => {
 
     // Get fields to display based on role from localStorage
     const getDisplayFields = () => {
-        const role = localStorage.getItem('role') || 'student';
-        if (role === 'student') {
+        // const role = localStorage.getItem('role') || 'student';
+        if (role?.toLowerCase() === 'student') {
             return ['name', 'rollNo', 'collegeEmailId', 'departmentName'];
         }
         return ['name', 'collegeEmailId', 'departmentName', 'areaOfExpertise', 'gScholarLink', 'experience'];
@@ -212,8 +214,8 @@ const ProfilePage = () => {
     }
 
     // Get role with safe null handling
-    let role = localStorage.getItem('role') || 'student';
-    role = role.toLowerCase();
+    // let role = localStorage.getItem('role') || 'student';
+    // role = role.toLowerCase();
     console.log('Current role:', role);
 
     return (
@@ -307,12 +309,12 @@ const ProfilePage = () => {
                                                     </svg>
                                                     {role}
                                                 </span>
-                                                {role === 'student' && profile.rollNo && (
+                                                {role?.toLowerCase() === 'student' && profile.rollNumber && (
                                                     <span className='inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 rounded-lg text-sm font-medium'>
                                                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                                             <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z" />
                                                         </svg>
-                                                        {profile.rollNo}
+                                                        {profile.rollNumber}
                                                     </span>
                                                 )}
                                             </div>
