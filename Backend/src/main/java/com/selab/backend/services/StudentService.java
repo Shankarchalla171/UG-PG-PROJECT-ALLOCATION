@@ -1,21 +1,22 @@
 package com.selab.backend.services;
 
+import com.selab.backend.Dto.CreateProfileRequest;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.exceptions.UserNotFoundException;
+import com.selab.backend.models.Role;
 import com.selab.backend.models.Student;
 import com.selab.backend.models.User;
 import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.repositories.UserRepository;
-import com.selab.backend.student.StudentProfileResponse;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class StudentService {
 
     private final StudentRepository studentRepository;
@@ -26,7 +27,19 @@ public class StudentService {
         return studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("profile for user with name"+user.getUsername()+" not found"));
     }
 
-    public Student createStudent(Student student) {
+    @Transactional
+    public Student createStudent(CreateProfileRequest createProfileRequest , User user) {
+         user.setRole(Role.STUDENT);
+         userRepository.save(user);
+         Student student= Student.builder()
+                 .name(createProfileRequest.getName())
+                 .departmentName(createProfileRequest.getDepartmentName())
+                 .collegeEmailId(createProfileRequest.getCollegeEmailId())
+                 .rollNumber(createProfileRequest.getRollNo())
+                 .resumePath(createProfileRequest.getResumePath())
+                 .profilePhotoLink(createProfileRequest.getProfilePhotoLink())
+                 .user(user)
+                 .build();
         return studentRepository.save(student);
     }
 

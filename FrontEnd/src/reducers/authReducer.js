@@ -18,7 +18,13 @@ export const authReducer = (state, action) =>{
                 token:action.payload.token,
             }
         }
-
+        case "setRole":{
+            console.log(action.payload);
+            return{
+                ...state,
+                role:action.payload
+            }
+        }
         case "logout":{
             return{
                 ...state,

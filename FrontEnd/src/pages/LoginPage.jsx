@@ -101,9 +101,7 @@ const handleLogin = async (e) => {
                 email: email,
             }
         });
-
         navigate('/dashboard');
-        
         setLoading(false);
 
         
