@@ -5,8 +5,11 @@ import com.selab.backend.auth.*;
 import com.selab.backend.services.AuthenticationService;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.models.User;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +21,7 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
 
     @PostMapping("/register")
@@ -59,11 +63,49 @@ public class AuthenticationController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<Object> forgotPassword(@RequestBody PasswordChangeRequest req) {
-        if (req.getOtp() == null) {
-            return ResponseEntity.ok(authenticationService.sendOtp(req.getEmail()));
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            if (request.getOtp() == null) {
+                // Step 1: Send OTP
+                String message = authenticationService.sendOtp(request.getEmail());
+                return ResponseEntity.ok(ForgotPasswordResponse.builder()
+                        .message(message)
+                        .status("OTP_SENT")
+                        .build());
+            } else {
+                // Step 2: Validate OTP
+                Map<String, String> response = authenticationService.validateOtp(request.getEmail(), request.getOtp());
+                return ResponseEntity.ok(ForgotPasswordResponse.builder()
+                        .message(response.get("message"))
+                        .token(response.get("token"))
+                        .status("OTP_VERIFIED")
+                        .build());
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-        return ResponseEntity.ok(authenticationService.validateOtp(req.getEmail(), req.getOtp()));
     }
+    @PostMapping("/change-password")
+    @Transactional
+    public ResponseEntity<Object> changePassword(@RequestBody NewPassword newPassword, @AuthenticationPrincipal User user) {
+        User u=userRepository.findById(user.getId()).get();
+        u.setPassword(passwordEncoder.encode(newPassword.getNewPassword()));
+        userRepository.save(u);
+        return ResponseEntity.ok("Password Changed successfully.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            String message = authenticationService.resetPassword(request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok(Map.of(
+                    "message", message,
+                    "status", "PASSWORD_RESET"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
 
 }

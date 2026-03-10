@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
     const {
-        isloggedIn,email,password,role,token,authDispatch} = useContext(AuthContext);
+        isloggedIn,email,role,token,authDispatch} = useContext(AuthContext);
     const navigate= useNavigate();
     
     // State for form mode and form fields
@@ -14,6 +14,7 @@ const LoginPage = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState("");
     const [err, setErr] = useState("");
+    const [password,setPassword]=useState("");
     const [loading, setLoading] = useState(false);
 
 
@@ -30,10 +31,11 @@ const LoginPage = () => {
     }, [loading]);
 
   useEffect(() => {
+      console.log(localStorage);
         if (isloggedIn) {
             const normalized = role?.toString().toLowerCase();
             if (normalized === "student") {
-                navigate("/profile");
+                navigate("/dashboard");
             }
         }
     }, [isloggedIn, role, navigate]);
@@ -50,10 +52,7 @@ const LoginPage = () => {
 
     const handlePasswordChange =(e) =>{
         // console.log(e.target.value);
-        authDispatch({
-            type:"setPassword",
-            payload:e.target.value,
-        })
+        setPassword(e.target.value);
     }
 
     const handleConfirmPasswordChange = (e) => {
@@ -89,8 +88,8 @@ const handleLogin = async (e) => {
         if (!response.ok) {
             throw new Error(data.message || "Login failed");
         }
-         localStorage.setItem('token', data.token);
-        localStorage.setItem('role', data.role);
+        //  localStorage.setItem('token', data.token);
+        // localStorage.setItem('role', data.role);
         // localStorage.setItem('email', email);
         console.log(data);
         
@@ -103,7 +102,7 @@ const handleLogin = async (e) => {
             }
         });
 
-        navigate('/profile');
+        navigate('/dashboard');
         
         setLoading(false);
 
@@ -175,7 +174,7 @@ const handleRegister = async (e) => {
 };
     const clearForm = () => {
         authDispatch({ type: "setEmail", payload: "" });
-        authDispatch({ type: "setPassword", payload: "" });
+        setPassword("");
         setConfirmPassword("");
     }
 
@@ -302,7 +301,12 @@ const handleRegister = async (e) => {
                             {/* Forgot Password Link (only for login) */}
                             {!isRegistering && (
                                 <div className="flex justify-end">
-                                    <a href="#" className="text-sm text-emerald-300 hover:text-emerald-200 font-medium transition-colors">Forgot password?</a>
+                                    <button 
+                                        onClick={() => navigate('/forgot-password')}
+                                        className="text-sm text-emerald-300 hover:text-emerald-200 font-medium transition-colors"
+                                    >
+                                        Forgot password?
+                                    </button>
                                 </div>
                             )}
 

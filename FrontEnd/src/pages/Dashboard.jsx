@@ -9,12 +9,12 @@ const Dashboard = () => {
     const navigate = useNavigate();
     // const { role } = useContext(AuthContext);
 
-    role=localStorage.getItem('role')
+     const {role}= useContext(AuthContext);
 
 
 
     // Render based on role
-    if (role === "student") {
+    if (role === "STUDENT") {
         return <StudentDashboard />;
     } else if (role === "deptCoordinator") {
         return <CoordinatorDashboard />;
