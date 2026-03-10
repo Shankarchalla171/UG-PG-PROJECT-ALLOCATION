@@ -15,24 +15,26 @@ public class Professor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long professorId;
 
-
     @Email
-
     private String email;
 //    @NotBlank
+    @Column(nullable = false)
     private String userName;
 
-//    @NotBlank
+    @Column(nullable = false)
     private String departmentName;
 
-//    @NotBlank
+    @Column(nullable = false)
     private String domain;
 
-//    @NotBlank
+    @Column(nullable = false)
     private String googleScholarLink;
-//    @NotBlank
+    @Column(nullable = false)
     private  String officeNumber;
 
+    @OneToOne
+    @JoinColumn(name="user_id")
+    private User user;
 
     @OneToMany(mappedBy = "professor" , cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private List<Project> projects;
