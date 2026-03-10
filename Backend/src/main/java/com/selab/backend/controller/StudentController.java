@@ -1,11 +1,15 @@
 package com.selab.backend.controller;
 
 import com.selab.backend.auth.JwtService;
+import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.Student;
+import com.selab.backend.models.User;
 import com.selab.backend.services.StudentService;
 import com.selab.backend.student.StudentProfileResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +20,7 @@ import java.util.List;
 public class StudentController {
     private final StudentService studentService;
     private final JwtService jwtService;
+    private final StudentMapper studentMapper;
 
     @PostMapping("/profile")
     public ResponseEntity<Student> createStudent(@RequestBody Student student) {
@@ -34,12 +39,8 @@ public class StudentController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<StudentProfileResponse> getStudentProfile(
-            @RequestHeader("Authorization") String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            return ResponseEntity.badRequest().build();
-        }
-        String token = authorizationHeader.substring(7);
-        return ResponseEntity.ok(studentService.getStudentProfile(token));
+    public ResponseEntity<StudentProfileResponse> getStudentProfile(@AuthenticationPrincipal User user) {
+        Student student = studentService.getStudentProfile(user);
+        return new ResponseEntity<>(studentMapper.toDto(student), HttpStatus.OK);
     }
 }

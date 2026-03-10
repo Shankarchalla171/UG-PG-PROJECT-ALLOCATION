@@ -19,7 +19,4 @@ public class AppliedProject {
     @JoinColumn(name="teamId")
     private Team team;
 
-
-
-
 }
