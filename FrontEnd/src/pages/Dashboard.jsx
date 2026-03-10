@@ -4,12 +4,13 @@ import { AuthContext } from "../context/AuthContext";
 import StudentDashboard from "./StudentDashboard";
 import CoordinatorDashboard from "./CoordinatorDashboard";
 import Professor_dashboard from "./Professor_dashboard";
+import CreateProfile from "./CreateProfile";
 
 const Dashboard = () => {
     const navigate = useNavigate();
     // const { role } = useContext(AuthContext);
 
-     const {role}= useContext(AuthContext);
+    const {role}= useContext(AuthContext);
 
 
 
@@ -18,9 +19,11 @@ const Dashboard = () => {
         return <StudentDashboard />;
     } else if (role === "deptCoordinator") {
         return <CoordinatorDashboard />;
-    } else if (role === "faculty") {
+    } else if (role === "PROFF") {
         // Faculty will be redirected, but show nothing while redirecting
         return <Professor_dashboard/>
+    }else if(role === "USER"){
+        return <CreateProfile/>
     }
 
     // Default fallback for unknown roles

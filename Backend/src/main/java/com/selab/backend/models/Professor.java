@@ -2,13 +2,19 @@ package com.selab.backend.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Entity
 @Table(name="professors")
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class Professor {
 
     @Id
@@ -16,10 +22,11 @@ public class Professor {
     private Long professorId;
 
     @Email
+    @Column(nullable = false)
     private String email;
 //    @NotBlank
     @Column(nullable = false)
-    private String userName;
+    private String name;
 
     @Column(nullable = false)
     private String departmentName;
