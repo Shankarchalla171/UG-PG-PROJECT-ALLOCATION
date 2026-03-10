@@ -1,11 +1,14 @@
 package com.selab.backend.controller;
 
+import com.selab.backend.Dto.CreateProfileRequest;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.mappers.StudentMapper;
+import com.selab.backend.models.Role;
 import com.selab.backend.models.Student;
 import com.selab.backend.models.User;
 import com.selab.backend.services.StudentService;
-import com.selab.backend.student.StudentProfileResponse;
+import com.selab.backend.Dto.StudentProfileResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,9 +26,9 @@ public class StudentController {
     private final StudentMapper studentMapper;
 
     @PostMapping("/profile")
-    public ResponseEntity<Student> createStudent(@RequestBody Student student) {
-        Student created = studentService.createStudent(student);
-        return ResponseEntity.ok(created);
+    public ResponseEntity<Role> createStudent(@RequestBody @Valid CreateProfileRequest createProfileRequest, @AuthenticationPrincipal User user) {
+        Student created = studentService.createStudent(createProfileRequest,user);
+        return new ResponseEntity<>(created.getUser().getRole(),HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
