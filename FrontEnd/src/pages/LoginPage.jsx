@@ -119,13 +119,13 @@ const handleLogin = async (e) => {
 const handleRegister = async (e) => {
     e.preventDefault();
     console.log("register button clicked");
-    
+    console.log("hi");
     // Validation
     if (!email || !password || !confirmPassword) {
         alert("Please fill in all fields");
         return;
     }
-    
+    console.log("hi");
     if (password !== confirmPassword) {
         alert("Passwords do not match");
         return;
@@ -152,7 +152,7 @@ const handleRegister = async (e) => {
                 password: password
             }),
         });
-        
+        console.log("hi");
         const data = await response.json();
         
         if (!response.ok) {

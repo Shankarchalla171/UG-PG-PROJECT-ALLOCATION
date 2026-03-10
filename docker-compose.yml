@@ -48,7 +48,8 @@ services:
     ports:
       - "${FRONTEND_PORT}:5173"
     environment:
-      REACT_APP_API_URL: ${REACT_APP_API_URL}
+      - USE_DOCKER=true
+      - REACT_APP_API_URL=http://localhost:8080
     depends_on:
       - backend
     networks:
