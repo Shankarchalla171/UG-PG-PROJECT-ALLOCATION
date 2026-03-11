@@ -6,7 +6,7 @@ import lombok.Data;
 @Entity
 @Data
 @Table(name="aplied_projects")
-public class AppliedProject {
+public class ProjectApplications {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long AppliedProjectsId;
