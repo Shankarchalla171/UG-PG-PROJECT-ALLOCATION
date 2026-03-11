@@ -2,16 +2,14 @@ package com.selab.backend.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
 @Entity
 @Table(name="professors")
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -39,12 +37,13 @@ public class Professor {
     @Column(nullable = false)
     private  String officeNumber;
 
+    @Column(nullable = false)
+    private String profilePhotoPath;
+
     @OneToOne
     @JoinColumn(name="user_id")
     private User user;
 
     @OneToMany(mappedBy = "professor" , cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private List<Project> projects;
-
-
 }

@@ -20,17 +20,6 @@ const ProfilePage = () => {
     useEffect(() => {
         const fetchProfileData = async () => {
             try {
-                // Get values from localStorage with null checks
-                // let role = localStorage.getItem('role');
-                // const token = localStorage.getItem('token');
-
-                // Handle null role
-                // if (role) {
-                //     role = role.toLowerCase();
-                // } else {
-                //     role = 'student'; // Default fallback
-                // }
-
                 console.log('Role from localStorage:', role);
                 console.log('Token from localStorage:', token ? 'Present' : 'Missing');
 
@@ -38,7 +27,7 @@ const ProfilePage = () => {
                 let dummyData;
                 if (role?.toLowerCase() === 'student') {
                     dummyData = studentData;
-                } else if (role?.toLowerCase() === 'faculty') {
+                } else if (role?.toLowerCase() === 'PROFF') {
                     dummyData = facultyData;
                 } else {
                     dummyData = studentData; // Default fallback
@@ -221,6 +210,7 @@ const ProfilePage = () => {
     // let role = localStorage.getItem('role') || 'student';
     // role = role.toLowerCase();
     console.log('Current role:', role);
+    console.log(profile);
 
     return (
         <>
@@ -245,7 +235,7 @@ const ProfilePage = () => {
                                             My Profile
                                         </h1>
                                         <p className='text-amber-600 mt-0.5'>
-                                            {role === 'student' ? 'Your student information' : 'Your faculty information'}
+                                            {role?.toLowerCase() === 'student' ? 'Your student information' : 'Your faculty information'}
                                         </p>
                                     </div>
                                 </div>
@@ -260,10 +250,11 @@ const ProfilePage = () => {
                                         <div className='relative'>
                                             <div className='w-28 h-28 p-2 sm:w-32 sm:h-32 rounded-2xl border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-orange-100 to-amber-100'>
                                                 <img
-                                                    src={profile.profilePhoto || profilePlaceholder || 'https://via.placeholder.com/150?text=User'}
+                                                    src={profile.profilePhotoPath || profilePlaceholder || 'https://via.placeholder.com/150?text=User'}
                                                     alt="Profile"
                                                     className='w-full h-full object-cover'
                                                 />
+                        
                                             </div>
                                         </div>
 

@@ -4,11 +4,12 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateProfileRequest {
+public class StudentCreateProfileRequest {
     @NotBlank(message = " name  cant be null")
     private String name;
 
@@ -19,6 +20,6 @@ public class CreateProfileRequest {
     @NotBlank(message = " departmentName cant be blank")
     private String departmentName;
 
-    private  String resumePath;
-    private  String profilePhotoLink;
+    private MultipartFile resume;
+    private  MultipartFile profilePhoto;
 }
