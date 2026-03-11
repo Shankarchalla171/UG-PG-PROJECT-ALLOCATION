@@ -8,7 +8,7 @@ const DeptEnforceDeadlines = () => {
     {
       id: 1,
       phase: "team_formation",
-      title: "Team Formation",
+      title: "Team Form",
       description: "Students must form teams and register their team details",
       currentDeadline: "2024-03-15",
       status: "upcoming",

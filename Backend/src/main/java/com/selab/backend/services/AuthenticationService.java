@@ -25,9 +25,12 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAmount;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -212,40 +215,62 @@ public class AuthenticationService
         if(!userRepository.existsByEmail(email)) {
             throw new UserNotFoundException("There's no user with this email address. Try signing up.");
         }
-        boolean otpExists=false;
-        if(otpRepo.existsByEmail(email)) {
-            OTPStore otpStore=otpRepo.findByEmail(email);
-            if(otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())) {
-                emailService.sendOtpEmail(email, userRepository.findByEmail(email).get().getUsername(), otpStore.getOtp());
-                otpExists=true;
-            }
-            else {
-                otpRepo.delete(otpStore);
-            }
-        }
-        if(!otpExists) {
-            SecureRandom random = new SecureRandom();
-            int otp = 0;
-            for (int i = 0; i < 6; i++) {
-                if(i==0) otp = otp * 10 + random.nextInt(1, 10);
-                else otp=otp*10+random.nextInt(10);
-            }
-            OTPStore otpStore = new OTPStore();
-            otpStore.setOtp(otp);
-            otpStore.setEmail(email);
-            otpStore.setTime(Instant.now());
-            otpRepo.save(otpStore);
+        if(otpRepo.existsByEmail(email)) otpRepo.delete(otpRepo.findByEmail(email));
+//        boolean otpExists=false;
+//        if(otpRepo.existsByEmail(email)) {
+//            OTPStore otpStore=otpRepo.findByEmail(email);
+//            if(otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())) {
+//                emailService.sendOtpEmail(email, userRepository.findByEmail(email).get().getUsername(), otpStore.getOtp());
+//                otpExists=true;
+//            }
+//            else {
+//                otpRepo.delete(otpStore);
+//            }
+//        }
+        SecureRandom random = new SecureRandom();
+        int otp = random.nextInt(100000, 1000000);
+        OTPStore otpStore = new OTPStore();
+        otpStore.setOtp(passwordEncoder.encode(String.valueOf(otp)));
+        otpStore.setEmail(email);
+        otpStore.setTime(Instant.now());
+        otpRepo.save(otpStore);
+        emailService.sendOtpEmail(email, userRepository.findByEmail(email).get().getUsername(), otp);
 
-            emailService.sendOtpEmail(email, userRepository.findByEmail(email).get().getUsername(), otp);
-        }
         return "Kindly check your mail for the OTP.";
     }
 
     @Transactional
     public Map<String, String> validateOtp(String email, Integer otp) {
         OTPStore otpStore=otpRepo.findByEmail(email);
-        int validOtp=otpStore.getOtp();
-        if(otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())&&validOtp==otp) {
+
+        /* Tried to implement multiple otp scenario.
+         Falling back to single otp scenario due to latency issues with bcrypt encoder
+         */
+//        Set<OTPStore> validOtpStores=otpStoreSet
+//                .stream().
+//                filter(
+//                        otpStore->
+//                                otpStore
+//                                        .getTime()
+//                                        .plus(15, ChronoUnit.MINUTES)
+//                                        .isAfter(Instant.now()))
+//                .collect(Collectors.toSet());
+//
+//        Set<OTPStore> invalidOtpStores=otpStoreSet
+//                .stream()
+//                .filter(
+//                        otpStore->
+//                                otpStore.getTime().plus(15, ChronoUnit.MINUTES).isBefore(Instant.now())
+//                )
+//                .collect(Collectors.toSet());
+//        otpRepo.deleteAll(invalidOtpStores);
+//        Set<String> validOtps=validOtpStores
+//                .stream()
+//                .map(otpStore->otpStore.getOtp())
+//                .collect(Collectors.toSet());
+//        String encodedOtp=passwordEncoder.encode(String.valueOf(otp));
+        if(otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())&&
+                passwordEncoder.matches(String.valueOf(otp), otpStore.getOtp())) {
             User u=userRepository.findByEmail(email).get();
             String token=jwtService.generateToken(u);
             otpRepo.delete(otpStore);
@@ -258,5 +283,28 @@ public class AuthenticationService
             otpRepo.delete(otpStore);
         }
         throw new InvalidOtpException("This otp is either invalid or expired. please request a new otp");
+    }
+
+    @Transactional
+    public String resetPassword(String token, String newPassword) {
+        // Validate token
+        String username = jwtService.extractUsername(token);
+        if (username == null) {
+            throw new RuntimeException("Invalid token");
+        }
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        // Check if token is valid and has the correct purpose
+        if (!jwtService.isTokenValid(token, user)) {
+            throw new RuntimeException("Invalid or expired token");
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        return "Password reset successfully";
     }
 }
