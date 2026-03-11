@@ -1,4 +1,4 @@
-package com.selab.backend.student;
+package com.selab.backend.Dto;
 
 import lombok.Data;
 
