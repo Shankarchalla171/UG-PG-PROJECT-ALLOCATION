@@ -15,18 +15,15 @@ public class DeptCoordinator {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long deptCoordinatorId;
 
-
-    private String email;
-
-//    @NotBlank
+    @Column(nullable = false)
     private String DeptName;
 
+    @OneToOne
+    @JoinColumn(name="user_id")
+    private User user;
 
     @OneToMany(mappedBy = "deptCoordinator", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private List<Project> projects;
-
-
-
 
 
 }
