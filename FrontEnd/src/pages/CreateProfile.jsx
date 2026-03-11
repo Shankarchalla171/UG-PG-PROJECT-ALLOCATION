@@ -33,8 +33,8 @@ const CreateProfile = () => {
     collegeEmailId: "",
     rollNo: "",
     departmentName: "",
-    profilePhotoLink: null,
-    resumePath: null,
+    profilePhoto: null,
+    resume: null,
   };
 
   const initialProfessor = {
@@ -44,6 +44,7 @@ const CreateProfile = () => {
     domain: "",
     googleScholarLink: "",
     officeNumber: "",
+    profilePhoto: null,
   };
 
   const [studentForm, setStudentForm] = useState(initialStudent);
@@ -58,8 +59,11 @@ const CreateProfile = () => {
   };
 
   const handleProfessorChange = (e) => {
-    const { name, value } = e.target;
-    setProfessorForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, files } = e.target;
+    setProfessorForm((prev) => ({
+      ...prev,
+      [name]: files ? files[0] : value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -68,34 +72,41 @@ const CreateProfile = () => {
     setError(null);
     try {
       if (selectedRole === "student") {
-        // const formData = new FormData();
-        // Object.entries(studentForm).forEach(([key, val]) => {
-        //   if (val !== null && val !== "") formData.append(key, val);
-        // });
-        // console.log(formData);
-        console.log(studentForm);
+        const studentData = new FormData();
+
+        Object.entries(studentForm).forEach(([key, val]) => {
+          if (val !== null && val !== "") studentData.append(key, val);
+        });
+
+        console.log(studentData);
+
         const res = await fetch("/api/students/profile", {
           method: "POST",
           headers: { 
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
         },
-          body: JSON.stringify(studentForm),
+          body: studentData,
         });
+
         if (!res.ok) throw new Error(`Request failed (${res.status})`);
         const data= await res.json();
         console.log(data);
-         authDispatch({type:"setRole",payload:data});
+        authDispatch({type:"setRole",payload:data});
 
       } else {
-        console.log(professorForm);
+        
+        const professorData = new FormData();
+        Object.entries(professorForm).forEach(([key, val]) => {
+          if (val !== null && val !== "") professorData.append(key, val);
+        });
+
+        console.log(professorData);
         const res = await fetch("/api/professors/profile", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
-          body: JSON.stringify(professorForm),
+          body: professorData,
         });
         
         if (!res.ok) {
@@ -291,7 +302,7 @@ const CreateProfile = () => {
                       <input
                         type="file"
                         id="profilePhoto"
-                        name="profilePhotoLink"
+                        name="profilePhoto"
                         accept="image/*"
                         onChange={handleStudentChange}
                         className="hidden"
@@ -306,7 +317,7 @@ const CreateProfile = () => {
                           </svg>
                         </div>
                         <span className="text-amber-500 text-sm truncate">
-                          {studentForm.profilePhotoLink? studentForm.profilePhotoLink.name : "Upload a photo (JPG, PNG)"}
+                          {studentForm.profilePhoto? studentForm.profilePhoto.name : "Upload a photo (JPG, PNG)"}
                         </span>
                       </label>
                     </div>
@@ -317,7 +328,7 @@ const CreateProfile = () => {
                       <input
                         type="file"
                         id="resume"
-                        name="resumePath"
+                        name="resume"
                         accept=".pdf,.doc,.docx"
                         onChange={handleStudentChange}
                         className="hidden"
@@ -332,7 +343,7 @@ const CreateProfile = () => {
                           </svg>
                         </div>
                         <span className="text-amber-500 text-sm truncate">
-                          {studentForm.resumePath? studentForm.resumePath.name : "Upload your resume (PDF, DOC)"}
+                          {studentForm.resume? studentForm.resume.name : "Upload your resume (PDF, DOC)"}
                         </span>
                       </label>
                     </div>
@@ -413,7 +424,7 @@ const CreateProfile = () => {
                       />
                     </div>
 
-                    <div className="mb-8">
+                    <div className={FIELD_CLASS}>
                       <label htmlFor="googleScholarLink" className={LABEL_CLASS}>
                         Google Scholar Link *
                       </label>
@@ -427,6 +438,32 @@ const CreateProfile = () => {
                         className={INPUT_CLASS}
                         placeholder="https://scholar.google.com/citations?user=..."
                       />
+                    </div>
+
+                    {/* Profile Photo upload */}
+                    <div className="mb-8">
+                      <label className={LABEL_CLASS}>Profile Photo</label>
+                      <input
+                        type="file"
+                        id="profProfilePhoto"
+                        name="profilePhoto"
+                        accept="image/*"
+                        onChange={handleProfessorChange}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="profProfilePhoto"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-orange-200/60 hover:border-orange-400 bg-white cursor-pointer transition-all duration-300 group"
+                      >
+                        <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-amber-100 group-hover:from-orange-500 group-hover:to-rose-500 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300">
+                          <svg className="w-4 h-4 text-orange-500 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                          </svg>
+                        </div>
+                        <span className="text-amber-500 text-sm truncate">
+                          {professorForm.profilePhoto ? professorForm.profilePhoto.name : "Upload a photo (JPG, PNG)"}
+                        </span>
+                      </label>
                     </div>
                   </>
                 )}
