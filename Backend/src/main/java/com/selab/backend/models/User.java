@@ -25,10 +25,8 @@ public class User implements UserDetails {
     }
     @Id
 //    @Column(nullable = false)
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @OneToOne(mappedBy = "user")
-    private Student student;
     @NotBlank
     @Column(nullable = false,unique = true )
     private String username;
