@@ -10,7 +10,7 @@ import java.util.List;
 @Data
 public class Team {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private Long teamId;
     private String teamName;
 
@@ -22,6 +22,6 @@ public class Team {
     private List<TeamMembers> teamMembers;
 
     @OneToMany(mappedBy = "team",cascade = CascadeType.ALL,orphanRemoval = true)
-    private List<AppliedProject> appliedProjects;
+    private List<ProjectApplications> appliedProjects;
 
 }
