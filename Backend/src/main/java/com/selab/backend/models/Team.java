@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name="teams")
@@ -11,7 +12,7 @@ import java.util.List;
 public class Team {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private Long teamId;
+    private UUID teamId;
     private String teamName;
 
     @OneToOne
