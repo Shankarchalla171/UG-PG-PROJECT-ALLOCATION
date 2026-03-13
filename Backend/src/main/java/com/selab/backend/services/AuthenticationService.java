@@ -6,10 +6,9 @@ import com.selab.backend.auth.JwtService;
 import com.selab.backend.auth.RegisterRequest;
 import com.selab.backend.exceptions.InvalidOtpException;
 import com.selab.backend.exceptions.UserNotFoundException;
-import com.selab.backend.models.OTPStore;
-import com.selab.backend.models.Role;
-import com.selab.backend.models.User;
+import com.selab.backend.models.*;
 import com.selab.backend.repositories.OtpRepo;
+import com.selab.backend.repositories.StudentRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,25 +17,18 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.selab.backend.repositories.UserRepository;
-import com.selab.backend.services.EmailService;
 
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAmount;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService
 {
     private final UserRepository userRepository;
+    private final StudentRepository studentRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -84,6 +76,7 @@ public class AuthenticationService
             return AuthenticationResponse.builder()
                     .token(null)
                     .role(null)
+                    .teamRole(null)
                     .message("Registration successful! Please verify your email to activate your account.")
                     .build();
 
@@ -121,6 +114,7 @@ public class AuthenticationService
                 return AuthenticationResponse.builder()
                         .token(null)
                         .role(null)
+                        .teamRole(null)
                         .message("Please verify your email before logging in")
                         .build();
             }
@@ -129,9 +123,20 @@ public class AuthenticationService
             var jwtToken = jwtService.generateToken(user);
 
             // Return successful response with role
+            UUID teamId=null;
+            String teamRole=null;
+            if(user.getRole()==Role.STUDENT){
+                Student student=studentRepository.findByUser(user).orElseThrow(()-> new RuntimeException("student not found"));
+//                TeamMembers member=teamMembersRepository.findByMember(student).orElseThrow(()-
+                if(student.getTeamRole() != null) {
+                    teamId = student.getTeam().getTeamId();
+                    teamRole = student.getTeamRole().toString();
+                }
+            }
             return AuthenticationResponse.builder()
                     .token(jwtToken)
                     .role(user.getRole().toString()) // This will return STUDENT, FACULTY, etc.
+                    .teamRole(teamRole)
                     .message("Login successful")
                     .build();
 
@@ -182,7 +187,7 @@ public class AuthenticationService
             }
 
             // Update user role to STUDENT
-            user.setRole(Role.STUDENT);
+            user.setRole(Role.USER);
             userRepository.save(user);
 
             // Generate login token
