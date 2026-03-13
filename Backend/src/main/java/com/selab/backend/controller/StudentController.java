@@ -1,13 +1,13 @@
 package com.selab.backend.controller;
 
 import com.selab.backend.Dto.StudentCreateProfileRequest;
+import com.selab.backend.Dto.StudentDto;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.Student;
 import com.selab.backend.models.User;
 import com.selab.backend.services.StudentService;
-import com.selab.backend.Dto.StudentProfileResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -42,7 +42,7 @@ public class StudentController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<StudentProfileResponse> getStudentProfile(@AuthenticationPrincipal User user) {
+    public ResponseEntity<StudentDto> getStudentProfile(@AuthenticationPrincipal User user) {
         Student student = studentService.getStudentProfile(user);
         return new ResponseEntity<>(studentMapper.toDto(student), HttpStatus.OK);
     }

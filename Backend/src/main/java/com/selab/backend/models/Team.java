@@ -15,12 +15,14 @@ public class Team {
     private UUID teamId;
     private String teamName;
 
+    private Boolean isFinalized=false;
+
     @OneToOne
     @JoinColumn(name="team_lead_id")
     private Student teamLead;
 
-    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL,orphanRemoval = true)
-    private List<TeamMembers> teamMembers;
+    @OneToMany(mappedBy = "team")
+    private List<Student> teamMembers;
 
     @OneToMany(mappedBy = "team",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<ProjectApplications> appliedProjects;
