@@ -4,14 +4,15 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name="teams")
 @Data
 public class Team {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long teamId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID teamId;
     private String teamName;
 
     @OneToOne
@@ -22,6 +23,6 @@ public class Team {
     private List<TeamMembers> teamMembers;
 
     @OneToMany(mappedBy = "team",cascade = CascadeType.ALL,orphanRemoval = true)
-    private List<AppliedProject> appliedProjects;
+    private List<ProjectApplications> appliedProjects;
 
 }

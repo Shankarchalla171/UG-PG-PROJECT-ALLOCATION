@@ -5,18 +5,22 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(name="aplied_projects")
-public class AppliedProject {
+@Table(name="projectApplications")
+public class ProjectApplications {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long AppliedProjectsId;
 
     @ManyToOne
-    @JoinColumn(name="projectId")
+    @JoinColumn(name="projectId",nullable = false)
     private Project project;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ApplicationStatus status;
+
     @ManyToOne
-    @JoinColumn(name="teamId")
+    @JoinColumn(name="teamId",nullable = false)
     private Team team;
 
 }
