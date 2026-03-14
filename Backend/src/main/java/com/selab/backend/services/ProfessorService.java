@@ -1,8 +1,10 @@
 package com.selab.backend.services;
 
 import com.selab.backend.Dto.ProfCreateProfileRequest;
-import com.selab.backend.Dto.ProfProfileResponse;
+import com.selab.backend.Dto.ProfDto;
+import com.selab.backend.Dto.UpdateProfileRequest;
 import com.selab.backend.exceptions.UserNotFoundException;
+import com.selab.backend.mappers.ProfessorMapper;
 import com.selab.backend.models.Professor;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.User;
@@ -15,12 +17,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Service
 @RequiredArgsConstructor
 public class ProfessorService {
     private final ProfessorRepository professorRepository;
     private final UserRepository userRepository;
+    private final ProfessorMapper professorMapper;
 
     public Professor createProfile(@Valid ProfCreateProfileRequest profileRequest, User user) {
         String baseDir = System.getProperty("user.dir") + File.separator+"uploads"+File.separator;
@@ -28,7 +34,7 @@ public class ProfessorService {
 
 
         MultipartFile photo=profileRequest.getProfilePhoto();
-        FileValidator.validateImage(photo,2 * 1024 * 1024);//2mb
+        FileValidator.validateImage(photo,3 * 1024 * 1024);//2mb
 
         try{
             new File(profilePhotoDir).mkdirs();
@@ -58,16 +64,39 @@ public class ProfessorService {
         }
     }
 
-    public ProfProfileResponse getProfile(User user) {
-        Professor professor = professorRepository.findByUser(user).orElseThrow(() -> new UserNotFoundException("user with email " + user.getEmail() + " not found"));
-        ProfProfileResponse profile = ProfProfileResponse.builder()
-                .name(professor.getName())
-                .email(professor.getEmail())
-                .officeNumber(professor.getOfficeNumber())
-                .googleScholarLink(professor.getGoogleScholarLink())
-                .domain(professor.getDomain())
-                .departmentName(professor.getDepartmentName())
-                .build();
-        return profile;
+    public Professor getProfile(User user) {
+
+        return professorRepository.findByUser(user).orElseThrow(() -> new UserNotFoundException("user with email " + user.getEmail() + " not found"));
+    }
+
+    public Professor update(User user, UpdateProfileRequest request) {
+        String baseDir = System.getProperty("user.dir") + File.separator+"uploads";
+        String profilePhotoDir = baseDir+File.separator + "profilePhoto";
+
+        Professor prof= professorRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("user with "+user.getUsername()+"  not found"));
+
+        if(request.getProfilePhoto() != null && !request.getProfilePhoto().isEmpty()){
+            MultipartFile photo=request.getProfilePhoto();
+
+            FileValidator.validateImage(photo, 3 * 1024 * 1024);
+
+           try{
+               if(prof.getProfilePhotoPath() != null){
+                   Path oldFile= Paths.get(System.getProperty("user.dir"),prof.getProfilePhotoPath());
+                   Files.deleteIfExists(oldFile);
+               }
+
+               String fileName=user.getId()+"_"+photo.getOriginalFilename();
+               Path filePath=Paths.get(profilePhotoDir,fileName);
+               String relativePath="uploads/profilePhoto/"+fileName;
+
+               photo.transferTo(filePath);
+               prof.setProfilePhotoPath(relativePath);
+           } catch (Exception e) {
+               throw new RuntimeException(e.getMessage());
+           }
+        }
+        professorMapper.updateProf(request,prof);
+        return professorRepository.save(prof);
     }
 }
