@@ -1,5 +1,7 @@
 package com.selab.backend.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
@@ -25,9 +27,10 @@ public class User implements UserDetails {
     }
     @Id
 //    @Column(nullable = false)
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     @OneToOne(mappedBy = "user")
+    @JsonManagedReference
     private Student student;
     @NotBlank
     @Column(nullable = false,unique = true )

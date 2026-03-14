@@ -1,22 +1,32 @@
 package com.selab.backend.services;
 
+import com.selab.backend.auth.JwtService;
+import com.selab.backend.models.DeptCoordinator;
+import com.selab.backend.models.Role;
 import com.selab.backend.models.User;
-import com.selab.backend.repositories.UserRepository;
+import com.selab.backend.repositories.AdminRepository;
+import com.selab.backend.repositories.DeptCoordinatorRepo;
+import com.selab.backend.repositories.ProfessorRepository;
+import com.selab.backend.repositories.StudentRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements UserDetailsService {
-
-    private final UserRepository userRepository;
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+public class UserService {
+    private final StudentRepository studentRepo;
+    private final ProfessorRepository professorRepo;
+    private final DeptCoordinatorRepo coordinatorRepo;
+    public Object getUser(User userDetails) {
+        if(userDetails.getRole().equals(Role.STUDENT)) {
+            return studentRepo.findById(userDetails.getId()).get();
+        }
+        else if(userDetails.getRole().equals(Role.PROFF)) {
+            return professorRepo.findByEmail(userDetails.getEmail()).get();
+        }
+        else if(userDetails.getRole().equals(Role.ADMIN)) {
+            return coordinatorRepo.findByEmail(userDetails.getEmail());
+        }
+        return null;
     }
 }
