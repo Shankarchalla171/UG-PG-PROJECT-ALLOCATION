@@ -2,7 +2,9 @@ package com.selab.backend.controller;
 
 
 import com.selab.backend.Dto.ProfCreateProfileRequest;
-import com.selab.backend.Dto.ProfProfileResponse;
+import com.selab.backend.Dto.ProfDto;
+import com.selab.backend.Dto.UpdateProfileRequest;
+import com.selab.backend.mappers.ProfessorMapper;
 import com.selab.backend.models.Professor;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.User;
@@ -20,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProfessorController {
 
     private final ProfessorService professorService;
-
+    private final ProfessorMapper professorMapper;
 
     @PostMapping("/profile")
     public ResponseEntity<Role> createProfile(@ModelAttribute @Valid ProfCreateProfileRequest profileRequest, @AuthenticationPrincipal User user){
@@ -29,9 +31,15 @@ public class ProfessorController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<ProfProfileResponse> getProfile(@AuthenticationPrincipal User user){
-        return new ResponseEntity<>(professorService.getProfile(user),HttpStatus.OK);
+    public ResponseEntity<ProfDto> getProfile(@AuthenticationPrincipal User user){
+        Professor profProfile=professorService.getProfile(user);
+        return new ResponseEntity<>(professorMapper.toDto(profProfile),HttpStatus.OK);
     }
 
+    @PatchMapping
+    public ResponseEntity<ProfDto> updateProfile(@AuthenticationPrincipal User user, @ModelAttribute UpdateProfileRequest request){
+        Professor updatedProf = professorService.update(user, request);
+        return new ResponseEntity<>(professorMapper.toDto(updatedProf),HttpStatus.OK);
+    }
 
 }
