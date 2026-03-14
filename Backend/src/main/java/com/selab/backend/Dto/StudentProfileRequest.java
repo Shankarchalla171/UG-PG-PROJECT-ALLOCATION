@@ -9,7 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class StudentCreateProfileRequest {
+public class StudentProfileRequest {
     @NotBlank(message = " name  cant be null")
     private String name;
 
