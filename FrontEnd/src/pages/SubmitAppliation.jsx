@@ -10,7 +10,7 @@ const SubmitApplication = () => {
     const { id } = useParams();
     const [project, setProject] = useState(null);
     const [teamMembers, setTeamMembers] = useState([]);
-    const [resumeFile, setResumeFile] = useState(null);
+    const [resumeFiles, setResumeFiles] = useState([]);
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState({ show: false, type: '', message: '' });
@@ -34,22 +34,61 @@ const SubmitApplication = () => {
     }, [toast.show]);
 
     const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.type === 'application/zip' || file.type === 'application/x-zip-compressed' || file.name.endsWith('.zip')) {
-                setResumeFile(file);
-            } else {
-                setToast({ show: true, type: 'error', message: 'Please upload a valid ZIP file' });
+        const files = e.target.files;
+        if (files) {
+            // Check if adding these files would exceed the limit of 3 files
+            if (resumeFiles.length + files.length > 3) {
+                setToast({ show: true, type: 'error', message: 'Maximum 3 files allowed. You can add ' + (3 - resumeFiles.length) + ' more file(s).' });
                 e.target.value = '';
+                return;
+            }
+
+            // Validate each file
+            const validFiles = [];
+            let hasError = false;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileSizeMB = file.size / (1024 * 1024);
+                
+                // Check file size (2 MB max)
+                if (fileSizeMB > 2) {
+                    setToast({ show: true, type: 'error', message: `File "${file.name}" exceeds 2 MB limit (${fileSizeMB.toFixed(2)} MB)` });
+                    hasError = true;
+                    continue;
+                }
+                
+                validFiles.push(file);
+            }
+            
+            if (!hasError && validFiles.length > 0) {
+                setResumeFiles([...resumeFiles, ...validFiles]);
+                setToast({ show: true, type: 'success', message: `Added ${validFiles.length} file(s) successfully` });
             }
         }
+        e.target.value = '';
+    };
+
+    const handleRemoveFile = (index) => {
+        const removedFile = resumeFiles[index];
+        setResumeFiles(resumeFiles.filter((_, i) => i !== index));
+        setToast({ show: true, type: 'success', message: `Removed "${removedFile.name}" from resumes` });
+    };
+
+    const handleOpenFile = (file) => {
+        const url = URL.createObjectURL(file);
+        window.open(url, '_blank');
+        // Clean up the URL object after opening
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 100);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!resumeFile) {
-            setToast({ show: true, type: 'error', message: 'Please upload a ZIP file containing resumes' });
+        if (resumeFiles.length === 0) {
+            setToast({ show: true, type: 'error', message: 'Please upload at least one resume file' });
             return;
         }
 
@@ -67,7 +106,7 @@ const SubmitApplication = () => {
             // await submitApplication(formData);
 
             setToast({ show: true, type: 'success', message: 'Application submitted successfully!' });
-            setResumeFile(null);
+            setResumeFiles([]);
             setMessage('');
         } catch (error) {
             setToast({ show: true, type: 'error', message: 'Failed to submit application. Please try again.' });
@@ -199,52 +238,90 @@ const SubmitApplication = () => {
 
                             {/* Resume Upload & Message Section */}
                             <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
-                                {/* Resume Upload Card */}
+                                {/* Resume Management Card */}
                                 <div className='bg-white rounded-xl border border-orange-200/60 shadow-sm p-6'>
                                     <h2 className='text-lg font-semibold text-amber-900 mb-4 flex items-center gap-2'>
                                         <svg className="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.84V19h2v-4.16l1.59 1.59L16 15.01 12.01 11 8 15.01z" />
                                         </svg>
-                                        Upload Resumes
+                                        Manage Resumes
                                     </h2>
 
-                                    <div className='relative'>
-                                        <input
-                                            type="file"
-                                            accept=".zip"
-                                            onChange={handleFileChange}
-                                            className='absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10'
-                                            id="resume-upload"
-                                        />
-                                        <label
-                                            htmlFor="resume-upload"
-                                            className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl transition-all cursor-pointer ${resumeFile
-                                                    ? 'border-emerald-300 bg-emerald-50/50'
-                                                    : 'border-orange-200 bg-amber-50/30 hover:border-orange-300 hover:bg-amber-50'
-                                                }`}
-                                        >
-                                            {resumeFile ? (
-                                                <>
-                                                    <svg className="w-12 h-12 text-emerald-500 mb-3" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                                                    </svg>
-                                                    <p className='text-sm font-medium text-emerald-700'>{resumeFile.name}</p>
-                                                    <p className='text-xs text-emerald-600 mt-1'>
-                                                        {(resumeFile.size / 1024 / 1024).toFixed(2)} MB
-                                                    </p>
-                                                    <p className='text-xs text-amber-500 mt-2'>Click to change file</p>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <svg className="w-12 h-12 text-amber-400 mb-3" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
-                                                    </svg>
-                                                    <p className='text-sm font-medium text-amber-700'>Click to upload or drag and drop</p>
-                                                    <p className='text-xs text-amber-500 mt-1'>ZIP file containing all team resumes (Max 10MB)</p>
-                                                </>
-                                            )}
-                                        </label>
+                                    {/* Uploaded Files List */}
+                                    <div className='mb-4'>
+                                        {resumeFiles.length > 0 ? (
+                                            <div className='space-y-2'>
+                                                <p className='text-sm font-medium text-amber-700 mb-3'>Uploaded Files ({resumeFiles.length}/3)</p>
+                                                {resumeFiles.map((file, index) => (
+                                                    <div key={index} className='flex items-center justify-between p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg'>
+                                                        <div className='flex items-center gap-2 flex-1 min-w-0'>
+                                                            <svg className="w-5 h-5 text-emerald-600 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z" />
+                                                            </svg>
+                                                            <div className='min-w-0 flex-1'>
+                                                                <p className='text-sm font-medium text-emerald-900 truncate'>{file.name}</p>
+                                                                <p className='text-xs text-emerald-600'>{(file.size / 1024).toFixed(2)} KB</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className='ml-2 flex gap-1 flex-shrink-0'>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleOpenFile(file)}
+                                                                className='p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors'
+                                                                title="Open file"
+                                                            >
+                                                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                                                    <path d="M19 4h-3.5l-5.4-5.4c-.3-.3-.8-.3-1.1 0l-5.4 5.4H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-7 12l-4-5h3V5h2v6h3l-4 5z" />
+                                                                </svg>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveFile(index)}
+                                                                className='p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors'
+                                                                title="Remove file"
+                                                            >
+                                                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className='text-sm text-amber-500 py-3'>No resumes uploaded yet</p>
+                                        )}
                                     </div>
+
+                                    {/* Add Files Button */}
+                                    {resumeFiles.length < 3 && (
+                                        <div className='relative'>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept=".pdf,.doc,.docx"
+                                                onChange={handleFileChange}
+                                                className='absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10'
+                                                id="resume-upload"
+                                            />
+                                            <label
+                                                htmlFor="resume-upload"
+                                                className='flex flex-col items-center justify-center p-6 border-2 border-dashed border-orange-200 bg-amber-50/30 hover:border-orange-300 hover:bg-amber-50 rounded-xl transition-all cursor-pointer'
+                                            >
+                                                <svg className="w-10 h-10 text-amber-400 mb-2" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                                                </svg>
+                                                <p className='text-sm font-medium text-amber-700'>Add Resume(s)</p>
+                                                <p className='text-xs text-amber-500 mt-1'>Max 2 MB per file • {resumeFiles.length < 3 ? (3 - resumeFiles.length) + ' slot(s) available' : 'Limit reached'}</p>
+                                            </label>
+                                        </div>
+                                    )}
+
+                                    {resumeFiles.length >= 3 && (
+                                        <div className='p-3 bg-amber-50 border border-amber-200 rounded-lg'>
+                                            <p className='text-xs text-amber-600 font-medium'>✓ Maximum 3 files uploaded</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Message Card */}
