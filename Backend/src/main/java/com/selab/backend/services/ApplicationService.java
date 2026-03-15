@@ -90,6 +90,17 @@ public class ApplicationService {
         });
     }
 
+    public void addProfessorReview(Long applicationId, String review){
+
+        ProjectApplications application =
+                projectApplicationsRepository.findById(applicationId)
+                        .orElseThrow(() -> new RuntimeException("Application not found"));
+
+        application.setProfessorReview(review);
+
+        projectApplicationsRepository.save(application);
+    }
+
     public void acceptApplication(Long applicationId){
 
         ProjectApplications application =
