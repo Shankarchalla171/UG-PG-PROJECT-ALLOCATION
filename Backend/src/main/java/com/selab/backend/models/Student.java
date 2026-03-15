@@ -23,14 +23,21 @@ public class Student  {
 
     @Column(nullable = false)
     private String rollNumber;
-//    @NotBlank
+
     @OneToOne()
     @JoinColumn(name = "user_id",nullable = false)
     private User user;
-//    private Long userId;
+
 
     @Column(nullable = false)
     private String name;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="team_id")
+    private Team team;
+
+    @Enumerated(EnumType.STRING)
+    private TeamRole teamRole;
 
     @Email
     @Column(nullable = false)

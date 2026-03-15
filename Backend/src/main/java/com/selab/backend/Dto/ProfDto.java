@@ -10,11 +10,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class ProfDto {
+    private Long professorId;
     private String name;
     private String email;
     private String departmentName;
     private String domain;
     private String officeNumber;
     private String googleScholarLink;
-//    private byte[] profilePhotoPath;
+    private String profilePhotoPath;
 }

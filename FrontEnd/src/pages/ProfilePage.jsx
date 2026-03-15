@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import Navbar from '../components/Navbar.jsx';
-import { Button } from "../components/button";
 import profilePlaceholder from '../assets/profile_photo_placeholder.jpg';
 
 // Import dummy data
@@ -15,7 +14,8 @@ const ProfilePage = () => {
     const [draftProfile, setDraftProfile] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const {role,token}=useContext(AuthContext);
+    const [showResume, setShowResume] = useState(false);
+    const { role, token } = useContext(AuthContext);
 
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -32,7 +32,7 @@ const ProfilePage = () => {
                 } else {
                     dummyData = studentData; // Default fallback
                 }
-                
+
                 console.log('Setting dummy data:', dummyData);
                 setProfile({ ...dummyData });
 
@@ -54,21 +54,21 @@ const ProfilePage = () => {
                     setLoading(false);
                     return;
                 }
-                
+
                 const url = `/api/${pathRole}/profile`;
                 console.log('Fetching from URL:', url);
                 console.log('Using token:', token.substring(0, 20) + '...');
 
                 // Make API call
                 const response = await fetch(url, {
-                    headers: { 
+                    headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
 
                 console.log('Response status:', response.status);
-                
+
                 if (!response.ok) {
                     throw new Error(`Failed to fetch profile: ${response.status}`);
                 }
@@ -77,7 +77,7 @@ const ProfilePage = () => {
                 console.log('API response data:', data);
                 setProfile(data);
                 setError(null);
-                
+
             } catch (err) {
                 console.error('Profile fetch error:', err);
                 setError(err.message);
@@ -90,10 +90,65 @@ const ProfilePage = () => {
         fetchProfileData();
     }, []); // Empty dependency array - runs once on mount
 
-    // whenever edit starts, clone current profile
+    const handleSave = async () => {
+        setLoading(true);
+        const formData = new FormData();
+
+        Object.entries(draftProfile).forEach(([key, val]) => {
+            if (val !== null && val != profile[key])
+                formData.append(key, val);
+        });
+        console.log('FormData entries:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+        }
+
+        let pathRole;
+        if (role?.toLowerCase() === 'student') {
+            pathRole = 'students';
+        } else if (role === 'PROFF') {
+            pathRole = 'professors';
+        } else {
+            console.error('Unknown role:', role);
+            setLoading(false);
+            return;
+        }
+
+
+
+        const url = `/api/${pathRole}`;
+
+        try {
+            console.log('Sending PATCH request to:', url);
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                },
+                body: formData
+            })
+
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(`Failed to update profile: ${message}`);
+            }
+            const updatedProfile = await response.json();
+            console.log(updatedProfile);
+            setProfile(updatedProfile);
+            setIsEditing(false);
+            setError(null);
+        } catch (err) {
+            setError(err.message);
+        }
+        finally {
+            setLoading(false);
+        }
+    }
+    // whenever edit starts, clone current profile and close resume preview
     useEffect(() => {
         if (isEditing) {
             setDraftProfile({ ...profile });
+            setShowResume(false);
         }
     }, [isEditing, profile]);
 
@@ -193,7 +248,7 @@ const ProfilePage = () => {
                     <main className='flex-1 flex items-center justify-center'>
                         <div className='text-center bg-white p-8 rounded-2xl shadow-xl'>
                             <p className='text-red-500 mb-4'>Error: {error}</p>
-                            <button 
+                            <button
                                 onClick={() => window.location.reload()}
                                 className='px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600'
                             >
@@ -247,71 +302,83 @@ const ProfilePage = () => {
                                 <div className='relative p-6 sm:px-8 pb-8'>
                                     {/* Profile Photo */}
                                     <div className='flex flex-col sm:flex-row items-center sm:items-end gap-4 mb-6'>
-                                        <div className='relative'>
-                                            <div className='w-28 h-28 p-2 sm:w-32 sm:h-32 rounded-2xl border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-orange-100 to-amber-100'>
+                                        <div className='relative w-28 h-28 sm:w-32 sm:h-32'>
+                                            <div className='w-full h-full p-2 rounded-2xl border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-orange-100 to-amber-100'>
                                                 <img
-                                                    src={profile.profilePhotoPath || profilePlaceholder || 'https://via.placeholder.com/150?text=User'}
+                                                    src={
+                                                        draftProfile.profilePhoto
+                                                            ? URL.createObjectURL(draftProfile.profilePhoto)
+                                                            : profile.profilePhotoLink
+                                                            ? `http://localhost:8080/${profile.profilePhotoLink}`
+                                                            : profile.profilePhotoPath
+                                                            ?`http://localhost:8080/${profile.profilePhotoPath}`
+                                                            : profilePlaceholder
+                                                    }
                                                     alt="Profile"
                                                     className='w-full h-full object-cover'
                                                 />
-                        
                                             </div>
+                                            {isEditing && (
+                                                <>
+                                                    <input
+                                                        type="file"
+                                                        id="profilePhotoEdit"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            if (e.target.files[0])
+                                                                setDraftProfile(prev => ({ ...prev, profilePhoto: e.target.files[0] }));
+                                                        }}
+                                                    />
+                                                    <label
+                                                        htmlFor="profilePhotoEdit"
+                                                        className="absolute inset-0 rounded-2xl flex items-center justify-center bg-black/40 cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-200"
+                                                        title="Change photo"
+                                                    >
+                                                        <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                                            <path d="M12 15.2A3.2 3.2 0 0 1 8.8 12 3.2 3.2 0 0 1 12 8.8 3.2 3.2 0 0 1 15.2 12 3.2 3.2 0 0 1 12 15.2M12 7a5 5 0 0 0-5 5 5 5 0 0 0 5 5 5 5 0 0 0 5-5 5 5 0 0 0-5-5M2 4l1.5-1.5h4L9 4h11a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4z" />
+                                                        </svg>
+                                                    </label>
+                                                </>
+                                            )}
                                         </div>
 
                                         {/* Name and Info */}
                                         <div className='flex-1 text-center sm:text-left sm:pb-2'>
                                             {/* edit controls */}
-                                            <div className='flex gap-1.5 mt-2'>
-                                                {isEditing ? (
-                                                    <>
-                                                        <Button
-                                                            onClick={() => {
-                                                                setProfile(draftProfile);
-                                                                setIsEditing(false);
-                                                            }}
-                                                            variant="success"
-                                                        >
-                                                            Save
-                                                        </Button>
-                                                        <Button
-                                                            onClick={() => setIsEditing(false)}
-                                                            variant="destructive"
-                                                        >
-                                                            Cancel
-                                                        </Button>
-                                                    </>
-                                                ) : (
-                                                    <Button
-                                                        onClick={() => setIsEditing(true)}
-                                                    >
-                                                        Edit Profile
-                                                    </Button>
-                                                )}
-                                            </div>
+
                                             <h2 className='text-2xl sm:text-3xl font-bold text-amber-900'>
                                                 {profile.name || 'User Name'}
                                             </h2>
-                                            <div className='flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-2'>
-                                                <span className='inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-100 to-amber-100 text-amber-700 rounded-lg text-sm font-medium'>
-                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10z" />
-                                                    </svg>
-                                                    {profile.departmentName || 'Department'}
-                                                </span>
-                                                <span className='inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 rounded-lg text-sm font-medium capitalize'>
-                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                                                    </svg>
-                                                    {role}
-                                                </span>
-                                                {role?.toLowerCase() === 'student' && profile.rollNumber && (
-                                                    <span className='inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 rounded-lg text-sm font-medium'>
-                                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z" />
-                                                        </svg>
-                                                        {profile.rollNumber}
-                                                    </span>
-                                                )}
+                                            <div className='flex flex-wrap items-center justify-center sm:justify-between gap-3 mt-2'>
+                                        
+                                                <div className='flex gap-1.5 mt-2'>
+                                                    {isEditing ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    handleSave();
+                                                                }}
+                                                                className='px-4 py-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-sm font-medium rounded-lg hover:from-orange-600 hover:to-rose-600 transition-all duration-300 shadow-sm shadow-orange-500/25 focus:outline-none focus:ring-2 focus:ring-orange-500/30'
+                                                            >
+                                                                Save
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setIsEditing(false)}
+                                                                className='px-4 py-2 border border-orange-300 text-amber-700 text-sm font-medium rounded-lg hover:bg-orange-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20'
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setIsEditing(true)}
+                                                            className='px-4 py-2 border border-orange-300 text-amber-700 text-sm font-medium rounded-lg hover:bg-orange-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20'
+                                                        >
+                                                            Edit Profile
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -351,7 +418,96 @@ const ProfilePage = () => {
                                             </div>
                                         ))}
                                     </div>
-                                    
+
+                                    {/* Resume Section — Students only */}
+                                    {role?.toLowerCase() === 'student' && (
+                                        <div className='mt-6'>
+
+
+                                            {isEditing ? (
+                                                <>
+                                                    <div className='flex items-center gap-2.5 text-sm font-semibold text-amber-800 mb-3'>
+                                                        <span className='w-8 h-8 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex items-center justify-center text-orange-500'>
+                                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                                                            </svg>
+                                                        </span>
+                                                        Resume
+                                                    </div>
+                                                    <input
+                                                        type="file"
+                                                        id="resumeEdit"
+                                                        accept=".pdf,.doc,.docx"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            if (e.target.files[0])
+                                                                setDraftProfile(prev => ({ ...prev, resume: e.target.files[0] }));
+                                                        }}
+                                                    />
+                                                    <label
+                                                        htmlFor="resumeEdit"
+                                                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-orange-200/60 hover:border-orange-400 bg-amber-50/50 cursor-pointer transition-all duration-300 group"
+                                                    >
+                                                        <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-amber-100 group-hover:from-orange-500 group-hover:to-rose-500 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300">
+                                                            <svg className="w-4 h-4 text-orange-500 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                                                            </svg>
+                                                        </div>
+                                                        <span className="text-amber-500 text-sm truncate">
+                                                            {draftProfile.resume ? draftProfile.resume.name : 'Upload new resume (PDF, DOC)'}
+                                                        </span>
+                                                    </label>
+                                                </>
+                                            ) : profile.resumePath ? (
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => setShowResume(v => !v)}
+                                                            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-orange-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 text-amber-700 hover:border-orange-300 hover:shadow-sm transition-all duration-300 group"
+                                                        >
+                                                            <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                                                                <svg className="w-4 h-4 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                                                                    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                                                                </svg>
+                                                            </div>
+                                                            <span className="text-sm font-medium">{showResume ? 'Hide Resume' : 'View Resume'}</span>
+                                                            <svg
+                                                                className={`w-4 h-4 ml-1 transition-transform duration-300 ${showResume ? 'rotate-180' : ''}`}
+                                                                viewBox="0 0 24 24" fill="currentColor"
+                                                            >
+                                                                <path d="M7 10l5 5 5-5z" />
+                                                            </svg>
+                                                        </button>
+                                                        <a
+                                                            href={`http://localhost:8080/${profile.resumePath}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            title="Open in new tab"
+                                                            className="p-2.5 rounded-xl border border-orange-100 bg-amber-50/50 text-amber-500 hover:text-orange-600 hover:border-orange-300 transition-all duration-300"
+                                                        >
+                                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                    {showResume && (
+                                                        <div className="mt-3 rounded-xl border border-orange-200/60 overflow-hidden shadow-sm">
+                                                            <iframe
+                                                                src={`http://localhost:8080/${profile.resumePath}`}
+                                                                className="w-full h-[680px]"
+                                                                title="Resume"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className='px-4 py-3.5 bg-gradient-to-r from-amber-50/50 to-orange-50/50 border border-orange-100 rounded-xl text-amber-400 text-sm'>
+                                                    No resume uploaded
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* Quick Links Card for Faculty */}
                                     {role === 'faculty' && profile.gScholarLink && (
                                         <div className='mt-6 bg-white rounded-2xl shadow-lg shadow-orange-100/30 border border-orange-100/50 p-6'>
