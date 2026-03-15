@@ -28,6 +28,7 @@ public class Project {
     private String description;
     private int slots;
     private String duration;
+    private String domain;
     private String preRequesites;
 
 
