@@ -16,7 +16,7 @@ public class DeptCoordinator {
     private Long deptCoordinatorId;
 
     @Column(nullable = false)
-    private String DeptName;
+    private String deptName;
 
     @OneToOne
     @JoinColumn(name="user_id")
