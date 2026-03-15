@@ -33,10 +33,7 @@ const LoginPage = () => {
   useEffect(() => {
       console.log(localStorage);
         if (isloggedIn) {
-            const normalized = role?.toString().toLowerCase();
-            if (normalized === "student") {
                 navigate("/dashboard");
-            }
         }
     }, [isloggedIn, role, navigate]);
 
