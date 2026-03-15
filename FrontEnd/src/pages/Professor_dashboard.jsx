@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 
@@ -9,6 +10,7 @@ import allProjects from "../../public/dummyData/projects"; // all projects from 
 import allApplications from "../../public/dummyData/studentApplications"; // all student applications
 
 const ProfessorDashboard = () => {
+  const {token} = useContext(AuthContext);
   const navigate = useNavigate();
   const [professorData, setProfessorData] = useState(null);
   const [myProjects, setMyProjects] = useState([]);
@@ -21,10 +23,33 @@ const ProfessorDashboard = () => {
     rejectedApplications: 0,
   });
 
+   const fecthProfData =async () =>{
+        const  url ="api/professors/profile";
+
+        try{
+            const response = await fetch(url,{
+                method:"GET",
+                headers:{  
+                     "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if(!response.ok){
+              const message= await response.text();
+              throw new Error(message);
+            }
+
+            const data= await response.json();
+            console.log("Fetched professor data:", data);
+            return data;
+        }catch(error){
+            // console.error("Error fetching professor data:", error);
+            console.error("Error fetching professor data:", error.message);
+        }
+   }
   useEffect(() => {
     // Load professor data
-    setProfessorData(faculty);
-
+    fecthProfData().then((data) => setProfessorData(data));
     // Filter projects where facultyName matches the professor's name
     const projectsOfProf = allProjects.filter(
       (p) => p.facultyName === faculty.name
@@ -87,7 +112,7 @@ const ProfessorDashboard = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <img
-                  src={professorData.profilePhoto}
+                  src={`http://localhost:8080/${professorData.profilePhotoPath}`}
                   alt={professorData.name}
                   className="w-16 h-16 rounded-full border-2 border-orange-200 object-cover"
                 />

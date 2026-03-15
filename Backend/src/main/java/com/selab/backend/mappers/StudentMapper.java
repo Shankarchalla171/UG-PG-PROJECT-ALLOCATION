@@ -1,12 +1,11 @@
 package com.selab.backend.mappers;
 
 import com.selab.backend.Dto.StudentDto;
+import com.selab.backend.Dto.UpdateProfileRequest;
 import com.selab.backend.models.Student;
 import com.selab.backend.models.TeamRole;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
-import org.mapstruct.ReportingPolicy;
+import org.hibernate.sql.Update;
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface StudentMapper {
@@ -18,4 +17,9 @@ public interface StudentMapper {
     default String getTeamRole(TeamRole teamRole){
         return  teamRole==null? null : teamRole.toString();
     }
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "profilePhotoLink", ignore = true)
+    @Mapping(target = "resumePath", ignore = true)
+    void updateStudent(UpdateProfileRequest request, @MappingTarget  Student student);
 }
