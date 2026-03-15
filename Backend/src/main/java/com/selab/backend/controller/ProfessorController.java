@@ -2,7 +2,7 @@ package com.selab.backend.controller;
 
 
 import com.selab.backend.Dto.ProfCreateProfileRequest;
-import com.selab.backend.Dto.ProfProfileResponse;
+import com.selab.backend.Dto.ProfDto;
 import com.selab.backend.models.Professor;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.User;
@@ -29,7 +29,7 @@ public class ProfessorController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<ProfProfileResponse> getProfile(@AuthenticationPrincipal User user){
+    public ResponseEntity<ProfDto> getProfile(@AuthenticationPrincipal User user){
         return new ResponseEntity<>(professorService.getProfile(user),HttpStatus.OK);
     }
 

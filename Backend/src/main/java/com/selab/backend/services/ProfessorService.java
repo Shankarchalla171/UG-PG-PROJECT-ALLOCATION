@@ -1,7 +1,7 @@
 package com.selab.backend.services;
 
 import com.selab.backend.Dto.ProfCreateProfileRequest;
-import com.selab.backend.Dto.ProfProfileResponse;
+import com.selab.backend.Dto.ProfDto;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.models.Professor;
 import com.selab.backend.models.Role;
@@ -58,9 +58,9 @@ public class ProfessorService {
         }
     }
 
-    public ProfProfileResponse getProfile(User user) {
+    public ProfDto getProfile(User user) {
         Professor professor = professorRepository.findByUser(user).orElseThrow(() -> new UserNotFoundException("user with email " + user.getEmail() + " not found"));
-        ProfProfileResponse profile = ProfProfileResponse.builder()
+        ProfDto profile = ProfDto.builder()
                 .name(professor.getName())
                 .email(professor.getEmail())
                 .officeNumber(professor.getOfficeNumber())
