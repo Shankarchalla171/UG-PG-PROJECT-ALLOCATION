@@ -12,6 +12,7 @@ public class ProfessorApplicationDto {
     private UUID teamId;
     private String message;
     private String status;
+    private String professorReview;
     private LocalDate appliedOn;
 
 }

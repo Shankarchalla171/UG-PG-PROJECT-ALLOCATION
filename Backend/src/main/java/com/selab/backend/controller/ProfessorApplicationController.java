@@ -36,6 +36,15 @@ public class ProfessorApplicationController {
         return applicationService.getProfessorApplications(professor, pageable);
     }
 
+    @PutMapping("/applications/{id}/review")
+    public String addReview(
+            @PathVariable Long id,
+            @RequestBody String review
+    ){
+        applicationService.addProfessorReview(id, review);
+        return "Review added";
+    }
+
     @PutMapping("/applications/{id}/accept")
     public String acceptApplication(@PathVariable Long id){
 
