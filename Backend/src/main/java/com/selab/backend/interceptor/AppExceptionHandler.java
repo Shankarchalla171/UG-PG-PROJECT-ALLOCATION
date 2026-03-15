@@ -3,6 +3,7 @@ package com.selab.backend.interceptor;
 import com.selab.backend.exceptions.AccessDeniedException;
 import com.selab.backend.exceptions.FileValidationException;
 import com.selab.backend.exceptions.ResourceNotFoundException;
+import com.selab.backend.exceptions.TeamInvalidException;
 import com.selab.backend.exceptions.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -58,5 +59,10 @@ public class AppExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> handleRuntimeException(RuntimeException ex){
         return ResponseEntity.internalServerError().body(ex.getMessage());
+    }
+
+    @ExceptionHandler(TeamInvalidException.class)
+    public ResponseEntity<?> handleTeamInvalidException(TeamInvalidException ex){
+        return ResponseEntity.badRequest().body(ex.getMessage());
     }
 }

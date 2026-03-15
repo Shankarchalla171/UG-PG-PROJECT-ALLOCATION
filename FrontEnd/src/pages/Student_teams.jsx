@@ -1,40 +1,75 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import students from '../../public/dummyData/students'
 import teams from '../../public/dummyData/teams'
+import { AuthContext } from '../context/AuthContext';
 
 const Student_teams = () => {
-    const [student, setStudent] = useState({});
-    const [view, setView] = useState('selection'); // 'selection', 'createConfirm', 'teamCreated', 'joinInput', 'teamJoined', 'teamFinalized'
+    const { token, temaId, teamRole, authDispatch } = useContext(AuthContext);
+    const [view, setView] = useState('selection'); // 'selection', 'createConfirm', 'teamCreated', 'joinInput', 'teamJoined', 'teamFinalized', 'transferLeadership', 'leaveSteps'
     const [teamId, setTeamId] = useState('');
     const [joinTeamId, setJoinTeamId] = useState('');
     const [currentTeam, setCurrentTeam] = useState(null);
     const [toast, setToast] = useState({ show: false, type: '', message: '' });
     const [copied, setCopied] = useState(false);
     const [isFinalized, setIsFinalized] = useState(false);
+    const [selectedNewLeaderId, setSelectedNewLeaderId] = useState('');
+    const [isTransferringLeadership, setIsTransferringLeadership] = useState(true);
+    const [isLeavingTeam, setIsLeavingTeam] = useState(false);
 
     useEffect(() => {
-        setStudent(students[2]);
+        //here we have to fecth the team details of team.
+        if (teamRole == null)
+            setView('selection');
+        else {
+            const fetchTeamDetails = async () => {
+                try {
+                    const url = `/api/teams`;
+                    console.log("Fetching team details with url: " + url);
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const msg = await response.text();
+                        throw new Error(msg || 'Failed to fetch team details');
+                    }
+
+                    const teamData = await response.json();
+                    console.log("Fetched team details:", teamData);
+                    setCurrentTeam(teamData);
+                    setTeamId(teamData.teamId);
+                    setIsFinalized(teamData.isFinalized);
+                    if (teamData.isFinalized) {
+                        setView('teamFinalized');
+                    } else if (teamRole === "TEAMlEAD") {
+                        setView('teamCreated');
+                    } else
+                        setView('teamJoined');
+                    
+                } catch (error) {
+                    setToast({ show: true, type: 'error', message: error.message || 'Failed to fetch team details.' });
+                }
+            }
+            fetchTeamDetails();
+        }
     }, []);
 
-    // Auto-hide toast after 4 seconds
+    // Auto-hide toast after 5 seconds
     useEffect(() => {
         if (toast.show) {
             const timer = setTimeout(() => {
                 setToast({ show: false, type: '', message: '' });
-            }, 4000);
+            }, 5000);
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
 
-    // Generate random team ID
-    const generateTeamId = () => {
-        const randomNum = Math.floor(Math.random() * 9000) + 1000;
-        return `TEAM${randomNum}`;
-    };
 
-    // Copy team ID to clipboard
     const copyToClipboard = () => {
         navigator.clipboard.writeText(teamId);
         setCopied(true);
@@ -43,65 +78,232 @@ const Student_teams = () => {
     };
 
     // Handle create team confirmation
-    const handleCreateTeam = () => {
-        const newTeamId = generateTeamId();
-        setTeamId(newTeamId);
-        const newTeam = {
-            teamId: newTeamId,
-            students: [{ name: student.name, rollNo: student.rollNo }]
-        };
-        setCurrentTeam(newTeam);
-        setView('teamCreated');
-        setToast({ show: true, type: 'success', message: 'Team created successfully!' });
+    const handleCreateTeam = async () => {
+
+        try {
+            const url = "/api/teams"
+            console.log("Fetching url :" + url);
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+
+            if (!response.ok) {
+                const msg = await response.text();
+                throw new Error(msg || 'Failed to create team');
+            }
+
+            const data = await response.json();
+            console.log(data);
+            setTeamId(data.teamId);
+            setCurrentTeam(data);
+            authDispatch({
+                type: "setTeam",
+                payload: {
+                    teamRole: "TEAMLEAD"
+                }
+            });
+            setView('teamCreated');
+            setToast({ show: true, type: 'success', message: 'Team created successfully!' });
+        } catch (error) {
+            setToast({ show: true, type: 'error', message: error.message || 'Failed to create team.' });
+        }
     };
 
     // Handle join team
-    const handleJoinTeam = () => {
-        const foundTeam = teams.find(t => t.teamId.toLowerCase() === joinTeamId.trim().toLowerCase());
-        if (foundTeam) {
-            // Check if team is full (max 3 members, so can't join if already 3 or more)
-            if (foundTeam.students.length >= 3) {
-                setToast({ show: true, type: 'error', message: 'This team is full! Maximum 3 members allowed.' });
-                return;
+    const handleJoinTeam = async () => {
+        if (teamId && teamRole) {
+            setToast({ show: true, type: 'error', message: 'You are already a member of this team!' });
+            return;
+        }
+
+        try {
+            console.log("Attempting to join team with ID:", joinTeamId);
+
+            const url = `/api/teams/${joinTeamId.trim()}`;
+            console.log("Fetching url:", url);
+
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                }
+            });
+            console.log("Response status:", response.status);
+
+            if (!response.ok) {
+                const msg = await response.text();
+                console.log(msg);
+                throw new Error(msg || "Failed to join team");
             }
-            // Check if student is already in the team
-            const alreadyMember = foundTeam.students.some(s => s.rollNo === student.rollNo);
-            if (alreadyMember) {
-                setToast({ show: true, type: 'error', message: 'You are already a member of this team!' });
-                return;
-            }
-            // Add student to team
-            const updatedTeam = {
-                ...foundTeam,
-                students: [...foundTeam.students, { name: student.name, rollNo: student.rollNo }]
-            };
-            setCurrentTeam(updatedTeam);
-            setTeamId(foundTeam.teamId);
-            setView('teamJoined');
-            setToast({ show: true, type: 'success', message: 'Successfully joined the team!' });
-        } else {
-            setToast({ show: true, type: 'error', message: 'Team not found. Please check the Team ID.' });
+
+            const data = await response.json();
+            console.log(data);
+
+            setTeamId(data.teamId);
+            setCurrentTeam(data);
+            setView("teamJoined");
+
+            authDispatch({
+                type: "setTeam",
+                payload: {
+                    teamRole: "TEAM_MEMBER"
+                }
+            });
+
+            setToast({ show: true, type: "success", message: "Successfully joined the team!" });
+
+        } catch (error) {
+            // console.error(error);
+            setToast({ show: true, type: "error", message: error.message || "Failed to join team" });
         }
     };
 
-    // Reset to selection view
-    const handleBack = () => {
-        if(view === 'teamCreated') {
-            setToast({ show: true, type: 'error', message: 'Team deleted successfully!' });
-        }else if(view === 'teamJoined') {
-            setToast({ show: true, type: 'success', message: 'You have left the team!' });
+    const leaveTeam = async () => {
+        const url = 'api/teams/leave';
+
+        console.log("Fetching url:", url);
+
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            console.log("Leave team error:", error);
+            throw new Error(error || "Failed to leave team");
         }
+
+        setToast({ show: true, type: 'success', message: 'You have left the team!' });
+
         setView('selection');
         setJoinTeamId('');
         setCurrentTeam(null);
         setIsFinalized(false);
+        setSelectedNewLeaderId('');
+
+        authDispatch({
+            type: "setTeam",
+            payload: null,
+        });
+    };
+
+
+    // Reset to selection view
+    const handleBack = async () => {
+        setIsLeavingTeam(true);
+        if (view === 'teamCreated' && currentTeam?.members?.length > 1) {
+            setView('leaveSteps');
+            setIsLeavingTeam(false);
+            return;
+        }
+        try {
+            await leaveTeam();
+        } catch (error) {
+            console.error(error);
+            setToast({
+                show: true,
+                type: 'error',
+                message: error.message || 'Failed to leave team. Please try again.',
+            });
+        } finally {
+            setIsLeavingTeam(false);
+        }
+    };
+
+    const handleTransferLeadership = async () => {
+        if (!selectedNewLeaderId) {
+            setToast({ show: true, type: 'error', message: 'Please select a member to transfer leadership.' });
+            return;
+        }
+
+        try {
+            setIsTransferringLeadership(true);
+            const url = `/api/teams/transfer-leadership/${selectedNewLeaderId}`;
+            console.log('Fetching url: ' + url);
+
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const msg = await response.text();
+                console.log('Response status:', response.status);
+                throw new Error(msg || 'Failed to transfer leadership');
+            }
+
+            const updatedTeam = await response.json();
+            if (updatedTeam) {
+                setCurrentTeam(updatedTeam);
+                setTeamId(updatedTeam.teamId || teamId);
+            }
+
+            setSelectedNewLeaderId('');
+            authDispatch({
+                type: 'setTeam',
+                payload: {
+                    teamRole: 'TEAM_MEMBER',
+                },
+            });
+            setToast({ show: true, type: 'success', message: 'Leadership transferred. You can now leave the team.' });
+
+            // If user originally wanted to leave, leave after transfer
+            if (isLeavingTeam) {
+                await leaveTeam();
+            } else {
+                setView('teamJoined');
+            }
+
+        } catch (error) {
+            setToast({ show: true, type: 'error', message: error.message || 'Failed to transfer leadership.' });
+        } finally {
+            setIsTransferringLeadership(false);
+            setIsLeavingTeam(false);
+        }
     };
 
     // Handle finalize team
-    const handleFinalizeTeam = () => {
-        setIsFinalized(true);
-        setView('teamFinalized');
-        setToast({ show: true, type: 'success', message: 'Team finalized successfully! You can now apply for projects.' });
+    const handleFinalizeTeam = async () => {
+        //     setIsFinalized(true);
+        //     setView('teamFinalized');
+        //     setToast({ show: true, type: 'success', message: 'Team finalized successfully! You can now apply for projects.' });
+        try {
+            const url = `/api/teams/finalize/${teamId}`;
+            console.log("Fetching url: " + url);
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                }
+            });
+
+            console.log("Response status: " + response.status);
+
+            if (!response.ok) {
+                const msg = await response.text();
+                console.log("Response status: " + response.status);
+                throw new Error(msg || "Failed to finalize team");
+            }
+
+            const data = await response.text();
+            console.log(data);
+            setIsFinalized(true);
+            setView('teamFinalized');
+            setToast({ show: true, type: 'success', message: data || 'Team finalized successfully! You can now apply for projects.' });
+
+        } catch (error) {
+            // console.error(error);
+            setToast({ show: true, type: 'error', message: error.message || 'Failed to finalize team. Please try again.' });
+        }
     };
 
 
@@ -211,7 +413,7 @@ const Student_teams = () => {
                             <div className='w-full max-w-3xl'>
                                 <div className='bg-white rounded-xl border border-orange-200/60 shadow-sm p-8'>
                                     <button
-                                        onClick={handleBack}
+                                        onClick={() => setView('selection')}
                                         className='mb-4 flex items-center gap-2 text-amber-700 hover:text-orange-600 transition-colors cursor-pointer'
                                     >
                                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -252,6 +454,141 @@ const Student_teams = () => {
                             </div>
                         )}
 
+                        {/* Leave Steps View */}
+                        {view === 'leaveSteps' && (
+                            <div className='w-full max-w-md'>
+                                <div className='bg-white rounded-xl border border-orange-200/60 shadow-sm p-8'>
+                                    {/* Icon */}
+                                    <div className='w-14 h-14 mx-auto mb-5 rounded-full bg-amber-100 flex items-center justify-center'>
+                                        <svg className="w-7 h-7 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                                        </svg>
+                                    </div>
+
+                                    <h2 className='text-xl font-bold text-amber-900 mb-1 text-center'>Before you leave</h2>
+                                    <p className='text-sm text-amber-600 mb-7 text-center'>
+                                        Your team has members. Follow these two steps to leave safely.
+                                    </p>
+
+                                    {/* Steps */}
+                                    <div className='space-y-4 mb-8'>
+                                        <div className='flex items-start gap-4 p-4 rounded-xl bg-orange-50 border border-orange-200/60'>
+                                            <div className='w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center text-white text-sm font-bold shadow-sm'>
+                                                1
+                                            </div>
+                                            <div>
+                                                <p className='text-sm font-semibold text-amber-900'>Transfer Leadership</p>
+                                                <p className='text-xs text-amber-600 mt-0.5'>
+                                                    Hand over the team leader role to another member.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className='flex items-start gap-4 p-4 rounded-xl bg-amber-50/60 border border-orange-200/40'>
+                                            <div className='w-8 h-8 shrink-0 rounded-full bg-amber-200 flex items-center justify-center text-amber-700 text-sm font-bold'>
+                                                2
+                                            </div>
+                                            <div>
+                                                <p className='text-sm font-semibold text-amber-800'>Leave the Team</p>
+                                                <p className='text-xs text-amber-500 mt-0.5'>
+                                                    Once leadership is transferred, you can leave freely.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className='flex flex-col sm:flex-row gap-3'>
+                                        <button
+                                            onClick={() => { setIsLeavingTeam(true); setSelectedNewLeaderId(''); setView('transferLeadership'); }}
+                                            className='flex-1 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-medium rounded-lg hover:from-orange-600 hover:to-rose-600 shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2'
+                                        >
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                                            </svg>
+                                            Transfer Leadership
+                                        </button>
+                                        <button
+                                            onClick={() => setView('teamCreated')}
+                                            className='flex-1 py-3 bg-white border border-orange-200 text-amber-700 font-medium rounded-lg hover:bg-orange-50 transition-colors cursor-pointer'
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Transfer Leadership View */}
+                        {view === 'transferLeadership' && currentTeam && (
+                            <div className='w-full max-w-2xl'>
+                                <div className='bg-white rounded-xl border border-orange-200/60 shadow-sm p-8'>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedNewLeaderId('');
+                                            setView('teamCreated');
+                                        }}
+                                        className='mb-4 flex items-center gap-2 text-amber-700 hover:text-orange-600 transition-colors cursor-pointer'
+                                    >
+                                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                                        </svg>
+                                        Back
+                                    </button>
+
+                                    <div className='w-14 h-14 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center'>
+                                        <svg className="w-7 h-7 text-orange-600" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                                        </svg>
+                                    </div>
+                                    <h2 className='text-xl font-bold text-amber-900 mb-2 text-center'>Transfer Leadership</h2>
+                                    <p className='text-sm text-amber-600 mb-6 text-center'>
+                                        Choose a new leader before leaving the team.
+                                    </p>
+
+                                    <div className='mb-4'>
+                                        <label className='block text-xs font-medium text-amber-700 mb-1.5'>Select New Leader</label>
+                                        <select
+                                            value={selectedNewLeaderId}
+                                            onChange={(e) => setSelectedNewLeaderId(e.target.value)}
+                                            className='w-full px-3 py-2.5 bg-white border border-orange-200 rounded-lg text-sm text-amber-900 focus:outline-none focus:ring-2 focus:ring-orange-300'
+                                        >
+                                            <option value=''>Select member</option>
+                                            {currentTeam.members
+                                                .filter((member) => member.teamRole !== 'TEAMLEAD' && member.teamRole !== 'TEAMlEAD')
+                                                .map((member) => (
+                                                    <option key={member.studentId} value={member.studentId}>
+                                                        {member.name} ({member.rollNumber})
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </div>
+
+                                    <div className='flex flex-col sm:flex-row gap-3'>
+                                        <button
+                                            onClick={handleTransferLeadership}
+                                            disabled={!isTransferringLeadership || !selectedNewLeaderId}
+                                            className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all ${!isTransferringLeadership || !selectedNewLeaderId
+                                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                : 'bg-orange-500 text-white hover:bg-orange-600 cursor-pointer'
+                                                }`}
+                                        >
+                                            {isTransferringLeadership && isLeavingTeam ? 'Transfer Leadership & Leave Team' : 'Transfer Leadership'}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedNewLeaderId('');
+                                                setView('teamCreated');
+                                            }}
+                                            className='flex-1 py-3 rounded-lg text-sm font-medium border border-orange-200 text-amber-700 hover:bg-orange-50 cursor-pointer'
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Team Created/Joined View */}
                         {(view === 'teamCreated' || view === 'teamJoined' || view === 'teamFinalized') && currentTeam && (
                             <div className='w-full max-w-3xl'>
@@ -278,57 +615,53 @@ const Student_teams = () => {
 
                                     <div className='p-6'>
                                         {/* Team ID Section */}
-                                        <div className='mb-6'>
-                                            <label className='block text-xs font-medium text-amber-600 mb-2 uppercase tracking-wide'>Team Code</label>
-                                            <div className='flex items-center gap-3'>
-                                                <div className='flex-1 px-5 py-4 bg-amber-50 border border-orange-200 rounded-xl font-mono text-2xl font-bold text-amber-900 text-center'>
-                                                    {teamId}
+                                        {!isFinalized && (
+                                            <div className='mb-6'>
+                                                <label className='block text-xs font-medium text-amber-600 mb-2 uppercase tracking-wide'>Team Code</label>
+                                                <div className='flex items-center gap-3'>
+                                                    <div className='flex-1 px-5 py-4 bg-amber-50 border border-orange-200 rounded-xl font-mono text-2xl font-bold text-amber-900 text-center'>
+                                                        {teamId}
+                                                    </div>
+                                                    <button
+                                                        onClick={copyToClipboard}
+                                                        className={`px-4 py-4 rounded-xl border transition-all cursor-pointer ${copied
+                                                            ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
+                                                            : 'bg-white border-orange-200 text-amber-700 hover:bg-orange-50 hover:border-orange-300'
+                                                            }`}
+                                                    >
+                                                        {copied ? (
+                                                            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    onClick={copyToClipboard}
-                                                    className={`px-4 py-4 rounded-xl border transition-all cursor-pointer ${copied
-                                                        ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
-                                                        : 'bg-white border-orange-200 text-amber-700 hover:bg-orange-50 hover:border-orange-300'
-                                                        }`}
-                                                >
-                                                    {copied ? (
-                                                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                                                        </svg>
-                                                    ) : (
-                                                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
-                                                        </svg>
-                                                    )}
-                                                </button>
                                             </div>
-                                        </div>
+                                        )}
 
                                         {/* Team Members Section */}
                                         <div>
                                             <label className='block text-xs font-medium text-amber-600 mb-3 uppercase tracking-wide'>
-                                                Team Members ({currentTeam.students.length})
+                                                Team Members ({currentTeam.members.length})
                                             </label>
                                             <div className='space-y-3'>
-                                                {currentTeam.students.map((member, index) => (
-                                                    <div key={index} className='flex items-center gap-3 p-3 bg-amber-50/50 rounded-lg border border-orange-100'>
+                                                {currentTeam.members.map((member) => (
+                                                    <div key={member.studentId} className='flex items-center gap-3 p-3 bg-amber-50/50 rounded-lg border border-orange-100'>
                                                         <div className='w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-bold text-sm'>
                                                             {member.name?.charAt(0) || 'M'}
                                                         </div>
                                                         <div className='flex-1'>
                                                             <p className='text-sm font-medium text-amber-900'>{member.name}</p>
-                                                            <p className='text-xs text-amber-600'>{member.rollNo}</p>
+                                                            <p className='text-xs text-amber-600'>{member.rollNumber}</p>
                                                         </div>
-                                                        {index === 0 && (
-                                                            <span className='px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full'>
-                                                                Leader
-                                                            </span>
-                                                        )}
-                                                        {member.rollNo === student.rollNo && index !== 0 && (
-                                                            <span className='px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full'>
-                                                                You
-                                                            </span>
-                                                        )}
+
+                                                        <span className='px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full'>
+                                                            {member.teamRole === "TEAMlEAD" ? "Leader" : "Member"}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -341,7 +674,18 @@ const Student_teams = () => {
                                                     onClick={handleBack}
                                                     className='flex-1 py-3 bg-white border border-orange-200 text-amber-700 font-medium rounded-lg hover:bg-orange-50 transition-colors cursor-pointer'
                                                 >
-                                                   {view === 'teamCreated' ? 'Delete Team' : 'Leave Team'}
+                                                    {view === 'teamCreated' ? 'Delete Team' : 'Leave Team'}
+                                                </button>
+                                            )}
+                                            {view === 'teamCreated' && !isFinalized && currentTeam.members.length > 1 && (
+                                                <button
+                                                    onClick={() => { setSelectedNewLeaderId(''); setView('transferLeadership'); }}
+                                                    className='flex-1 py-3 bg-white border border-orange-300 text-orange-600 font-medium rounded-lg hover:bg-orange-50 transition-colors cursor-pointer flex items-center justify-center gap-2'
+                                                >
+                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                                                    </svg>
+                                                    Transfer Leadership
                                                 </button>
                                             )}
                                             {view === 'teamCreated' && !isFinalized && (
@@ -356,6 +700,7 @@ const Student_teams = () => {
                                                 </button>
                                             )}
                                         </div>
+
                                     </div>
                                 </div>
                             </div>

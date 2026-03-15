@@ -95,6 +95,7 @@ const handleLogin = async (e) => {
             payload: {
                 token: data.token,
                 role: data.role,
+                teamRole:data.teamRole,
                 email: email,
             }
         });
