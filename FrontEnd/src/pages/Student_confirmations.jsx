@@ -1,5 +1,6 @@
 import React from "react";
 import Sidebar from "../components/Sidebar";
+const API_URL = import.meta.env.VITE_API_URL;
 import Navbar from "../components/Navbar";
 import { useState, useEffect } from "react";
 import student_confirmations from "../../public/dummyData/studentConfirmations";

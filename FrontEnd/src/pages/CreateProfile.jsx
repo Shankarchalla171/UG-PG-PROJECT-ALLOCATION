@@ -1,8 +1,11 @@
 import React, { useState, useContext } from "react";
 import Navbar from "../components/Navbar";
+
 import Sidebar from "../components/Sidebar";
 import { AuthContext } from "../context/AuthContext";
 import { data } from "react-router-dom";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const DEPARTMENTS = [
   "Computer Science & Engineering",
@@ -80,7 +83,11 @@ const CreateProfile = () => {
 
         console.log(studentData);
 
-        const res = await fetch("/api/students/profile", {
+        console.log('Token:', token);
+console.log('Full URL:', `${API_URL}/api/auth/students/profile`);
+console.log('API_URL:', API_URL);
+
+        const res = await fetch(`${API_URL}/api/auth/students/profile`, {
           method: "POST",
           headers: { 
             Authorization: `Bearer ${token}`,
@@ -101,7 +108,7 @@ const CreateProfile = () => {
         });
 
         console.log(professorData);
-        const res = await fetch("/api/professors/profile", {
+        const res = await fetch(`${API_URL}/api/professors/profile`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
