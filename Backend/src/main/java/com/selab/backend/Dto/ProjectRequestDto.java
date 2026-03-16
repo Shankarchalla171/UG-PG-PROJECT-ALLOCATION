@@ -20,6 +20,8 @@ public class ProjectRequestDto {
     @Min(value = 1, message = "Slots must be at least 1")
     private Integer slots;  // Use Integer instead of int for null check
 
+    private String domain;
+
     @NotBlank(message = "Duration is required")
     private String duration;
 

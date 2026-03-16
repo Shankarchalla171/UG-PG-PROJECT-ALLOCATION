@@ -12,9 +12,9 @@ import java.util.List;
 @Entity
 @Table(name="projects")
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 public class Project {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,6 +38,9 @@ public class Project {
 
     @Column(name = "slots")
     private int slots;
+
+    @Column(name = "domain")
+    private String domain;
 
     @Column(name = "duration")
     private String duration;
