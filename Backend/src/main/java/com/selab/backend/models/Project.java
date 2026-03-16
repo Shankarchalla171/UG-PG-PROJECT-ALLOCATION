@@ -39,6 +39,9 @@ public class Project {
     @Column(name = "slots")
     private int slots;
 
+    @Column(name = "domain")
+    private String domain;
+
     @Column(name = "duration")
     private String duration;
 

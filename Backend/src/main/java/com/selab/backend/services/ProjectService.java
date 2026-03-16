@@ -51,6 +51,7 @@ public class ProjectService {
                 .duration(projectRequestDto.getDuration())
                 .preRequisites(projectRequestDto.getPrerequisites())
                 .professor(professor)
+                .domain(projectRequestDto.getDomain())
                 .deptCoordinator(coordinator)
                 .build();
 
@@ -66,6 +67,7 @@ public class ProjectService {
                 .slots(project.getSlots())
                 .duration(project.getDuration())
                 .prerequisites(project.getPreRequisites())
+                .domain(project.getDomain())
                 .professor(professorMapper.toDto(professor))
                 .build();
     }
@@ -121,6 +123,7 @@ public class ProjectService {
                 .slots(project.getSlots())
                 .duration(project.getDuration())
                 .prerequisites(project.getPreRequisites())
+                .domain(project.getDomain())
                 .professor(professorMapper.toDto(project.getProfessor()))  // Get from project
                 .build();
     }
