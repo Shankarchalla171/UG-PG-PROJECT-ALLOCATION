@@ -8,6 +8,7 @@ const LoginPage = () => {
         isloggedIn,email,role,token,authDispatch} = useContext(AuthContext);
     const navigate= useNavigate();
     
+    const API_URL = import.meta.env.VITE_API_URL;
     // State for form mode and form fields
     const [isRegistering, setIsRegistering] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +34,7 @@ const LoginPage = () => {
   useEffect(() => {
       console.log(localStorage);
         if (isloggedIn) {
-                navigate("/dashboard");
+                // navigate("/dashboard");
         }
     }, [isloggedIn, role, navigate]);
 
@@ -69,7 +70,7 @@ const handleLogin = async (e) => {
     
     try {
         // const response = await fetch('/api/auth/login', {
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch('${API_URL}/api/auth/login', {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -133,10 +134,10 @@ const handleRegister = async (e) => {
 
     setErr("");
     setLoading(true);
-    await delay(100);
 
     try {
-        const response = await fetch('/api/auth/register', {
+        // FIX: Use the full URL with port 8080 like in the login function
+        const response = await fetch('${API_URL}/api/auth/register', {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
