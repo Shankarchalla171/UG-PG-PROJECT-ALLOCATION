@@ -9,7 +9,7 @@ const VerifyEmail = () => {
     // grab token from query params
     const query = new URLSearchParams(location.search);
     const token = query.get("token");
-
+    const API_URL=import.meta.env.VITE_API_URL;
     useEffect(() => {
         if (!token) {
             setMessage("No verification token provided in URL.");
@@ -18,7 +18,7 @@ const VerifyEmail = () => {
 
         const verify = async () => {
             try {
-                const res = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
+                const res = await fetch(`${API_URL}/api/auth/verify-email?token=${encodeURIComponent(token)}`);
                 const data = await res.json();
 
                 if (res.ok) {
