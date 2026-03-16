@@ -9,7 +9,9 @@ public class ViewConfirmationsDto {
     private String projectDescription;
     private String duration;
     private String facultyName;
-    private Integer facultyAvailableSlots;
+    private Integer projectAvailableSlots;  // Remaining slots for this project
+
+    // Can this team confirm this application?
     private Boolean canConfirm;
-    private String message;
+    private String message; // If canConfirm is false, explain why
 }
