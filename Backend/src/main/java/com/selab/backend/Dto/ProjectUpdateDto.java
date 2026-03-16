@@ -22,6 +22,8 @@ public class ProjectUpdateDto {
     @Min(value = 1, message = "Slots must be at least 1")
     private Integer slots;
 
+    private String domain;
+
     private String duration;
 
     private String prerequisites;

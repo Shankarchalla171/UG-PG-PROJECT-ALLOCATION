@@ -12,6 +12,7 @@ public class ProjectResponseDto {
     private String title;
     private String description;
     private Integer slots;
+    private String domain;
     private String duration;
     private String prerequisites;
     private ProfDto professor;

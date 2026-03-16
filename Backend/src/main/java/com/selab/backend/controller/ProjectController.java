@@ -30,6 +30,7 @@ public class ProjectController {
             @Valid @RequestBody ProjectRequestDto projectRequestDto,
             @AuthenticationPrincipal  User currentUser
             ){
+        System.out.println("reached controller");
         ProjectResponseDto createdProject = projectService.createProject(
                 projectRequestDto,
                 currentUser
@@ -73,6 +74,7 @@ public class ProjectController {
     @GetMapping("/professor/my-projects")
     public ResponseEntity<List<ProjectResponseDto>> getMyProjects(
             @AuthenticationPrincipal User currentUser) {
+        System.out.println("reached controller..");
         List<ProjectResponseDto> projects = projectService.getAllProjectsByProfessor(currentUser);
         return ResponseEntity.ok(projects);
     }
