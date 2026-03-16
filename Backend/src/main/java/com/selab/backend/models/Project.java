@@ -30,8 +30,13 @@ public class Project {
     @JoinColumn(name="deptCoordinatorId",nullable = false)
     private DeptCoordinator deptCoordinator;
 
+    @Column(name = "title")
     private String title;
+
+    @Column(name = "description")
     private String description;
+
+    @Column(name = "slots")
     private int slots;
 
     @Column(name = "domain")
@@ -39,10 +44,12 @@ public class Project {
 
     @Column(name = "duration")
     private String duration;
-    private String preRequesites;
+
+    @Column(name = "pre_requesites")
+    private String preRequisites;
 
 
-    @OneToMany(mappedBy = "project")
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectApplications> applications;
 
 }
