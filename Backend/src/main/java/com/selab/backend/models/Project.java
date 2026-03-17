@@ -28,7 +28,10 @@ public class Project {
     private String description;
     private int slots;
     private String duration;
+    
+    @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT ''")
     private String domain;
+    
     private String preRequesites;
 
 

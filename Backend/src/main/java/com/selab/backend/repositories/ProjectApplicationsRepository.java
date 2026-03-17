@@ -15,4 +15,6 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     Optional<ProjectApplications> findByTeamAndProject(Team team, Project project);
     Page<ProjectApplications> findByTeam(Team team, Pageable pageable);
     Page<ProjectApplications> findByProject_Professor(Professor professor, Pageable pageable);
+
+    long countByProject(Project project);
 }
