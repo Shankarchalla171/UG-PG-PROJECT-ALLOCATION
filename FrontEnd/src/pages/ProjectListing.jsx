@@ -1,11 +1,14 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useContext } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import projects from '../../public/dummyData/projects';
 import ProjectCard from '../components/ProjectCard';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 const ProjectListing = () => {
+  const { token } = useContext(AuthContext);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  
   const [projectlist, setProjectlist] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('');
@@ -13,59 +16,165 @@ const ProjectListing = () => {
   const [slotFilter, setSlotFilter] = useState('all');
   const [isFilterExpanded, setIsFilterExpanded] = useState(true);
   const [activeProjectId, setActiveProjectId] = useState(null);
-  const [activeProject, setActiveProject] = useState([]);
+  const [activeProject, setActiveProject] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    //we have to fetch from backend, but for now we will use dummy data
-    setProjectlist(projects);
-  }, [])
+    const fetchProjects = async () => {
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+        
+        if (!token) {
+          setLoadError('Authentication required. Please log in.');
+          setIsLoading(false);
+          return;
+        }
+        
+        const url = `${API_URL}/api/student/projects`;
+        console.log('Fetching from:', url);
+        console.log('Token available:', !!token);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          let errorMessage = `Server error: ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            console.error('Error response:', errorData);
+          } catch (e) {
+            console.error('Could not parse error response');
+          }
+          throw new Error(errorMessage);
+        }
+        
+        const data = await response.json();
+        console.log('Fetched data:', data);
+        
+        // Handle null/undefined response
+        if (!data) {
+          console.error('Response is null or undefined');
+          setLoadError('No projects returned from server.');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Validate response is an array
+        if (!Array.isArray(data)) {
+          console.error('Invalid response format: expected array, got', typeof data, data);
+          setLoadError(`Invalid response format. Expected array, got ${typeof data}.`);
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('Number of projects received:', data.length);
+        
+        // Log first project structure for debugging
+        if (data.length > 0) {
+          console.log('First project structure:', data[0]);
+        }
+        
+        // Validate and clean data
+        const validatedProjects = data.filter(project => {
+          const hasRequiredFields = project && 
+            project.id !== undefined && 
+            project.id !== null;
+          
+          if (!hasRequiredFields) {
+            console.warn('Project missing required fields:', project);
+          }
+          
+          return hasRequiredFields;
+        }).map(project => ({
+          ...project,
+          projectTitle: project.projectTitle || 'Untitled Project',
+          domains: Array.isArray(project.domains) ? project.domains : [],
+          facultyName: project.facultyName || 'Unknown',
+          description: project.description || '',
+          availableSlots: typeof project.availableSlots === 'number' ? project.availableSlots : 0,
+          preRequisites: project.preRequisites || ''
+        }));
+        
+        console.log('Validated projects:', validatedProjects.length);
+        setProjectlist(validatedProjects);
+      } catch (error) {
+        console.error('Error fetching projects:', error.message, error);
+        setLoadError(`Failed to load projects: ${error.message || 'Unknown error. Please check that the backend is running.'}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProjects();
+  }, [token, API_URL])
 
   useEffect(() => {
-    projects.forEach((project) => {
-      if (activeProjectId === null) {
-        setActiveProject([]);
-      }
-      if (project.id === activeProjectId) {
-        setActiveProject(project);
-      }
-    })
-  }, [activeProjectId])
+    if (activeProjectId === null) {
+      setActiveProject(null);
+    } else {
+      const selected = projectlist.find(project => project.id === activeProjectId);
+      setActiveProject(selected || null);
+    }
+  }, [activeProjectId, projectlist])
 
   // Extract unique domains and faculty names for filter options
   const allDomains = useMemo(() => {
     const domains = new Set();
-    projectlist.forEach(p => p.domains?.forEach(d => domains.add(d)));
+    projectlist.forEach(p => {
+      if (p && Array.isArray(p.domains)) {
+        p.domains.forEach(d => {
+          if (d) domains.add(d);  // Only add non-null domains
+        });
+      }
+    });
     return Array.from(domains).sort();
   }, [projectlist]);
 
   const allFaculty = useMemo(() => {
     const faculty = new Set();
-    projectlist.forEach(p => p.facultyName && faculty.add(p.facultyName));
+    projectlist.forEach(p => {
+      if (p && p.facultyName) {
+        faculty.add(p.facultyName);
+      }
+    });
     return Array.from(faculty).sort();
   }, [projectlist]);
 
   // Filter projects based on selected filters
   const filteredProjects = useMemo(() => {
     return projectlist.filter(project => {
+      if (!project) return false;  // Skip null/undefined projects
+      
       // Search filter
       const matchesSearch = !searchQuery ||
-        project.projectTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        (project.projectTitle && project.projectTitle.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
       // Domain filter
       const matchesDomain = !selectedDomain ||
-        project.domains?.includes(selectedDomain);
+        (Array.isArray(project.domains) && project.domains.includes(selectedDomain));
 
       // Faculty filter
       const matchesFaculty = !selectedFaculty ||
         project.facultyName === selectedFaculty;
 
-      // Slots filter
+      // Slots filter - ensure availableSlots is a number
+      const availableSlots = typeof project.availableSlots === 'number' ? project.availableSlots : 0;
       const matchesSlots =
         slotFilter === 'all' ||
-        (slotFilter === 'available' && project.availableSlots > 0) ||
-        (slotFilter === 'full' && project.availableSlots === 0);
+        (slotFilter === 'available' && availableSlots > 0) ||
+        (slotFilter === 'full' && availableSlots === 0);
 
       return matchesSearch && matchesDomain && matchesFaculty && matchesSlots;
     });
@@ -205,10 +314,41 @@ const ProjectListing = () => {
             </div>
 
             {/* Project Cards Grid */}
+            {isLoading && (
+              <div className='col-span-full flex flex-col items-center justify-center py-16'>
+                <svg className="animate-spin w-12 h-12 mb-4 text-amber-500" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <p className='text-lg font-medium text-amber-700'>Loading projects...</p>
+                <p className='text-sm text-amber-500 mt-1'>Please wait</p>
+              </div>
+            )}
+
+            {loadError && !isLoading && (
+              <div className='col-span-full flex flex-col items-center justify-center py-16 text-red-600'>
+                <svg className="w-16 h-16 mb-4 text-red-300" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                </svg>
+                <p className='text-lg font-medium'>{loadError}</p>
+                <p className='text-sm text-red-500 mt-2'>
+                  Endpoint: <code className='bg-red-100 px-2 py-1 rounded'>{API_URL}/api/student/projects</code>
+                </p>
+                <p className='text-sm text-red-500 mt-1'>Please check the browser console for more details</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className='mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors'
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {!isLoading && !loadError && (
             <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
-              {filteredProjects.length > 0 ? (
+              {filteredProjects && filteredProjects.length > 0 ? (
                 filteredProjects.map(project =>
-                  project?.id ? <ProjectCard key={project.id} project={project} activeProjectId={activeProjectId} setActiveProjectId={setActiveProjectId} /> : null
+                  project && project.id ? <ProjectCard key={project.id} project={project} activeProjectId={activeProjectId} setActiveProjectId={setActiveProjectId} /> : null
                 )
               ) : (
                 <div className='col-span-full flex flex-col items-center justify-center py-16 text-amber-600'>
@@ -220,16 +360,17 @@ const ProjectListing = () => {
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
 
         {/* Project Details Panel - Responsive */}
-        <div className={`${activeProject?.projectTitle
+        <div className={`${activeProject && activeProject.projectTitle
             ? 'fixed  inset-0 z-50 lg:relative lg:inset-auto  lg:z-0 bg-black/40 backdrop-blur-sm lg:bg-transparent lg:backdrop-blur-none'
             : 'hidden lg:block'
           } lg:w-80 xl:w-96 lg:shrink-0 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:self-start`}>
           <div className='h-full lg:h-full p-4 lg:p-4 border-l border-orange-200/60 bg-white/95 lg:bg-gradient-to-b lg:from-amber-50/50 lg:to-orange-50/30 overflow-y-auto ml-auto max-w-md lg:max-w-none'>
-            {activeProject?.projectTitle ? (
+            {activeProject && activeProject.projectTitle ? (
               <div className='w-full max-w-md mx-auto lg:max-w-none'>
                 {/* Mobile Close Button */}
                 <button
