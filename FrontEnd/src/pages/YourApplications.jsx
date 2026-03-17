@@ -1,17 +1,77 @@
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 import React, { useState, useEffect, useMemo } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import RequestCard from '../components/RequestCard';
-import applications from '../../public/dummyData/studentApplications';
+import { useLocation } from "react-router-dom";
+
 
 const YourApplications = () => {
+    const { token } = useContext(AuthContext);
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
     const [yourApplications, setYourApplications] = useState([]);
     const [sortBy, setSortBy] = useState('all');
+    const location = useLocation();
 
-    useEffect(()=>{
-        //fetch the applications of the logged in student and set it to yourApplications state
-        setYourApplications(applications);
-    },[]);
+    const [toast, setToast] = useState({
+        show: false,
+        type: '',
+        message: ''
+    });
+
+    useEffect(() => {
+        if (location.state?.toast) {
+            setToast({
+                show: true,
+                type: location.state.toast.type,
+                message: location.state.toast.message
+            });
+        }
+    }, [location.state]);
+
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast({ show: false, type: '', message: '' });
+            }, 4000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
+
+    useEffect(() => {
+
+        const fetchApplications = async () => {
+            try {
+
+                const response = await fetch(`${API_URL}/api/students/applications`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch applications");
+                }
+
+                const data = await response.json();
+
+                // backend returns Page object -> applications inside content
+                setYourApplications(data?.content || []);
+
+            } catch (error) {
+                console.error("Error fetching applications:", error);
+            }
+        };
+
+        if(token){
+            fetchApplications();
+        }
+
+    }, [token]);
 
     // write code for sorting based on status
     const sortedApplications = useMemo(() => {
@@ -26,6 +86,15 @@ const YourApplications = () => {
             <div className='flex'>
                 <Sidebar/>
                 <div className='flex-1 p-6'>
+                    {toast.show && (
+                        <div className={`fixed top-20 right-6 z-50 px-5 py-4 rounded-xl shadow-lg border 
+                            ${toast.type === 'success'
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                : 'bg-red-50 border-red-200 text-red-800'}`}>
+                            {toast.message}
+                        </div>
+                    )}
+                    
                     {/* Header */}
                     <div className='mb-6'>
                         <h1 className='text-2xl font-bold text-amber-900 flex items-center gap-3'>
@@ -68,7 +137,7 @@ const YourApplications = () => {
                                 >
                                     <option value="all">All Status</option>
                                     <option value="PENDING">Pending</option>
-                                    <option value="APPROVED">Approved</option>
+                                    <option value="CONFIRMED">Approved</option>
                                     <option value="REJECTED">Rejected</option>
                                 </select>
                             </div>
