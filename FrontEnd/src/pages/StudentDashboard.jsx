@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { AuthContext } from "../context/AuthContext";
 import Sidebar from "../components/Sidebar";
 import student from "../../public/dummyData/student";
 import appliactions from "../../public/dummyData/studentApplications";
 
 const StudentDashboard = () => {
+    const { token } = useContext(AuthContext);
     const navigate = useNavigate();
     const [studentData, setStudentData] = useState(null);
     const [applications, setApplications] = useState([]);
@@ -16,9 +18,34 @@ const StudentDashboard = () => {
         rejected: 0
     });
 
+    const fecthStudentData = async () => {
+        const url = "api/students/profile";
+
+        try {
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(message);
+            }
+
+            const data = await response.json();
+            console.log("Fetched student data:", data);
+            return data;
+        } catch (error) {
+            // console.error("Error fetching student data:", error);
+            console.error("Error fetching student data:", error.message);
+        }
+    }
+
     useEffect(() => {
         // Fetch student data - in real app, this would come from backend
-        setStudentData(student);
+        fecthStudentData().then((data) => setStudentData(data));
 
         // Fetch student applications
         setApplications(appliactions);
@@ -68,15 +95,15 @@ const StudentDashboard = () => {
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                             <div className="flex items-center gap-4">
                                 <img
-                                    src={studentData.profilePhoto}
+                                    src={`http://localhost:8080/${studentData.profilePhotoLink}`}
                                     alt={studentData.name}
                                     className="w-16 h-16 rounded-full border-2 border-orange-200 object-cover"
                                 />
                                 <div>
                                     <p className="text-sm text-amber-500 font-medium">Logged in as</p>
                                     <h2 className="text-xl font-bold text-amber-900">{studentData.name}</h2>
-                                    <p className="text-sm text-amber-600">{studentData.rollNo} • {studentData.department}</p>
-                                    <p className="text-sm text-amber-500">{studentData.email}</p>
+                                    <p className="text-sm text-amber-600">{studentData.rollNumber} • {studentData.departmentName}</p>
+                                    <p className="text-sm text-amber-500">{studentData.collegeEmailId}</p>
                                 </div>
                             </div>
                             <button
@@ -212,11 +239,10 @@ const StudentDashboard = () => {
                                             <p className="font-semibold text-amber-900">{app.project.projectTitle}</p>
                                             <p className="text-sm text-amber-600">{app.project.facultyName}</p>
                                             <div className="flex items-center gap-2 mt-2">
-                                                <span className={`text-xs font-medium px-3 py-1 rounded-full ${
-                                                    app.status === "PENDING" ? "bg-yellow-100 text-yellow-700" :
-                                                    app.status === "APPROVED" ? "bg-green-100 text-green-700" :
-                                                    "bg-red-100 text-red-700"
-                                                }`}>
+                                                <span className={`text-xs font-medium px-3 py-1 rounded-full ${app.status === "PENDING" ? "bg-yellow-100 text-yellow-700" :
+                                                        app.status === "APPROVED" ? "bg-green-100 text-green-700" :
+                                                            "bg-red-100 text-red-700"
+                                                    }`}>
                                                     {app.status}
                                                 </span>
                                                 <span className="text-xs text-amber-500">Applied on {app.appliedOn}</span>
