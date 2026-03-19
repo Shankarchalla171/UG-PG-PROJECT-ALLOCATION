@@ -18,5 +18,5 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     Page<ProjectApplications> findByTeam(Team team, Pageable pageable);
     Page<ProjectApplications> findByProject_Professor(Professor professor, Pageable pageable);
 
-
+    long countByProject(Project project);
 }

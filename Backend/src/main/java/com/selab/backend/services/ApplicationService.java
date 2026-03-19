@@ -8,7 +8,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,16 +51,21 @@ public class ApplicationService {
         return applications.map(application -> {
 
             StudentApplicationDto dto = new StudentApplicationDto();
-
             dto.setApplicationId(application.getAppliedProjectsId());
             dto.setProjectTitle(application.getProject().getTitle());
             dto.setFacultyName(application.getProject().getProfessor().getName());
+            dto.setSlots(application.getProject().getSlots());
             dto.setStatus(application.getStatus().toString());
             dto.setMessage(application.getMessage());
 
             if(application.getAppliedOn()!=null){
                 dto.setAppliedOn(application.getAppliedOn().toLocalDate());
             }
+
+            long competitors =
+                    projectApplicationsRepository.countByProject(application.getProject())-1;
+
+            dto.setCompetitors(Math.max(competitors,0));
 
             return dto;
         });

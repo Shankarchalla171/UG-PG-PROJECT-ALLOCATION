@@ -1,14 +1,12 @@
 package com.selab.backend.services;
 
+import com.selab.backend.Dto.ProjectListingDto;
 import com.selab.backend.Dto.ProjectRequestDto;
 import com.selab.backend.Dto.ProjectResponseDto;
 import com.selab.backend.exceptions.ResourceNotFoundException;
 import com.selab.backend.mappers.ProfessorMapper;
 import com.selab.backend.mappers.ProjectMapper;
-import com.selab.backend.models.DeptCoordinator;
-import com.selab.backend.models.Professor;
-import com.selab.backend.models.Project;
-import com.selab.backend.models.User;
+import com.selab.backend.models.*;
 import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.ProfessorRepository;
 import com.selab.backend.repositories.ProjectRepository;
@@ -18,6 +16,8 @@ import org.springframework.stereotype.Service;
 import com.selab.backend.Dto.ProjectUpdateDto;
 
 import com.selab.backend.exceptions.AccessDeniedException;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +29,39 @@ public class ProjectService {
     private final ProfessorMapper professorMapper;
     private final ProjectMapper projectMapper;
     private  final DeptCoordinatorRepository deptCoordinatorRepository;
+
+
+    public List<ProjectListingDto> getProjectListings(Student student) {
+
+        List<Project> projects =
+                projectRepository.findProjectsNotAppliedByTeam(student.getTeam());
+
+        return projects.stream().map(project -> {
+
+            ProjectListingDto dto = new ProjectListingDto();
+
+            dto.setId(project.getProjectId());
+            dto.setProjectTitle(project.getTitle());
+            dto.setDescription(project.getDescription());
+
+            dto.setFacultyName(project.getProfessor().getName());
+
+            dto.setDomains(
+                    Arrays.asList((project.getDomain() != null ? project.getDomain() : "").split(","))
+            );
+
+            dto.setPreRequisites(
+                    project.getPreRequisites()
+            );
+
+            dto.setAvailableSlots(
+                    project.getSlots()
+            );
+
+            return dto;
+
+        }).toList();
+    }
 
 
     @Transactional
