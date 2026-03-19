@@ -1,27 +1,90 @@
-import React from 'react'
-import { useParams } from 'react-router-dom';
+import React, { useContext } from 'react'
+import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import projects from '../../public/dummyData/projects';
-import teams from '../../public/dummyData/teams';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import { AuthContext } from '../context/AuthContext';
 
 const SubmitApplication = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
+    const { token } = useContext(AuthContext);
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    
     const [project, setProject] = useState(null);
     const [teamMembers, setTeamMembers] = useState([]);
-    const [resumeFile, setResumeFile] = useState(null);
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState(null);
     const [toast, setToast] = useState({ show: false, type: '', message: '' });
-    console.log(id);
+
+    // Fetch available projects and find the matching one
+    const fetchProject = async () => {
+        try {
+            const response = await fetch(`${API_URL}/api/student/projects`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!response.ok) throw new Error('Failed to fetch projects');
+            const projects = await response.json();
+            
+            // Find project matching the ID from URL
+            const projectId = parseInt(id, 10);
+            const foundProject = projects.find(p => p.id === projectId);
+            
+            if (!foundProject) {
+                throw new Error('Project not found');
+            }
+            
+            setProject(foundProject);
+        } catch (error) {
+            console.error('Error fetching project:', error);
+            setLoadError('Failed to load project details. Please try again.');
+            setToast({ show: true, type: 'error', message: 'Failed to load project details' });
+        }
+    };
+
+    // Fetch team details
+    const fetchTeam = async () => {
+        try {
+            const response = await fetch(`${API_URL}/api/teams`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!response.ok) throw new Error('Failed to fetch team');
+            const data = await response.json();
+            setTeamMembers(data.members || []);
+        } catch (error) {
+            console.error('Error fetching team:', error);
+            setLoadError('Failed to load team details. Please try again.');
+            setToast({ show: true, type: 'error', message: 'Failed to load team details' });
+        }
+    };
+
+    // Fetch data on component mount
     useEffect(() => {
-        //fetch the project details using the id and set it to project state
-        const selectedProject = projects.find(proj => proj.id === id);
-        setProject(selectedProject);
-        setTeamMembers(teams[0].students);
-    }, []);
-    console.log(teams[0]);
+        if (!token) {
+            setLoadError('Authentication required. Please log in.');
+            setIsLoading(false);
+            return;
+        }
+        
+        const loadData = async () => {
+            setIsLoading(true);
+            setLoadError(null);
+            await Promise.all([fetchProject(), fetchTeam()]);
+            setIsLoading(false);
+        };
+        
+        loadData();
+    }, [id, token]);
 
     // Auto-hide toast after 4 seconds
     useEffect(() => {
@@ -33,44 +96,52 @@ const SubmitApplication = () => {
         }
     }, [toast.show]);
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.type === 'application/zip' || file.type === 'application/x-zip-compressed' || file.name.endsWith('.zip')) {
-                setResumeFile(file);
-            } else {
-                setToast({ show: true, type: 'error', message: 'Please upload a valid ZIP file' });
-                e.target.value = '';
-            }
-        }
+    const handleOpenFile = (fileUrl) => {
+        window.open(fileUrl, '_blank');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!resumeFile) {
-            setToast({ show: true, type: 'error', message: 'Please upload a ZIP file containing resumes' });
-            return;
-        }
-
         setIsSubmitting(true);
 
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const response = await fetch(`${API_URL}/api/student/apply`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    projectId: project.id,
+                    message: message
+                })
+            });
 
-            // TODO: Replace with actual API call
-            // const formData = new FormData();
-            // formData.append('projectId', id);
-            // formData.append('resumes', resumeFile);
-            // formData.append('message', message);
-            // await submitApplication(formData);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to submit application');
+            }
 
-            setToast({ show: true, type: 'success', message: 'Application submitted successfully!' });
-            setResumeFile(null);
-            setMessage('');
+            // setToast({ show: true, type: 'success', message: 'Application submitted successfully!' });
+            // setMessage('');
+            
+            // // Redirect to your applications page after 2 seconds
+            // setTimeout(() => {
+            //     navigate('/student_applications');
+            // }, 2000);
+
+            navigate('/student_applications', {
+                state: {
+                    toast: {
+                        type: 'success',
+                        message: 'Application submitted successfully!'
+                    }
+                }
+            });
         } catch (error) {
-            setToast({ show: true, type: 'error', message: 'Failed to submit application. Please try again.' });
+            console.error('Error submitting application:', error);
+            setToast({ show: true, type: 'error', message: error.message || 'Failed to submit application. Please try again.' });
         } finally {
             setIsSubmitting(false);
         }
@@ -118,7 +189,28 @@ const SubmitApplication = () => {
                         <p className='text-sm text-amber-600 mt-1 ml-10'>Fill out the form to apply for this project</p>
                     </div>
 
-                    {project ? (
+                    {isLoading && (
+                        <div className='bg-white rounded-xl border border-orange-200/60 shadow-sm p-12 text-center'>
+                            <svg className="animate-spin w-12 h-12 mx-auto mb-4 text-amber-500" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            <p className='text-lg font-medium text-amber-700'>Loading...</p>
+                            <p className='text-sm text-amber-500 mt-1'>Please wait while we fetch your project and team details</p>
+                        </div>
+                    )}
+
+                    {loadError && !isLoading && (
+                        <div className='bg-white rounded-xl border border-orange-200/60 shadow-sm p-12 text-center'>
+                            <svg className="w-16 h-16 mx-auto mb-4 text-red-300" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                            </svg>
+                            <p className='text-lg font-medium text-red-700'>{loadError}</p>
+                            <p className='text-sm text-red-500 mt-1'>Please go back and try again</p>
+                        </div>
+                    )}
+
+                    {!isLoading && !loadError && project && (
                         <form onSubmit={handleSubmit} className='w-full'>
                             {/* Project Details Card */}
                             <div className='bg-white rounded-xl border border-orange-200/60 shadow-sm p-6 mb-6'>
@@ -182,9 +274,9 @@ const SubmitApplication = () => {
                                                 </div>
                                                 <div className='flex-1'>
                                                     <p className='text-sm font-medium text-amber-900'>{member.name}</p>
-                                                    <p className='text-xs text-amber-600'>{member.rollNo} • {member.email}</p>
+                                                    <p className='text-xs text-amber-600'>{member.rollNumber} • {member.collegeEmailId}</p>
                                                 </div>
-                                                {index === 0 && (
+                                                {member.teamRole && member.teamRole.toUpperCase() === 'TEAMLEAD' && (
                                                     <span className='px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full'>
                                                         Leader
                                                     </span>
@@ -197,53 +289,47 @@ const SubmitApplication = () => {
                                 </div>
                             </div>
 
-                            {/* Resume Upload & Message Section */}
+                            {/* Resume & Message Section */}
                             <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
-                                {/* Resume Upload Card */}
+                                {/* Team Resumes Card */}
                                 <div className='bg-white rounded-xl border border-orange-200/60 shadow-sm p-6'>
                                     <h2 className='text-lg font-semibold text-amber-900 mb-4 flex items-center gap-2'>
                                         <svg className="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.84V19h2v-4.16l1.59 1.59L16 15.01 12.01 11 8 15.01z" />
                                         </svg>
-                                        Upload Resumes
+                                        Team Resumes
                                     </h2>
 
-                                    <div className='relative'>
-                                        <input
-                                            type="file"
-                                            accept=".zip"
-                                            onChange={handleFileChange}
-                                            className='absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10'
-                                            id="resume-upload"
-                                        />
-                                        <label
-                                            htmlFor="resume-upload"
-                                            className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl transition-all cursor-pointer ${resumeFile
-                                                    ? 'border-emerald-300 bg-emerald-50/50'
-                                                    : 'border-orange-200 bg-amber-50/30 hover:border-orange-300 hover:bg-amber-50'
-                                                }`}
-                                        >
-                                            {resumeFile ? (
-                                                <>
-                                                    <svg className="w-12 h-12 text-emerald-500 mb-3" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                                                    </svg>
-                                                    <p className='text-sm font-medium text-emerald-700'>{resumeFile.name}</p>
-                                                    <p className='text-xs text-emerald-600 mt-1'>
-                                                        {(resumeFile.size / 1024 / 1024).toFixed(2)} MB
-                                                    </p>
-                                                    <p className='text-xs text-amber-500 mt-2'>Click to change file</p>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <svg className="w-12 h-12 text-amber-400 mb-3" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
-                                                    </svg>
-                                                    <p className='text-sm font-medium text-amber-700'>Click to upload or drag and drop</p>
-                                                    <p className='text-xs text-amber-500 mt-1'>ZIP file containing all team resumes (Max 10MB)</p>
-                                                </>
-                                            )}
-                                        </label>
+                                    <div className='space-y-3'>
+                                        {teamMembers.length > 0 ? (
+                                            teamMembers.map((member, index) => (
+                                                member.resumePath ? (
+                                                    <div key={index} className='flex items-center justify-between p-3 bg-amber-50/50 rounded-lg border border-orange-100'>
+                                                        <div className='flex items-center gap-2 flex-1 min-w-0'>
+                                                            <svg className="w-5 h-5 text-orange-600 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z" />
+                                                            </svg>
+                                                            <div className='min-w-0 flex-1'>
+                                                                <p className='text-sm font-medium text-amber-900 truncate'>{member.name}</p>
+                                                                <p className='text-xs text-amber-600'>{member.rollNumber}</p>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleOpenFile(member.resumePath)}
+                                                            className='p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0'
+                                                            title="View resume"
+                                                        >
+                                                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M19 4h-3.5l-5.4-5.4c-.3-.3-.8-.3-1.1 0l-5.4 5.4H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-7 12l-4-5h3V5h2v6h3l-4 5z" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                ) : null
+                                            ))
+                                        ) : (
+                                            <p className='text-sm text-amber-600 py-3'>No team members yet</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -296,7 +382,9 @@ const SubmitApplication = () => {
                                 </button>
                             </div>
                         </form>
-                    ) : (
+                    )}
+
+                    {!isLoading && !loadError && !project && (
                         <div className='bg-white rounded-xl border border-orange-200/60 shadow-sm p-12 text-center'>
                             <svg className="w-16 h-16 mx-auto mb-4 text-amber-200" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />

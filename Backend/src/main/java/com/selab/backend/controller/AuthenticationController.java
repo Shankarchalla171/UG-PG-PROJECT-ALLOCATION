@@ -5,6 +5,7 @@ import com.selab.backend.auth.*;
 import com.selab.backend.services.AuthenticationService;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.models.User;
+import com.selab.backend.services.GoogleAuthService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ public class AuthenticationController {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final GoogleAuthService googleAuthService;
 
 
     @PostMapping("/register")
@@ -104,6 +106,18 @@ public class AuthenticationController {
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+
+
+    @PostMapping("/google-signin")
+    public ResponseEntity<AuthenticationResponse> googlesignin(@RequestBody GoogleAuthRequest request) {
+        try{
+            AuthenticationResponse  response=googleAuthService.googleAuthenticate(request.getToken());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
