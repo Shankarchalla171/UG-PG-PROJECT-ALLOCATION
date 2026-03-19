@@ -2,7 +2,6 @@ package com.selab.backend.Dto;
 
 import lombok.*;
 
-import java.util.List;
 
 @Getter
 @AllArgsConstructor
@@ -13,6 +12,7 @@ public class ProjectResponseDto {
     private String description;
     private Integer slots;
     private String duration;
+    private String domain;
     private String prerequisites;
     private ProfDto professor;
 
