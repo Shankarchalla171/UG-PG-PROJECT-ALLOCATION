@@ -34,18 +34,20 @@ public class ConfirmationController {
     /**
      * Team lead confirms an application
      * This will:
-     * - Reduce faculty slots by team size
      * - Update application status to TEAM_CONFIRMED
      * - Auto-reject other CONFIRMED applications for this team
+     * - Return the finalized application
      */
     @PostMapping("/{applicationId}/confirm")
-    public ResponseEntity<Void> confirmApplication(
+    public ResponseEntity<ViewConfirmationsDto> confirmApplication(
             @PathVariable Long applicationId,
             @AuthenticationPrincipal User currentUser) {
 
-        confirmationService.confirmApplication(applicationId, currentUser);
-        return ResponseEntity.ok().build();
+        ViewConfirmationsDto finalizedApplication =
+                confirmationService.confirmApplication(applicationId, currentUser);
+        return ResponseEntity.ok(finalizedApplication);
     }
+
 
     /**
      * Team lead rejects an application
@@ -59,4 +61,5 @@ public class ConfirmationController {
         confirmationService.rejectApplication(applicationId, currentUser);
         return ResponseEntity.ok().build();
     }
+
 }
