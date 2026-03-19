@@ -33,9 +33,13 @@ public class Project {
     private String title;
     private String description;
     private int slots;
-    private String duration;
+
+    @Column(name = "domain")
     private String domain;
-    private String preRequisites;
+
+    @Column(name = "duration")
+    private String duration;
+    private String preRequesites;
 
 
     @OneToMany(mappedBy = "project")

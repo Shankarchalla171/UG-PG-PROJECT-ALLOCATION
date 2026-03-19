@@ -12,7 +12,7 @@ import org.mapstruct.*;
 public interface ProjectMapper {
 
     // For updating existing project - only update non-null fields
-    @Mapping(target = "preRequisites", source = "prerequisites")  // Map DTO.prerequisites → Entity.preRequesites
+    @Mapping(target = "preRequesites", source = "prerequisites")  // Map DTO.prerequisites → Entity.preRequesites
     @Mapping(target = "projectId", ignore = true)           // Never update ID
     @Mapping(target = "professor", ignore = true)           // Never update professor
     @Mapping(target = "deptCoordinator", ignore = true)     // Never update coordinator
@@ -20,7 +20,7 @@ public interface ProjectMapper {
     void updateProjectFromDto(ProjectUpdateDto dto, @MappingTarget Project project);
 
     // For converting to response DTO
-    @Mapping(target = "prerequisites", source = "preRequisites")  // Map Entity.preRequesites → DTO.prerequisites
+    @Mapping(target = "prerequisites", source = "preRequesites")  // Map Entity.preRequesites → DTO.prerequisites
     ProjectResponseDto toResponseDto(Project project);
 
 }

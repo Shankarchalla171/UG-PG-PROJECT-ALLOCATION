@@ -1,18 +1,22 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import { AuthContext } from "../context/AuthContext";
 
 const ProfessorCreateProject = () => {
   const initialFormState = {
     title: "",
     description: "",
-    numberOfInterns: "",
+    slots: "",
     domain: "",
-    requirements: "",
+    prerequisites: "",
     duration: "",
   };
-
+  const {token}= useContext(AuthContext);
   const [formData, setFormData] = useState(initialFormState);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -22,12 +26,36 @@ const ProfessorCreateProject = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
 
-    console.log("Form submitted:", formData);
+    try {
+      const response = await fetch("api/projects", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-    setFormData(initialFormState); // clears form
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to create project");
+      }
+
+      const data = await response.json();
+      console.log("Project created:", data);
+      setSuccess(true);
+      setFormData(initialFormState); // clear form on success
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,6 +73,20 @@ const ProfessorCreateProject = () => {
                 Fill in the details below to create a new project
               </p>
             </div>
+
+            {/* Success message */}
+            {success && (
+              <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-xl">
+                Project created successfully!
+              </div>
+            )}
+
+            {/* Error message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
+                Error: {error}
+              </div>
+            )}
 
             <form
               onSubmit={handleSubmit}
@@ -65,7 +107,8 @@ const ProfessorCreateProject = () => {
                   value={formData.title}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400"
+                  disabled={loading}
+                  className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Enter project title"
                 />
               </div>
@@ -85,7 +128,8 @@ const ProfessorCreateProject = () => {
                   onChange={handleChange}
                   required
                   rows="5"
-                  className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400 resize-none"
+                  disabled={loading}
+                  className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400 resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Describe the project in detail..."
                 />
               </div>
@@ -102,17 +146,18 @@ const ProfessorCreateProject = () => {
                   <input
                     type="number"
                     id="numberOfInterns"
-                    name="numberOfInterns"
-                    value={formData.numberOfInterns}
+                    name="slots"
+                    value={formData.slots}
                     onChange={handleChange}
                     required
                     min="1"
-                    className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400"
+                    disabled={loading}
+                    className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="e.g., 3"
                   />
                 </div>
 
-                {/* Domain Field - Changed to text input */}
+                {/* Domain Field */}
                 <div>
                   <label
                     htmlFor="domain"
@@ -127,27 +172,29 @@ const ProfessorCreateProject = () => {
                     value={formData.domain}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400"
+                    disabled={loading}
+                    className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="e.g., Web Development, Machine Learning"
                   />
                 </div>
               </div>
 
-              {/* Requirements Field */}
+              {/* prerequisites Field */}
               <div className="mb-6">
                 <label
-                  htmlFor="requirements"
+                  htmlFor="prerequisites"
                   className="block text-amber-800 font-medium mb-2"
                 >
-                  Requirements & Skills Needed
+                  prerequisites & Skills Needed
                 </label>
                 <textarea
-                  id="requirements"
-                  name="requirements"
-                  value={formData.requirements}
+                  id="prerequisites"
+                  name="prerequisites"
+                  value={formData.prerequisites}
                   onChange={handleChange}
                   rows="4"
-                  className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400 resize-none"
+                  disabled={loading}
+                  className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400 resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="List the required skills and qualifications..."
                 />
               </div>
@@ -167,7 +214,8 @@ const ProfessorCreateProject = () => {
                   value={formData.duration}
                   onChange={handleChange}
                   min="1"
-                  className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400"
+                  disabled={loading}
+                  className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="e.g., 12"
                 />
               </div>
@@ -176,31 +224,21 @@ const ProfessorCreateProject = () => {
               <div className="flex gap-4 pt-4 border-t border-orange-200/60">
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-rose-600 transition-all duration-300 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                  disabled={loading}
+                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-rose-600 transition-all duration-300 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 focus:outline-none focus:ring-2 focus:ring-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Project
+                  {loading ? "Creating..." : "Create Project"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData(initialFormState)}
-                  className="px-6 py-3 border border-orange-300 text-amber-700 font-medium rounded-xl hover:bg-orange-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  disabled={loading}
+                  className="px-6 py-3 border border-orange-300 text-amber-700 font-medium rounded-xl hover:bg-orange-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
               </div>
             </form>
-
-            {/* Form Guidelines */}
-            {/* <div className="mt-6 p-4 bg-amber-50/50 rounded-xl border border-amber-200/60">
-              <h3 className="text-amber-800 font-medium mb-2">Tips for creating a great project:</h3>
-              <ul className="text-sm text-amber-600/70 space-y-1">
-                <li>• Be clear and specific about the project objectives</li>
-                <li>• Mention the technologies and tools to be used</li>
-                <li>• Specify the expected outcomes and deliverables</li>
-                <li>• Clearly state the skills you're looking for in applicants</li>
-                <li>• Mention any prerequisites or background requirements</li>
-              </ul>
-            </div> */}
           </div>
         </div>
       </div>
