@@ -51,16 +51,21 @@ const SubmitApplication = () => {
     // Fetch team details
     const fetchTeam = async () => {
         try {
-            const response = await fetch(`${API_URL}/api/teams`, {
+            const response = await fetch(`${API_URL}/api/students/team-details`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
             });
+
             if (!response.ok) throw new Error('Failed to fetch team');
+
             const data = await response.json();
+
+            // IMPORTANT: data.members from TeamDto
             setTeamMembers(data.members || []);
+
         } catch (error) {
             console.error('Error fetching team:', error);
             setLoadError('Failed to load team details. Please try again.');
@@ -96,8 +101,9 @@ const SubmitApplication = () => {
         }
     }, [toast.show]);
 
-    const handleOpenFile = (fileUrl) => {
-        window.open(fileUrl, '_blank');
+    const handleOpenFile = (filePath) => {
+        const fullUrl = `${API_URL}/${filePath}`;
+        window.open(fullUrl, '_blank');
     };
 
     const handleSubmit = async (e) => {
