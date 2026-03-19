@@ -192,7 +192,7 @@ public class AuthenticationService
 
             // Generate login token
             var jwtToken = jwtService.generateToken(user);
-            user.setRole(Role.STUDENT);
+            user.setRole(Role.USER);
             userRepository.save(user);
             return AuthenticationResponse.builder()
                     .token(jwtToken)

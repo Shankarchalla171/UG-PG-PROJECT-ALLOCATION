@@ -39,7 +39,7 @@ public class Project {
 
     @Column(name = "duration")
     private String duration;
-    private String preRequesites;
+    private String preRequisites;
 
 
     @OneToMany(mappedBy = "project")

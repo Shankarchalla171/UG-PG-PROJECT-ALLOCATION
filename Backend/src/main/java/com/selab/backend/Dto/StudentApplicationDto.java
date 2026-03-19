@@ -9,6 +9,8 @@ public class StudentApplicationDto {
     private Long applicationId;
     private String projectTitle;
     private String facultyName;
+    private int slots;
+    private long competitors;
     private String status;
     private String message;
     private LocalDate appliedOn;
