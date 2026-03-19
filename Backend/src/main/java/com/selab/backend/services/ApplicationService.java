@@ -63,7 +63,7 @@ public class ApplicationService {
             }
 
             long competitors =
-                    projectApplicationsRepository.countByProject(application.getProject())-1;
+                    projectApplicationsRepository.countByProject(application.getProject());
 
             dto.setCompetitors(Math.max(competitors,0));
 
