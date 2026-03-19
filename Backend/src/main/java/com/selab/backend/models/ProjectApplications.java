@@ -2,10 +2,12 @@ package com.selab.backend.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.Length;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
-@Table(name="projectApplications")
+@Table(name= "project_applications")
 public class ProjectApplications {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,5 +24,14 @@ public class ProjectApplications {
     @ManyToOne
     @JoinColumn(name="teamId",nullable = false)
     private Team team;
+
+    @Column(name = "message", length = 500)
+    private String message;
+
+    @Column(name = "applied_on")
+    private LocalDateTime appliedOn;
+
+    @Column(name = "professorReview")
+    private String professorReview;
 
 }
