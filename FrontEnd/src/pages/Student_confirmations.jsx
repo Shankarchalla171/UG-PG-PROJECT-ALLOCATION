@@ -1,26 +1,126 @@
-import React from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
-import { useState, useEffect } from "react";
-import student_confirmations from "../../public/dummyData/studentConfirmations";
 import ConfirmationCard from "../components/ConfirmationCard";
+import { AuthContext } from "../context/AuthContext";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Student_confirmations = () => {
     const [confirmations, setConfirmations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [processingId, setProcessingId] = useState(null);
+    const { token } = useContext(AuthContext);
 
+
+     console.log('Token from context:', token);
+    console.log('Token exists:', !!token);
+    console.log('Token length:', token?.length);
+    
+    // Fetch confirmations on component mount
     useEffect(() => {
-        //fetch the confirmations of the logged in student and set it to confirmations state
-        setConfirmations(student_confirmations);
+        fetchConfirmations();
     }, []);
 
-    const handleAccept = (confirmation) => {
-        // TODO: Handle accept logic
-        console.log('Accepted:', confirmation);
+    const fetchConfirmations = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${API_URL}/api/confirmations`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch confirmations: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setConfirmations(data);
+        } catch (err) {
+            console.error('Error fetching confirmations:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleReject = (confirmation) => {
-        // TODO: Handle reject logic
-        console.log('Rejected:', confirmation);
+    const handleAccept = async (confirmation) => {
+    setProcessingId(confirmation.applicationId);
+    setError(null);
+    
+    try {
+        const response = await fetch(`${API_URL}/api/confirmations/${confirmation.applicationId}/confirm`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Only team lead can confirm projects');
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to confirm');
+            }
+        }
+
+        // Get the finalized application from response
+        const finalizedApplication = await response.json();
+        
+        // Update the state with the new list:
+        // - Keep the finalized application (with allocated=true)
+        // - Remove all other applications (they become TEAM_REJECTED)
+        setConfirmations([finalizedApplication]);
+        
+    } catch (err) {
+        console.error('Error confirming:', err);
+        setError(err.message);
+    } finally {
+        setProcessingId(null);
+    }
+};
+
+    const handleReject = async (confirmation) => {
+        setProcessingId(confirmation.applicationId);
+        setError(null);
+        
+        try {
+            const response = await fetch(`${API_URL}/api/confirmations/${confirmation.applicationId}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error('Only team lead can reject projects');
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to reject');
+                }
+            }
+
+            // Remove the rejected item from list
+            setConfirmations(prev => prev.filter(c => c.applicationId !== confirmation.applicationId));
+            
+            // Show success message (you can add a toast notification here)
+            console.log('Successfully rejected project');
+            
+        } catch (err) {
+            console.error('Error rejecting:', err);
+            setError(err.message);
+        } finally {
+            setProcessingId(null);
+        }
     };
 
     return (
@@ -37,8 +137,20 @@ const Student_confirmations = () => {
                             </svg>
                             Confirmations
                         </h1>
-                        <p className="text-sm text-amber-600 mt-1 ml-10">Review and respond to your project confirmations</p>
+                        <p className="text-sm text-amber-600 mt-1 ml-10">Review and respond to your project approvals</p>
                     </div>
+
+                    {/* Error Message */}
+                    {error && (
+                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                            <div className="flex items-center gap-2">
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                </svg>
+                                <span>{error}</span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Stats Bar */}
                     <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-4 mb-6">
@@ -61,29 +173,38 @@ const Student_confirmations = () => {
                         </div>
                     </div>
 
+                    {/* Loading State */}
+                    {loading && (
+                        <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-12 text-center">
+                            <div className="animate-spin w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <p className="text-sm text-amber-600">Loading confirmations...</p>
+                        </div>
+                    )}
+
                     {/* Confirmations List */}
-                    <div className="space-y-4">
-                        {confirmations.length > 0 ? (
-                            confirmations.map(confirmation =>
-                                confirmation?.confirmationId ? (
+                    {!loading && (
+                        <div className="space-y-4">
+                            {confirmations.length > 0 ? (
+                                confirmations.map(confirmation => (
                                     <ConfirmationCard 
-                                        key={confirmation.confirmationId} 
+                                        key={confirmation.applicationId} 
                                         confirmation={confirmation}
                                         onAccept={handleAccept}
                                         onReject={handleReject}
+                                        isProcessing={processingId === confirmation.applicationId}
                                     />
-                                ) : null
-                            )
-                        ) : (
-                            <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-12 text-center">
-                                <svg className="w-16 h-16 mx-auto mb-4 text-amber-200" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                                </svg>
-                                <p className="text-lg font-medium text-amber-700">No confirmations yet</p>
-                                <p className="text-sm text-amber-500 mt-1">You'll see project confirmations here when faculty approves your applications</p>
-                            </div>
-                        )}
-                    </div>
+                                ))
+                            ) : (
+                                <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-12 text-center">
+                                    <svg className="w-16 h-16 mx-auto mb-4 text-amber-200" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                    </svg>
+                                    <p className="text-lg font-medium text-amber-700">No confirmations yet</p>
+                                    <p className="text-sm text-amber-500 mt-1">You'll see project confirmations here when faculty approve your applications</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </main>
         </>
