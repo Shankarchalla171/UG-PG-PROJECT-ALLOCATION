@@ -4,6 +4,6 @@ public enum ApplicationStatus {
     CONFIRMED,
     PENDING,
     REJECTED,
-    TEAMREJECTED,
-    TEAMCONFIRMED,
+    TEAM_CONFIRMED,
+    TEAM_REJECTED
 }
