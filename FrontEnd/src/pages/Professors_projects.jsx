@@ -10,6 +10,7 @@ const ProfessorViewProjects = () => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
     // State for editing (includes domain)
     const [editingId, setEditingId] = useState(null);
@@ -32,7 +33,7 @@ const ProfessorViewProjects = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('api/projects/professor/my-projects', {
+            const response = await fetch(`${API_URL}/api/projects/professor/my-projects`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
