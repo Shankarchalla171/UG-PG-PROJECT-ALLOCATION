@@ -17,9 +17,10 @@ const StudentDashboard = () => {
         approved: 0,
         rejected: 0
     });
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
     const fecthStudentData = async () => {
-        const url = "api/students/profile";
+        const url = `${API_URL}/api/students/profile`;
 
         try {
             const response = await fetch(url, {
