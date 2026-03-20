@@ -13,7 +13,6 @@ public class ProjectResponseDto {
     private Integer slots;
     private String domain;
     private String duration;
-    private String domain;
     private String prerequisites;
     private ProfDto professor;
 
