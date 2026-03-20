@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
 import Sidebar from "../components/Sidebar";
-// const API_URL = import.meta.env.VITE_API_URL;
 import Navbar from "../components/Navbar";
 import ConfirmationCard from "../components/ConfirmationCard";
 import { AuthContext } from "../context/AuthContext";
