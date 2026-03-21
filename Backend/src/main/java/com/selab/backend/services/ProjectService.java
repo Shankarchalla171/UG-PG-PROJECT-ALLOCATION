@@ -9,6 +9,7 @@ import com.selab.backend.mappers.ProjectMapper;
 import com.selab.backend.models.*;
 import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.ProfessorRepository;
+import com.selab.backend.repositories.ProjectApplicationsRepository;
 import com.selab.backend.repositories.ProjectRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class ProjectService {
     private final ProfessorMapper professorMapper;
     private final ProjectMapper projectMapper;
     private  final DeptCoordinatorRepository deptCoordinatorRepository;
+    private final ProjectApplicationsRepository projectApplicationsRepository;
 
     private Specification<Project> buildSpecification(
             Team team,
@@ -137,6 +139,10 @@ public class ProjectService {
 
         Page<Project> projects = projectRepository.findAll(spec, pageable);
 
+        boolean isConfirmed = isTeamAlreadyConfirmed(student.getTeam());
+
+        int teamSize = student.getTeam().getTeamMembers().size();
+
         return projects.map(project -> {
             ProjectListingDto dto = new ProjectListingDto();
 
@@ -145,12 +151,21 @@ public class ProjectService {
             dto.setDescription(project.getDescription());
             dto.setFacultyName(project.getProfessor().getName());
 
-            dto.setDomains(
-                    Arrays.asList((project.getDomain() != null ? project.getDomain() : "").split(","))
-            );
-
+            if (project.getDomain() != null && !project.getDomain().isEmpty()) {
+                dto.setDomains(
+                        Arrays.stream(project.getDomain().split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .toList()
+                );
+            } else {
+                dto.setDomains(new ArrayList<>());
+            }
+            dto.setDuration(project.getDuration());
             dto.setPreRequisites(project.getPreRequisites());
             dto.setAvailableSlots(project.getSlots());
+            dto.setTeamConfirmed(isConfirmed);
+            dto.setTeamSize(teamSize);
 
             return dto;
         });
@@ -325,31 +340,40 @@ public class ProjectService {
 
         String department = student.getDepartmentName();
 
-        // Fetch raw domains
-        List<String> rawDomains = projectRepository.findDistinctDomainsByDepartment(department);
+        Team team = student.getTeam();
+
+        List<String> rawDomains = projectRepository.findDistinctDomainsForAvailableProjects(department, team);
+        List<String> faculty = projectRepository.findDistinctFacultyForAvailableProjects(department, team);
 
         // Split comma-separated domains
         Set<String> domainSet = new HashSet<>();
 
         for (String d : rawDomains) {
-            if (d != null) {
+            if (d != null && !d.trim().isEmpty()) {
                 String[] split = d.split(",");
                 for (String s : split) {
-                    domainSet.add(s.trim());
+                    if (!s.trim().isEmpty()) {
+                        domainSet.add(s.trim());
+                    }
                 }
             }
         }
 
         List<String> domains = new ArrayList<>(domainSet);
 
-        // Faculty
-        List<String> faculty = projectRepository.findDistinctFacultyByDepartment(department);
 
         Map<String, List<String>> response = new HashMap<>();
         response.put("domains", domains);
         response.put("faculty", faculty);
 
         return response;
+    }
+
+    private boolean isTeamAlreadyConfirmed(Team team) {
+        return projectApplicationsRepository.existsByTeamAndStatus(
+                team,
+                ApplicationStatus.TEAM_CONFIRMED
+        );
     }
 
 }

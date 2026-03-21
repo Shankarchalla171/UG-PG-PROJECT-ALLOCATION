@@ -1,7 +1,7 @@
 import React from 'react';
 
 const ProjectCard = ({ project, activeProjectId, setActiveProjectId }) => {
-    const { id,projectTitle, facultyName, domains, availableSlots } = project;
+    const { id,projectTitle, facultyName, domains, availableSlots, description } = project;
     return (
         <div className='group bg-white rounded-xl border border-orange-200/60 shadow-sm hover:shadow-xl hover:border-orange-300 hover:scale-[1.02] transition-all duration-200 ease-out overflow-hidden hover:cursor-pointer'
           onClick={()=>setActiveProjectId(id)}
@@ -27,6 +27,11 @@ const ProjectCard = ({ project, activeProjectId, setActiveProjectId }) => {
                     </svg>
                     <span>{facultyName}</span>
                 </div>
+
+                <p className='mt-2 text-xs text-amber-500 uppercase'>Description</p>
+                <p className='text-sm text-amber-700 line-clamp-2'>
+                    {description || "No description"}
+                </p>
             </div>
 
             {/* Domains */}
