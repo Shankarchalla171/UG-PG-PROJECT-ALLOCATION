@@ -2,12 +2,16 @@ package com.selab.backend.services;
 
 import com.selab.backend.Dto.ProfessorApplicationDto;
 import com.selab.backend.Dto.StudentApplicationDto;
+import com.selab.backend.Dto.StudentDto;
+import com.selab.backend.Dto.TeamDto;
+import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.*;
 import com.selab.backend.repositories.ProjectApplicationsRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 public class ApplicationService {
 
     private final ProjectApplicationsRepository projectApplicationsRepository;
+    private final StudentMapper studentMapper;
 
     public void applyToProject(Project project, Team team, String message) {
 
@@ -71,10 +76,20 @@ public class ApplicationService {
         });
     }
 
-    public Page<ProfessorApplicationDto> getProfessorApplications(Professor professor, Pageable pageable) {
+    public Page<ProfessorApplicationDto> getProfessorApplications(Professor professor,
+                                                                  String status,
+                                                                  Pageable pageable) {
 
-        Page<ProjectApplications> applications =
-                projectApplicationsRepository.findByProject_Professor(professor, pageable);
+        Page<ProjectApplications> applications;
+
+        if(status != null && !status.isEmpty() && !status.equalsIgnoreCase("all")){
+            ApplicationStatus enumStatus = ApplicationStatus.valueOf(status.toUpperCase());
+            applications = projectApplicationsRepository
+                    .findByProject_ProfessorAndStatus(professor, enumStatus, pageable);
+        } else {
+            applications = projectApplicationsRepository
+                    .findByProject_Professor(professor, pageable);
+        }
 
         return applications.map(application -> {
 
@@ -82,13 +97,29 @@ public class ApplicationService {
 
             dto.setApplicationId(application.getAppliedProjectsId());
             dto.setProjectTitle(application.getProject().getTitle());
-            dto.setTeamId(application.getTeam().getTeamId());
             dto.setMessage(application.getMessage());
             dto.setStatus(application.getStatus().toString());
 
             if(application.getAppliedOn()!=null){
                 dto.setAppliedOn(application.getAppliedOn().toLocalDate());
             }
+
+            // ✅ Map team using existing DTOs
+            List<StudentDto> members = application.getTeam()
+                    .getTeamMembers()
+                    .stream()
+                    .map(studentMapper::toDto)
+                    .toList();
+
+            TeamDto teamDto = TeamDto.builder()
+                    .teamId(application.getTeam().getTeamId())
+                    .members(members)
+                    .isFinalized(application.getTeam().getIsFinalized())
+                    .build();
+
+            dto.setTeam(teamDto);
+
+            dto.setProfessorReview(application.getProfessorReview());
 
             return dto;
         });

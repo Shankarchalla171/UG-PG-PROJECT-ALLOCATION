@@ -15,11 +15,31 @@ import java.util.Optional;
 public interface ProjectRepository extends JpaRepository<Project, Long>, JpaSpecificationExecutor<Project> {
 
 
-    @Query("SELECT DISTINCT p.domain FROM Project p WHERE p.professor.departmentName = :dept")
-    List<String> findDistinctDomainsByDepartment(@Param("dept") String dept);
+    @Query("""
+    SELECT DISTINCT p.domain 
+    FROM Project p
+    WHERE p.professor.departmentName = :dept
+    AND p.projectId NOT IN (
+        SELECT pa.project.projectId 
+        FROM ProjectApplications pa 
+        WHERE pa.team = :team
+    )
+    AND p.domain IS NOT NULL 
+    AND p.domain <> ''
+    """)
+    List<String> findDistinctDomainsForAvailableProjects(String dept, Team team);
 
-    @Query("SELECT DISTINCT p.professor.name FROM Project p WHERE p.professor.departmentName = :dept")
-    List<String> findDistinctFacultyByDepartment(@Param("dept") String dept);
+    @Query("""
+    SELECT DISTINCT p.professor.name 
+    FROM Project p
+    WHERE p.professor.departmentName = :dept
+    AND p.projectId NOT IN (
+        SELECT pa.project.projectId 
+        FROM ProjectApplications pa 
+        WHERE pa.team = :team
+    )
+    """)
+    List<String> findDistinctFacultyForAvailableProjects(String dept, Team team);
     
     List<Project> findByTitleContainingIgnoreCase(String keyword);
     Optional<Project> findByTitleIgnoreCase(String title);

@@ -8,6 +8,7 @@ import com.selab.backend.services.ApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.selab.backend.services.ProjectService;
 
 @RestController
 @RequestMapping("/api/student")
@@ -17,6 +18,7 @@ public class ApplicationController {
     private final ApplicationService applicationService;
     private final ProjectRepository projectRepository;
     private final StudentRepository studentRepository;
+    private final ProjectService projectService;
 
     @PostMapping("/apply")
     public String apply(
