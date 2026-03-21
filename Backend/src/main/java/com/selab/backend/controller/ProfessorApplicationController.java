@@ -24,16 +24,16 @@ public class ProfessorApplicationController {
     public Page<ProfessorApplicationDto> getApplications(
             @AuthenticationPrincipal User user,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String status
     ){
 
-        // TEMPORARY testing
         Professor professor = professorRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Professor not found"));
 
         Pageable pageable = PageRequest.of(page, size);
 
-        return applicationService.getProfessorApplications(professor, pageable);
+        return applicationService.getProfessorApplications(professor, status, pageable);
     }
 
     @PutMapping("/applications/{id}/review")

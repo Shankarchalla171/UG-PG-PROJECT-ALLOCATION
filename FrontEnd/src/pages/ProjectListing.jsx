@@ -34,11 +34,13 @@ const ProjectListing = () => {
   const [showDomainDropdown, setShowDomainDropdown] = useState(false);
   const [showFacultyDropdown, setShowFacultyDropdown] = useState(false);
 
-  const [domainSearch, setDomainSearch] = useState('');
+  const [domainSearch, setDomainSearch] = useState("");
   const [facultySearch, setFacultySearch] = useState('');
 
-  const filteredDomains = allDomains.filter(d =>
-    d.toLowerCase().includes(domainSearch.toLowerCase())
+  const [student, setStudent] = useState(null);
+
+  const filteredDomains = (allDomains || []).filter(d =>
+    d.toLowerCase().includes((domainSearch || "").toLowerCase())
   );
 
   const filteredFaculty = allFaculty.filter(f =>
@@ -59,11 +61,24 @@ const ProjectListing = () => {
 
   const [pageInput, setPageInput] = useState('');
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
+
   const handlePageInput = () => {
     const pageNum = parseInt(pageInput);
-    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
-      setPage(pageNum - 1); // backend is 0-based
+
+    if (isNaN(pageNum)) return;
+
+    if (pageNum < 1) {
+      setPage(0);
+    } else if (pageNum > totalPages) {
+      setPage(totalPages - 1);
+    } else {
+      setPage(pageNum - 1);
     }
+
+    setPageInput('');
   };
 
   const getPageNumbers = () => {
@@ -174,8 +189,11 @@ const ProjectListing = () => {
           domains: Array.isArray(project.domains) ? project.domains : [],
           facultyName: project.facultyName || 'Unknown',
           description: project.description || '',
+          duration: project.duration || "",
           availableSlots: typeof project.availableSlots === 'number' ? project.availableSlots : 0,
-          preRequisites: project.preRequisites || ''
+          preRequisites: project.preRequisites || '',
+          teamConfirmed: project.teamConfirmed ?? false,
+          teamSize: project.teamSize ?? 1,
         }));
 
         
@@ -192,6 +210,26 @@ const ProjectListing = () => {
     
     fetchProjects();
   }, [token, API_URL, page, searchQuery, selectedDomain, selectedFaculty, slotFilter])
+
+  useEffect(() => {
+  const fetchStudent = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/students/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      console.log("Student data:", data);
+      setStudent(data);
+    } catch (err) {
+      console.error("Error fetching student:", err);
+    }
+  };
+
+  if (token) fetchStudent();
+}, [token]);
 
   useEffect(() => {
     setPage(0);
@@ -212,11 +250,12 @@ const ProjectListing = () => {
   }, [activeProjectId, projectlist])
 
   useEffect(() => {
+    console.log("useEffect triggered, token:", token);
     const fetchFilters = async () => {
       try {
         setIsFilterLoading(true);
 
-        const response = await fetch(`${API_URL}/api/student/projects/filters`, {
+        const response = await fetch(`${API_URL}/api/students/projects/filters`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -226,6 +265,7 @@ const ProjectListing = () => {
 
         setAllDomains((data.domains || []).sort());
         setAllFaculty((data.faculty || []).sort());
+        console.log("Filters API:", data);
       } catch (error) {
         console.error("Error fetching filters:", error);
       }
@@ -314,7 +354,7 @@ const ProjectListing = () => {
               </div>
 
               {/* Collapsible Content */}
-              <div className={`overflow-hidden transition-all duration-300 ease-out ${isFilterExpanded ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
+              <div className={`overflow-visible transition-all duration-300 ease-out ${isFilterExpanded ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
 
                 <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
                   {/* Search */}
@@ -352,7 +392,7 @@ const ProjectListing = () => {
                     </div>
 
                     {/* Dropdown */}
-                    {showDomainDropdown && !isFilterLoading && (
+                    {showDomainDropdown && (
                       <div className="absolute z-20 mt-1 w-full bg-white border border-orange-200 rounded-lg shadow max-h-60 overflow-y-auto">
 
                         {/* 🔍 Search inside dropdown */}
@@ -377,8 +417,12 @@ const ProjectListing = () => {
                         </div>
 
                         {/* Filtered list */}
-                        {filteredDomains
-                          .map(domain => (
+                        {isFilterLoading ? (
+                          <div className="px-3 py-2 text-sm text-gray-500">
+                            Loading...
+                          </div>
+                        ) : filteredDomains.length > 0 ? (
+                          filteredDomains.map(domain => (
                             <div
                               key={domain}
                               onClick={() => {
@@ -391,10 +435,7 @@ const ProjectListing = () => {
                               {domain}
                             </div>
                           ))
-                        }
-
-                        {/* No results */}
-                        {filteredDomains.length === 0 && (
+                        ) : (
                           <div className="px-3 py-2 text-sm text-gray-500">
                             No results
                           </div>
@@ -421,7 +462,7 @@ const ProjectListing = () => {
                     </div>
 
                     {/* Dropdown */}
-                    {showFacultyDropdown && !isFilterLoading && (
+                    {showFacultyDropdown && (
                       <div className="absolute z-20 mt-1 w-full bg-white border border-orange-200 rounded-lg shadow max-h-60 overflow-y-auto">
 
                         {/* 🔍 Search inside dropdown */}
@@ -446,8 +487,12 @@ const ProjectListing = () => {
                         </div>
 
                         {/* Filtered list */}
-                        {filteredFaculty
-                          .map(faculty => (
+                        {isFilterLoading ? (
+                          <div className="px-3 py-2 text-sm text-gray-500">
+                            Loading...
+                          </div>
+                        ) : filteredFaculty.length > 0 ? (
+                          filteredFaculty.map(faculty => (
                             <div
                               key={faculty}
                               onClick={() => {
@@ -460,10 +505,7 @@ const ProjectListing = () => {
                               {faculty}
                             </div>
                           ))
-                        }
-
-                        {/* No results */}
-                        {filteredFaculty.length === 0 && (
+                        ) : (
                           <div className="px-3 py-2 text-sm text-gray-500">
                             No results
                           </div>
@@ -517,7 +559,7 @@ const ProjectListing = () => {
                   {/* Prev */}
                   <button
                     onClick={handlePrev}
-                    disabled={page === 0}
+                    disabled={page === 0 || isLoading}
                     className="px-3 py-1 border rounded disabled:opacity-50"
                   >
                     Prev
@@ -531,6 +573,7 @@ const ProjectListing = () => {
                       <button
                         key={item}
                         onClick={() => handlePageClick(item)}
+                        disabled={isLoading}
                         className={`px-3 py-1 border rounded ${
                           page === item ? 'bg-orange-500 text-white' : ''
                         }`}
@@ -543,7 +586,7 @@ const ProjectListing = () => {
                   {/* Next */}
                   <button
                     onClick={handleNext}
-                    disabled={page === totalPages - 1}
+                    disabled={page === totalPages - 1 || isLoading}
                     className="px-3 py-1 border rounded disabled:opacity-50"
                   >
                     Next
@@ -563,6 +606,7 @@ const ProjectListing = () => {
                   />
                   <button
                     onClick={handlePageInput}
+                    disabled={isLoading}
                     className="px-2 py-1 bg-orange-500 text-white rounded text-sm"
                   >
                     Go
@@ -643,7 +687,14 @@ const ProjectListing = () => {
                   <h3 className='text-base lg:text-lg font-semibold text-amber-900 mb-2 lg:mb-3 leading-tight'>{activeProject.projectTitle}</h3>
 
                   {/* Description */}
-                  <p className='text-sm text-amber-700 mb-3 lg:mb-4 leading-relaxed'>{activeProject.description}</p>
+                  <div className="mb-3 lg:mb-4">
+                    <p className="text-xs font-medium text-amber-600 mb-1 uppercase tracking-wide">
+                      Description
+                    </p>
+                    <p className="text-sm text-amber-800 leading-relaxed bg-amber-50 p-3 rounded-lg border border-orange-100">
+                      {activeProject.description || "No description available"}
+                    </p>
+                  </div>
 
                   {/* Faculty */}
                   <div className='flex items-center gap-2 text-sm text-amber-700 mb-3 lg:mb-4 p-2 lg:p-3 bg-amber-50 rounded-lg'>
@@ -670,6 +721,16 @@ const ProjectListing = () => {
                     </div>
                   )}
 
+                  {/* Duration */}
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-1">
+                      Duration
+                    </p>
+                    <p className="text-sm text-amber-800">
+                      {activeProject.duration ? `${activeProject.duration} weeks` : "Not specified"}
+                    </p>
+                  </div>
+
                   {/* Slots Available */}
                   <div className='flex items-center justify-between p-2 lg:p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-orange-100 mb-3 lg:mb-4'>
                     <div className='flex items-center gap-2'>
@@ -678,7 +739,7 @@ const ProjectListing = () => {
                       </svg>
                       <span className='text-sm text-amber-700'>Available Slots</span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${activeProject.availableSlots > 0
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${activeProject.teamSize && activeProject.availableSlots >= activeProject.teamSize
                         ? 'bg-emerald-100 text-emerald-700'
                         : 'bg-red-100 text-red-700'
                       }`}>
@@ -686,14 +747,44 @@ const ProjectListing = () => {
                     </span>
                   </div>
 
+                  {activeProject.teamSize && activeProject.availableSlots < activeProject.teamSize && (
+                    <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                      <svg className="w-4 h-4 mt-0.5 text-red-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 
+                                10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                      </svg>
+                      <p className="text-sm text-red-700 font-medium">
+                        Not enough slots (Required: {activeProject.teamSize}, Available: {activeProject.availableSlots})
+                      </p>
+                    </div>
+                  )}
+
                   {/* Apply Button */}
                   {activeProject.availableSlots > 0 && (
-                    <button className='w-full py-2.5 lg:py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-2 text-sm lg:text-base
-                    hover:cursor-pointer'
-                      onClick={() => { navigate(`/applicationform/${activeProject.id}`) }}>
-                      <svg className="w-4 h-4 lg:w-5 lg:h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
+                    <button
+                      disabled={
+                        student?.teamRole?.toUpperCase() !== "TEAMLEAD" ||
+                        activeProject.availableSlots < activeProject.teamSize ||
+                        activeProject.teamConfirmed
+                      }
+                      title={
+                        activeProject.teamConfirmed
+                          ? "Your team has already confirmed a project"
+                          : student?.teamRole?.toUpperCase() !== "TEAMLEAD"
+                          ? "Only team lead can apply"
+                          : activeProject.availableSlots < activeProject.teamSize
+                          ? "Not enough slots for your team"
+                          : ""
+                      }
+                      className={`w-full py-2.5 px-4 rounded-lg transition-all
+                        ${
+                          student?.teamRole?.toUpperCase() === "TEAMLEAD" &&
+                          activeProject.availableSlots >= activeProject.teamSize &&
+                          !activeProject.teamConfirmed
+                            ? "bg-orange-500 hover:bg-orange-600 text-white"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
+                    >
                       Apply Now
                     </button>
                   )}
