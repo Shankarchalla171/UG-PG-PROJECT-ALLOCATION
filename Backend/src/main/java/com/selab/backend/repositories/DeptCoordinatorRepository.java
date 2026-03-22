@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface DeptCoordinatorRepository extends JpaRepository<DeptCoordinator, Long> {
     Optional<DeptCoordinator> findByDeptName(String deptName);
+    Optional<DeptCoordinator> findByUserId(Long userId);
 }
