@@ -1,6 +1,7 @@
 package com.selab.backend.controller;
 
 import com.selab.backend.Dto.AdminCreateUserRequest;
+import com.selab.backend.Dto.AdminMakeCoordinatorRequest;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.User;
 import com.selab.backend.services.UserService;
@@ -42,7 +43,7 @@ public class AdminController {
 
     // ✅ Make department coordinator
     @PostMapping("/users/{id}/make-coordinator")
-    public void makeCoordinator(@PathVariable Long id) {
-        userService.makeCoordinator(id);
+    public void makeCoordinator(@PathVariable Long id, @RequestBody AdminMakeCoordinatorRequest request) {
+        userService.makeCoordinator(id, request.getDeptName());
     }
 }
