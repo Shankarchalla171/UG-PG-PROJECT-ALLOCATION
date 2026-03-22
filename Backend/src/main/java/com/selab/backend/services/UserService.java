@@ -1,15 +1,14 @@
 package com.selab.backend.services;
 
 import com.selab.backend.Dto.AdminCreateUserRequest;
-import com.selab.backend.models.DeptCoordinator;
-import com.selab.backend.models.Role;
-import com.selab.backend.models.User;
+import com.selab.backend.models.*;
 import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +20,7 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final DeptCoordinatorRepository deptCoordinatorRepository;
+    private static final PasswordEncoder encoder = new BCryptPasswordEncoder();
 //    private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -92,7 +92,8 @@ public class UserService implements UserDetailsService {
         User user = new User();
         user.setUsername(request.getUserName());
         user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
+//        user.setPassword(request.getPassword());
+        user.setPassword(encoder.encode(request.getPassword()));
 //        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
 
