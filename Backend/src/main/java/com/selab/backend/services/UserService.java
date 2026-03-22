@@ -21,7 +21,7 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final DeptCoordinatorRepository deptCoordinatorRepository;
-    private final PasswordEncoder passwordEncoder;
+//    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -56,7 +56,7 @@ public class UserService implements UserDetailsService {
         return userRepository.save(user);
     }
 
-    public void makeCoordinator(Long userId) {
+    public void makeCoordinator(Long userId, String deptName) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -77,6 +77,7 @@ public class UserService implements UserDetailsService {
         // 2. Insert into dept_coordinator table
         DeptCoordinator coordinator = new DeptCoordinator();
         coordinator.setUser(user);  // JPA handles user_id
+        coordinator.setDeptName(deptName);
 
         deptCoordinatorRepository.save(coordinator);
     }
@@ -89,9 +90,10 @@ public class UserService implements UserDetailsService {
         }
 
         User user = new User();
-
+        user.setUsername(request.getUserName());
         user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(request.getPassword());
+//        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
 
         return userRepository.save(user);
