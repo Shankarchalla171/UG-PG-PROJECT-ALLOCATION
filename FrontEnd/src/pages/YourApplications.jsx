@@ -75,10 +75,17 @@ const YourApplications = () => {
 
     // write code for sorting based on status
     const sortedApplications = useMemo(() => {
-        if (sortBy === 'all') return yourApplications;
-        return yourApplications.filter(app => app.status === sortBy);
-    }, [yourApplications, sortBy]);
+        const filtered = sortBy === 'all'
+            ? yourApplications
+            : yourApplications.filter(app => app.status === sortBy);
 
+        // sort by appliedOn (latest first)
+        return [...filtered].sort((a, b) =>
+            new Date(b.appliedOn) - new Date(a.appliedOn)
+        );
+
+    }, [yourApplications, sortBy]);
+    
     return (
         <> 
           <Navbar />
