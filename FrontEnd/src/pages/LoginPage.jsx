@@ -11,6 +11,7 @@ const LoginPage = () => {
     const navigate = useNavigate();
 
     const API_URL = import.meta.env.VITE_API_URL;
+    console.log(API_URL);
     
     // State for form mode and form fields
     const [isRegistering, setIsRegistering] = useState(false);
@@ -128,6 +129,7 @@ const LoginPage = () => {
         setLoading(true);
 
         try {
+            
             const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: "POST",
                 headers: {
@@ -392,7 +394,7 @@ const LoginPage = () => {
                                 shape="rectangular"
                                 size="large"
                                 text="signin_with"
-                                width="100%"
+                                width={250}
                                 disabled={loading}
                             />
                         </div>
