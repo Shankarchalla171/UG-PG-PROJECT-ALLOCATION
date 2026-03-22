@@ -9,17 +9,25 @@ import com.selab.backend.mappers.ProjectMapper;
 import com.selab.backend.models.*;
 import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.ProfessorRepository;
+import com.selab.backend.repositories.ProjectApplicationsRepository;
 import com.selab.backend.repositories.ProjectRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import com.selab.backend.Dto.ProjectUpdateDto;
 
 import com.selab.backend.exceptions.AccessDeniedException;
 
-import java.util.Arrays;
-import java.util.List;
+import org.springframework.data.domain.Pageable;
+
+import java.util.*;
 import java.util.stream.Collectors;
+
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Subquery;
+import jakarta.persistence.criteria.Root;
 
 @Service
 @RequiredArgsConstructor
@@ -29,40 +37,139 @@ public class ProjectService {
     private final ProfessorMapper professorMapper;
     private final ProjectMapper projectMapper;
     private  final DeptCoordinatorRepository deptCoordinatorRepository;
+    private final ProjectApplicationsRepository projectApplicationsRepository;
+
+    private Specification<Project> buildSpecification(
+            Team team,
+            String department,
+            String search,
+            String domain,
+            String faculty,
+            String slots
+    ) {
+        return (root, query, cb) -> {
+
+            List<Predicate> predicates = new ArrayList<>();
+
+            // DEPARTMENT FILTER (MANDATORY)
+            if (department != null && !department.isEmpty()) {
+                predicates.add(
+                        cb.equal(
+                                root.get("professor").get("departmentName"), // ⚠️ check field name
+                                department
+                        )
+                );
+            }
+
+            // Exclude already applied projects
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<ProjectApplications> pa = subquery.from(ProjectApplications.class);
+
+            subquery.select(pa.get("project").get("projectId"))
+                    .where(cb.equal(pa.get("team"), team));
+
+            predicates.add(cb.not(root.get("projectId").in(subquery)));
+
+            // MULTI-WORD SEARCH
+            if (search != null && !search.isEmpty()) {
+                String[] words = search.trim().toLowerCase().split("\\s+");
+
+                for (String word : words) {
+                    Predicate titleMatch = cb.like(
+                            cb.lower(root.get("title")),
+                            "%" + word + "%"
+                    );
+
+                    Predicate descMatch = cb.like(
+                            cb.lower(root.get("description")),
+                            "%" + word + "%"
+                    );
+
+                    predicates.add(cb.or(titleMatch, descMatch));
+                }
+            }
+
+            // DOMAIN
+            if (domain != null && !domain.isEmpty()) {
+                predicates.add(cb.like(
+                        cb.lower(root.get("domain")),
+                        "%" + domain.toLowerCase() + "%"
+                ));
+            }
+
+            // FACULTY
+            if (faculty != null && !faculty.isEmpty()) {
+                predicates.add(cb.equal(
+                        cb.lower(root.get("professor").get("name")),
+                        faculty.toLowerCase()
+                ));
+            }
+
+            // SLOTS
+            if (slots != null && !slots.equals("all")) {
+                if (slots.equals("available")) {
+                    predicates.add(cb.greaterThan(root.get("slots"), 0));
+                } else if (slots.equals("full")) {
+                    predicates.add(cb.equal(root.get("slots"), 0));
+                }
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
 
 
-    public List<ProjectListingDto> getProjectListings(Student student) {
+    public Page<ProjectListingDto> getProjectListings(
+            Student student,
+            Pageable pageable,
+            String search,
+            String domain,
+            String faculty,
+            String slots
+    ) {
 
-        List<Project> projects =
-                projectRepository.findProjectsNotAppliedByTeam(student.getTeam());
+        Specification<Project> spec = buildSpecification(
+                student.getTeam(),
+                student.getDepartmentName(),
+                search,
+                domain,
+                faculty,
+                slots
+        );
 
-        return projects.stream().map(project -> {
+        Page<Project> projects = projectRepository.findAll(spec, pageable);
 
+        boolean isConfirmed = isTeamAlreadyConfirmed(student.getTeam());
+
+        int teamSize = student.getTeam().getTeamMembers().size();
+
+        return projects.map(project -> {
             ProjectListingDto dto = new ProjectListingDto();
 
             dto.setId(project.getProjectId());
             dto.setProjectTitle(project.getTitle());
             dto.setDescription(project.getDescription());
-
             dto.setFacultyName(project.getProfessor().getName());
 
-            dto.setDomains(
-                    Arrays.asList((project.getDomain() != null ? project.getDomain() : "").split(","))
-            );
-
-            dto.setPreRequisites(
-                    project.getPreRequisites()
-            );
-
-            dto.setAvailableSlots(
-                    project.getSlots()
-            );
+            if (project.getDomain() != null && !project.getDomain().isEmpty()) {
+                dto.setDomains(
+                        Arrays.stream(project.getDomain().split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .toList()
+                );
+            } else {
+                dto.setDomains(new ArrayList<>());
+            }
+            dto.setDuration(project.getDuration());
+            dto.setPreRequisites(project.getPreRequisites());
+            dto.setAvailableSlots(project.getSlots());
+            dto.setTeamConfirmed(isConfirmed);
+            dto.setTeamSize(teamSize);
 
             return dto;
-
-        }).toList();
+        });
     }
-
 
     @Transactional
     public ProjectResponseDto createProject(ProjectRequestDto projectRequestDto, User user){
@@ -227,6 +334,46 @@ public class ProjectService {
 
         // Optional: Log the deletion
         System.out.println("Project deleted: " + projectId + " by professor: " + professor.getProfessorId());
+    }
+
+    public Map<String, List<String>> getProjectFilters(Student student) {
+
+        String department = student.getDepartmentName();
+
+        Team team = student.getTeam();
+
+        List<String> rawDomains = projectRepository.findDistinctDomainsForAvailableProjects(department, team);
+        List<String> faculty = projectRepository.findDistinctFacultyForAvailableProjects(department, team);
+
+        // Split comma-separated domains
+        Set<String> domainSet = new HashSet<>();
+
+        for (String d : rawDomains) {
+            if (d != null && !d.trim().isEmpty()) {
+                String[] split = d.split(",");
+                for (String s : split) {
+                    if (!s.trim().isEmpty()) {
+                        domainSet.add(s.trim());
+                    }
+                }
+            }
+        }
+
+        List<String> domains = new ArrayList<>(domainSet);
+
+
+        Map<String, List<String>> response = new HashMap<>();
+        response.put("domains", domains);
+        response.put("faculty", faculty);
+
+        return response;
+    }
+
+    private boolean isTeamAlreadyConfirmed(Team team) {
+        return projectApplicationsRepository.existsByTeamAndStatus(
+                team,
+                ApplicationStatus.TEAM_CONFIRMED
+        );
     }
 
 }
