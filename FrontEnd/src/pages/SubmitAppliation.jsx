@@ -22,45 +22,43 @@ const SubmitApplication = () => {
     // Fetch available projects and find the matching one
     const fetchProject = async () => {
         try {
-            const response = await fetch(`${API_URL}/api/student/projects`, {
+            const response = await fetch(`${API_URL}/api/projects/${id}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
             });
-            if (!response.ok) throw new Error('Failed to fetch projects');
-            const projects = await response.json();
-            
-            // Find project matching the ID from URL
-            const projectId = parseInt(id, 10);
-            const foundProject = projects.find(p => p.id === projectId);
-            
-            if (!foundProject) {
-                throw new Error('Project not found');
-            }
-            
-            setProject(foundProject);
+
+            if (!response.ok) throw new Error('Failed to fetch project');
+
+            const data = await response.json();
+            setProject(data);
+
         } catch (error) {
             console.error('Error fetching project:', error);
             setLoadError('Failed to load project details. Please try again.');
-            setToast({ show: true, type: 'error', message: 'Failed to load project details' });
         }
     };
 
     // Fetch team details
     const fetchTeam = async () => {
         try {
-            const response = await fetch(`${API_URL}/api/teams`, {
+            const response = await fetch(`${API_URL}/api/students/team-details`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
             });
+
             if (!response.ok) throw new Error('Failed to fetch team');
+
             const data = await response.json();
+
+            // IMPORTANT: data.members from TeamDto
             setTeamMembers(data.members || []);
+
         } catch (error) {
             console.error('Error fetching team:', error);
             setLoadError('Failed to load team details. Please try again.');
@@ -96,8 +94,13 @@ const SubmitApplication = () => {
         }
     }, [toast.show]);
 
-    const handleOpenFile = (fileUrl) => {
-        window.open(fileUrl, '_blank');
+    const handleOpenFile = (filePath) => {
+        if (!filePath) return;
+
+        const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+        const fullUrl = `${API_URL}${cleanPath}`;
+
+        window.open(fullUrl, '_blank');
     };
 
     const handleSubmit = async (e) => {
@@ -113,7 +116,7 @@ const SubmitApplication = () => {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    projectId: project.id,
+                    projectId: project.projectId,
                     message: message
                 })
             });
@@ -226,7 +229,7 @@ const SubmitApplication = () => {
                                     <div>
                                         <label className='block text-xs font-medium text-amber-700 mb-1.5'>Project Title</label>
                                         <div className='px-4 py-3 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900'>
-                                            {project.projectTitle}
+                                            {project.title}
                                         </div>
                                     </div>
 
@@ -237,21 +240,21 @@ const SubmitApplication = () => {
                                             <svg className="w-4 h-4 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
                                                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                             </svg>
-                                            {project.facultyName}
+                                            {project.professor?.name}
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Available Slots */}
                                 <div className='mt-4'>
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${project.availableSlots > 0
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${project.slots > 0
                                             ? 'bg-emerald-100 text-emerald-700'
                                             : 'bg-red-100 text-red-700'
                                         }`}>
                                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
                                         </svg>
-                                        {project.availableSlots > 0 ? `${project.availableSlots} slots available` : 'No slots available'}
+                                        {project.slots > 0 ? `${project.slots} slots available` : 'No slots available'}
                                     </span>
                                 </div>
                             </div>

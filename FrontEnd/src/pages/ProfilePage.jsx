@@ -16,6 +16,7 @@ const ProfilePage = () => {
     const [error, setError] = useState(null);
     const [showResume, setShowResume] = useState(false);
     const { role, token } = useContext(AuthContext);
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -55,7 +56,7 @@ const ProfilePage = () => {
                     return;
                 }
 
-                const url = `/api/${pathRole}/profile`;
+                const url = `${API_URL}/api/${pathRole}/profile`;
                 console.log('Fetching from URL:', url);
                 console.log('Using token:', token.substring(0, 20) + '...');
 
@@ -116,7 +117,7 @@ const ProfilePage = () => {
 
 
 
-        const url = `/api/${pathRole}`;
+        const url = `${API_URL}/api/${pathRole}`;
 
         try {
             console.log('Sending PATCH request to:', url);

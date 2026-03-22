@@ -84,10 +84,10 @@ const CreateProfile = () => {
         console.log(studentData);
 
         console.log('Token:', token);
-console.log('Full URL:', `${API_URL}/api/auth/students/profile`);
+console.log('Full URL:', `${API_URL}/api/students/profile`);
 console.log('API_URL:', API_URL);
 
-        const res = await fetch(`${API_URL}/api/auth/students/profile`, {
+        const res = await fetch(`${API_URL}/api/students/profile`, {
           method: "POST",
           headers: { 
             Authorization: `Bearer ${token}`,

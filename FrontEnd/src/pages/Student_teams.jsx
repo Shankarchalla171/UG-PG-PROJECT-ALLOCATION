@@ -16,6 +16,7 @@ const Student_teams = () => {
     const [isTransferringLeadership, setIsTransferringLeadership] = useState(true);
     const [isLeavingTeam, setIsLeavingTeam] = useState(false);
     const [loading, setLoading] = useState(false);
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
     useEffect(() => {
         if (teamRole == null)
@@ -23,7 +24,7 @@ const Student_teams = () => {
         else {
             const fetchTeamDetails = async () => {
                 try {
-                    const url = `/api/teams`;
+                    const url = `${API_URL}/api/teams`;
                     const response = await fetch(url, {
                         method: 'GET',
                         headers: {
@@ -74,7 +75,7 @@ const Student_teams = () => {
     const handleCreateTeam = async () => {
         try {
             setLoading(true);
-            const url = "/api/teams"
+            const url = `${API_URL}/api/teams`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -113,7 +114,7 @@ const Student_teams = () => {
 
         try {
             setLoading(true);
-            const url = `/api/teams/${joinTeamId.trim()}`;
+            const url = `${API_URL}/api/teams/${joinTeamId.trim()}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: {
@@ -202,7 +203,7 @@ const Student_teams = () => {
 
         try {
             setIsTransferringLeadership(true);
-            const url = `/api/teams/transfer-leadership/${selectedNewLeaderId}`;
+            const url = `${API_URL}/api/teams/transfer-leadership/${selectedNewLeaderId}`;
             const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
@@ -248,7 +249,7 @@ const Student_teams = () => {
     const handleFinalizeTeam = async () => {
         try {
             setLoading(true);
-            const url = `/api/teams/finalize/${teamId}`;
+            const url = `${API_URL}/api/teams/finalize/${teamId}`;
             const response = await fetch(url, {
                 method: 'PUT',
                 headers: {

@@ -15,6 +15,7 @@ const ProfessorDashboard = () => {
   const [professorData, setProfessorData] = useState(null);
   const [myProjects, setMyProjects] = useState([]);
   const [myApplications, setMyApplications] = useState([]);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
   const [stats, setStats] = useState({
     totalProjects: 0,
     totalApplications: 0,
@@ -24,7 +25,7 @@ const ProfessorDashboard = () => {
   });
 
    const fecthProfData =async () =>{
-        const  url ="api/professors/profile";
+        const  url =`${API_URL}/api/professors/profile`;
 
         try{
             const response = await fetch(url,{
