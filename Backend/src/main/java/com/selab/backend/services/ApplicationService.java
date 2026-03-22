@@ -64,7 +64,7 @@ public class ApplicationService {
             dto.setMessage(application.getMessage());
 
             if(application.getAppliedOn()!=null){
-                dto.setAppliedOn(application.getAppliedOn().toLocalDate());
+                dto.setAppliedOn(application.getAppliedOn());
             }
 
             long competitors =

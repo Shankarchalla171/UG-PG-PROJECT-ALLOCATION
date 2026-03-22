@@ -523,8 +523,11 @@ const ProjectListing = () => {
                       className='w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all cursor-pointer'
                     >
                       <option value="all">All Projects</option>
-                      <option value="available">Available Slots</option>
-                      <option value="full">Full</option>
+                      <option value="available">Vacant (&gt;0)</option>
+                      <option value="full">Full (0)</option>
+                      <option value="1">Exactly 1</option>
+                      <option value="2">Exactly 2</option>
+                      <option value="3">Exactly 3</option>
                     </select>
                   </div>
                 </div>
@@ -776,6 +779,16 @@ const ProjectListing = () => {
                           ? "Not enough slots for your team"
                           : ""
                       }
+                      onClick={() => {
+                        console.log("CLICK CHECK", {
+                          role: student?.teamRole,
+                          slots: activeProject.availableSlots,
+                          teamSize: activeProject.teamSize,
+                          confirmed: activeProject.teamConfirmed
+                        });
+
+                        navigate(`/applicationform/${activeProject.id}`);
+                      }}
                       className={`w-full py-2.5 px-4 rounded-lg transition-all
                         ${
                           student?.teamRole?.toUpperCase() === "TEAMLEAD" &&
