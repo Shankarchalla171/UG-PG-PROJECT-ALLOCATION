@@ -19,7 +19,7 @@ public class DeptCoordinator {
     private String deptName;
 
     @OneToOne
-    @JoinColumn(name="user_id")
+    @JoinColumn(name="user_id", unique = true)
     private User user;
 
     @OneToMany(mappedBy = "deptCoordinator", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
