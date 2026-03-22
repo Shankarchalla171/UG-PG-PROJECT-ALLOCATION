@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -54,7 +55,54 @@ public class ResumeController {
         }
 
         // Get file path
-        Path filePath = Paths.get(student.getResumePath()).normalize();
+        Path filePath = Paths.get(student.getResumePath())
+                .toAbsolutePath()
+                .normalize();
+
+        System.out.println("Resolved path: " + filePath);
+
+        try {
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists()) {
+                throw new RuntimeException("File not found");
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(resource);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error loading file");
+        }
+    }
+
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<Resource> getResumeForStudent(
+            @PathVariable Long studentId,
+            @AuthenticationPrincipal User user
+    ) {
+
+        // Get logged-in student
+        Student loggedInStudent = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        // Get requested student
+        Student targetStudent = studentRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        // Check if both belong to same team
+        if (loggedInStudent.getTeam() == null ||
+                targetStudent.getTeam() == null ||
+                !loggedInStudent.getTeam().getTeamId().equals(targetStudent.getTeam().getTeamId())) {
+
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+
+        // Load file
+        Path filePath = Paths.get(targetStudent.getResumePath())
+                .toAbsolutePath()
+                .normalize();
 
         try {
             Resource resource = new UrlResource(filePath.toUri());
