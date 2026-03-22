@@ -18,6 +18,8 @@ const SubmitApplication = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
     const [toast, setToast] = useState({ show: false, type: '', message: '' });
+    const [previewData, setPreviewData] = useState(null);
+    const [loadingResume, setLoadingResume] = useState(false);
 
     // Fetch available projects and find the matching one
     const fetchProject = async () => {
@@ -94,13 +96,57 @@ const SubmitApplication = () => {
         }
     }, [toast.show]);
 
-    const handleOpenFile = (filePath) => {
-        if (!filePath) return;
+    const handleOpenFile = async (member) => {
+        if (loadingResume) return;
 
-        const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
-        const fullUrl = `${API_URL}${cleanPath}`;
+        setLoadingResume(true);
+        try {
+            const res = await fetch(
+            `${API_URL}/api/resumes/student/${member.studentId}`,
+            {
+                headers: {
+                Authorization: `Bearer ${token}`
+                }
+            }
+            );
 
-        window.open(fullUrl, '_blank');
+            if (!res.ok) {
+            const text = await res.text();
+            console.error("Backend error:", text);
+            alert("Failed to load resume");
+            return;
+            }
+
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+
+            setPreviewData({
+            url,
+            name: member.name,
+            roll: member.rollNumber
+            });
+
+        } catch (err) {
+            console.error("Error opening resume", err);
+        } finally {
+            setLoadingResume(false);
+        }
+    };
+
+    const handleDownload = () => {
+        if (!previewData) return;
+
+        const { url, name, roll } = previewData;
+
+        const safeName = name?.replace(/\s+/g, "_"); // remove spaces
+        const filename = `${safeName || "Student"}_${roll || "ID"}_Resume.pdf`;
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const handleSubmit = async (e) => {
@@ -149,6 +195,37 @@ const SubmitApplication = () => {
             setIsSubmitting(false);
         }
     };
+
+    useEffect(() => {
+        if (previewData) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, [previewData]);
+
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key === "Escape") {
+                setPreviewData(null);
+            }
+        };
+
+        window.addEventListener("keydown", handleEsc);
+        return () => window.removeEventListener("keydown", handleEsc);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+          if (previewData?.url) {
+            URL.revokeObjectURL(previewData.url);
+          }
+        };
+      }, [previewData]);
 
     return (
         <>
@@ -319,8 +396,13 @@ const SubmitApplication = () => {
                                                         </div>
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleOpenFile(member.resumePath)}
-                                                            className='p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0'
+                                                            onClick={() => handleOpenFile(member)}
+                                                            disabled={loadingResume}
+                                                            className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${
+                                                                loadingResume
+                                                                ? "text-gray-400 cursor-not-allowed"
+                                                                : "text-blue-500 hover:bg-blue-50"
+                                                            }`}
                                                             title="View resume"
                                                         >
                                                             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -398,6 +480,64 @@ const SubmitApplication = () => {
                     )}
                 </main>
             </div>
+            {/* Resume Preview Modal */}
+            {previewData && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/70 flex flex-col"
+                    onClick={() => setPreviewData(null)}   // click outside closes
+                >
+
+                    {/* Inner container (prevents close when clicking inside) */}
+                    <div
+                    className="flex flex-col flex-1"
+                    onClick={(e) => e.stopPropagation()} // prevents accidental close
+                    >
+
+                    {/* Top bar */}
+                    <div className="flex justify-between items-center px-4 py-3 bg-white shadow">
+
+                        <h2 className="font-semibold text-amber-800">
+                        Resume - {previewData?.name}
+                        </h2>
+
+                        <div className="flex gap-2">
+
+                        {/* Download */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload();
+                            }}
+                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        >
+                            Download
+                        </button>
+
+                        {/* Close */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewData(null);
+                            }}
+                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                        >
+                            Close
+                        </button>
+
+                        </div>
+                    </div>
+
+                    {/* Full screen iframe */}
+                    <iframe
+                        src={previewData?.url}
+                        className="flex-1 w-full bg-white"
+                        title="Resume"
+                    />
+
+                    </div>
+
+                </div>
+            )}
         </>
     );
 };

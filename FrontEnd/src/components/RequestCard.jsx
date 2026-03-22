@@ -75,7 +75,14 @@ const RequestCard = ({ request }) => {
                         </svg>
                         <div>
                             <p className='text-xs text-amber-500'>Applied on</p>
-                            <p className='text-sm font-medium text-amber-800'>{appliedOn ? new Date(appliedOn).toLocaleDateString() : "Not recorded"}</p>
+                            <p className='text-sm font-medium text-amber-800'>{appliedOn
+                                                                                ? new Date(appliedOn).toLocaleDateString('en-GB', {
+                                                                                    day: '2-digit',
+                                                                                    month: 'short',
+                                                                                    year: 'numeric'
+                                                                                })
+                                                                                : "Not recorded"}
+                            </p>
                         </div>
                     </div>
 

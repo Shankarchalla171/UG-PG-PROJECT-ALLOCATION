@@ -111,6 +111,14 @@ public class ProjectService {
                     predicates.add(cb.greaterThan(root.get("slots"), 0));
                 } else if (slots.equals("full")) {
                     predicates.add(cb.equal(root.get("slots"), 0));
+                } else {
+                    // Handle numeric values (1,2,3)
+                    try {
+                        int slotValue = Integer.parseInt(slots);
+                        predicates.add(cb.equal(root.get("slots"), slotValue));
+                    } catch (NumberFormatException e) {
+                        // ignore invalid values
+                    }
                 }
             }
 
@@ -370,8 +378,14 @@ public class ProjectService {
     }
 
     private boolean isTeamAlreadyConfirmed(Team team) {
-        return projectApplicationsRepository.existsByTeamAndStatus(
-                team,
+
+        if (team == null) {
+            System.out.println("TEAM IS NULL");
+            return false;
+        }
+
+        return projectApplicationsRepository.existsConfirmed(
+                team.getTeamId(),
                 ApplicationStatus.TEAM_CONFIRMED
         );
     }
