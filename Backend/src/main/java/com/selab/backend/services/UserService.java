@@ -1,18 +1,25 @@
 package com.selab.backend.services;
 
 import com.selab.backend.Dto.AdminCreateUserRequest;
+import com.selab.backend.Dto.AdminUserResponse;
 import com.selab.backend.models.*;
 import com.selab.backend.repositories.DeptCoordinatorRepository;
+import com.selab.backend.repositories.ProfessorRepository;
+import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +27,8 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final DeptCoordinatorRepository deptCoordinatorRepository;
+    private final ProfessorRepository professorRepository;
+    private final StudentRepository studentRepository;
     private static final PasswordEncoder encoder = new BCryptPasswordEncoder();
 //    private final PasswordEncoder passwordEncoder;
 
@@ -29,8 +38,47 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<AdminUserResponse> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
+
+    public AdminUserResponse convertToDTO(User user) {
+
+        String deptName = null;
+
+        switch (user.getRole()) {
+
+            case DEPTCORDINATOR -> {
+                deptName = deptCoordinatorRepository.findByUserId(user.getId())
+                        .map(DeptCoordinator::getDeptName)
+                        .orElse(null);
+            }
+
+            case PROFF -> {
+                deptName = professorRepository.findByUserId(user.getId())
+                        .map(Professor::getDepartmentName)
+                        .orElse(null);
+            }
+
+            case STUDENT -> {
+                deptName = studentRepository.findByUserId(user.getId())
+                        .map(Student::getDepartmentName)
+                        .orElse(null);
+            }
+
+            default -> deptName = null; // USER / ADMIN
+        }
+
+        return new AdminUserResponse(
+                user.getId(),
+                user.getUsername(),   // ⚠️ use correct field name
+                user.getEmail(),
+                user.getRole().name(),
+                deptName
+        );
     }
 
     public void deleteUser(Long id) {
@@ -40,6 +88,16 @@ public class UserService implements UserDetailsService {
         if (user.getRole().name().equals("ADMIN")) {
             throw new RuntimeException("Cannot delete admin");
         }
+
+        deptCoordinatorRepository.findByUserId(id)
+                .ifPresent(deptCoordinatorRepository::delete);
+
+        professorRepository.findByUserId(id)
+                .ifPresent(professorRepository::delete);
+
+        studentRepository.findByUserId(id)
+                .ifPresent(studentRepository::delete);
+
 
         userRepository.delete(user);
     }
@@ -86,7 +144,10 @@ public class UserService implements UserDetailsService {
 
         // 🔴 Check if user exists
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("User already exists");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "User already exists"
+            );
         }
 
         User user = new User();
