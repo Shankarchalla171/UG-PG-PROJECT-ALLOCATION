@@ -2,10 +2,12 @@ package com.selab.backend.controller;
 
 import com.selab.backend.Dto.AdminCreateUserRequest;
 import com.selab.backend.Dto.AdminMakeCoordinatorRequest;
+import com.selab.backend.Dto.AdminUserResponse;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.User;
 import com.selab.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,7 +20,7 @@ public class AdminController {
     private final UserService userService;
 
     @GetMapping("/users")
-    public List<User> getAllUsers() {
+    public List<AdminUserResponse> getAllUsers() {
         return userService.getAllUsers();
     }
 
@@ -28,8 +30,9 @@ public class AdminController {
     }
 
     @DeleteMapping("/users/{id}")
-    public void deleteUser(@PathVariable Long id) {
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
+        return ResponseEntity.ok("Deleted");
     }
 
     // ✅ Assign role (STUDENT / PROFF etc.)
