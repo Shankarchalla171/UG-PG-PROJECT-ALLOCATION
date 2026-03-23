@@ -101,7 +101,7 @@ export default function CoordinatorDashboard() {
                     onClick={() => navigate("/dept_enforce_deadlines")}
                     className="flex-1 bg-gradient-to-r from-orange-400 to-rose-400 text-white font-medium rounded-xl shadow-md hover:from-orange-500 hover:to-rose-500 transition-all flex items-center justify-center"
                   >
-                    Enforce Deadlines
+                    Manage Events
                   </button>
                 </div>
               </aside>
