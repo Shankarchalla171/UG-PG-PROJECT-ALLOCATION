@@ -9,4 +9,5 @@ public interface EmailServiceInterface {
     void sendVerificationEmail(String to, String username, String token);
     String sendMailWithAttachment(EmailDetails details);
 
+    void sendRemainerMail(String to,String subject, String body);
 }

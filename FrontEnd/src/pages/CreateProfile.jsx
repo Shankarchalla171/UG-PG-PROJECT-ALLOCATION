@@ -24,7 +24,7 @@ const LABEL_CLASS = "block text-amber-800 font-medium mb-2";
 const FIELD_CLASS = "mb-6";
 
 const CreateProfile = () => {
-  const { role,token,authDispatch } = useContext(AuthContext);
+  const { role, token, authDispatch } = useContext(AuthContext);
 
   const [selectedRole, setSelectedRole] = useState(null); // "student" | "professor"
   const [submitting, setSubmitting] = useState(false);
@@ -84,24 +84,24 @@ const CreateProfile = () => {
         console.log(studentData);
 
         console.log('Token:', token);
-console.log('Full URL:', `${API_URL}/api/auth/students/profile`);
-console.log('API_URL:', API_URL);
+        console.log('Full URL:', `${API_URL}/api/students/profile`);
+        console.log('API_URL:', API_URL);
 
-        const res = await fetch(`${API_URL}/api/auth/students/profile`, {
+        const res = await fetch(`${API_URL}/api/students/profile`, {
           method: "POST",
-          headers: { 
+          headers: {
             Authorization: `Bearer ${token}`,
-        },
+          },
           body: studentData,
         });
 
         if (!res.ok) throw new Error(`Request failed (${res.status})`);
-        const data= await res.json();
+        const data = await res.json();
         console.log(data);
-        authDispatch({type:"setRole",payload:data});
+        authDispatch({ type: "setRole", payload: data });
 
       } else {
-        
+
         const professorData = new FormData();
         Object.entries(professorForm).forEach(([key, val]) => {
           if (val !== null && val !== "") professorData.append(key, val);
@@ -115,15 +115,15 @@ console.log('API_URL:', API_URL);
           },
           body: professorData,
         });
-        
+
         if (!res.ok) {
-            throw new Error(`Request failed (${res.status})`);
+          throw new Error(`Request failed (${res.status})`);
         };
-        const data= await res.json();
+        const data = await res.json();
         console.log(data);
-        authDispatch({type:"setRole",payload:data});
+        authDispatch({ type: "setRole", payload: data });
       }
-     
+
       setSubmitted(true);
     } catch (err) {
       setError(err.message);
@@ -324,7 +324,7 @@ console.log('API_URL:', API_URL);
                           </svg>
                         </div>
                         <span className="text-amber-500 text-sm truncate">
-                          {studentForm.profilePhoto? studentForm.profilePhoto.name : "Upload a photo (JPG, PNG)"}
+                          {studentForm.profilePhoto ? studentForm.profilePhoto.name : "Upload a photo (JPG, PNG)"}
                         </span>
                       </label>
                     </div>
@@ -350,7 +350,7 @@ console.log('API_URL:', API_URL);
                           </svg>
                         </div>
                         <span className="text-amber-500 text-sm truncate">
-                          {studentForm.resume? studentForm.resume.name : "Upload your resume (PDF, DOC)"}
+                          {studentForm.resume ? studentForm.resume.name : "Upload your resume (PDF, DOC)"}
                         </span>
                       </label>
                     </div>
