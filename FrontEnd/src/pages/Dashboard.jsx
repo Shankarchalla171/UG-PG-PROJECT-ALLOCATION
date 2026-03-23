@@ -5,6 +5,7 @@ import StudentDashboard from "./StudentDashboard";
 import CoordinatorDashboard from "./CoordinatorDashboard";
 import Professor_dashboard from "./Professor_dashboard";
 import CreateProfile from "./CreateProfile";
+import AdminDashboard from "./AdminDashboard";
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -24,6 +25,9 @@ const Dashboard = () => {
         return <Professor_dashboard/>
     }else if(role === "USER"){
         return <CreateProfile/>
+    }
+    else if(role === "ADMIN"){
+        return <AdminDashboard/>
     }
 
     else{
