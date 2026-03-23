@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -114,5 +115,17 @@ public class EmailService implements EmailServiceInterface {
     @Override
     public String sendMailWithAttachment(EmailDetails details) {
         return "";
+    }
+
+    @Override
+    public void sendRemainerMail(String to, String subject, String body) {
+
+        SimpleMailMessage mailMessage= new SimpleMailMessage();
+
+        mailMessage.setTo(to);
+        mailMessage.setSubject(subject);
+        mailMessage.setText(body);
+
+        javaMailSender.send(mailMessage);
     }
 }

@@ -17,7 +17,7 @@ const Dashboard = () => {
     // Render based on role
     if (role === "STUDENT") {
         return <StudentDashboard />;
-    } else if (role === "deptCoordinator") {
+    } else if (role === "DEPTCORDINATOR") {
         return <CoordinatorDashboard />;
     } else if (role === "PROFF") {
         // Faculty will be redirected, but show nothing while redirecting
