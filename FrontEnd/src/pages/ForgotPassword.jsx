@@ -13,6 +13,7 @@ const ForgotPassword = () => {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
     // Step 1: Send OTP to email
     const handleEmailSubmit = async (e) => {
@@ -26,7 +27,7 @@ const ForgotPassword = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/auth/forgot-password', {
+            const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -64,7 +65,7 @@ const ForgotPassword = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/auth/forgot-password', {
+            const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -116,7 +117,7 @@ const ForgotPassword = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/auth/reset-password', {
+            const response = await fetch(`${API_URL}/api/auth/reset-password`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

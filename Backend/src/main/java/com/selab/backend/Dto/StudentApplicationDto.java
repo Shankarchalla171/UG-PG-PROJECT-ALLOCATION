@@ -1,7 +1,7 @@
 package com.selab.backend.Dto;
 
 import lombok.Data;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class StudentApplicationDto {
@@ -13,6 +13,6 @@ public class StudentApplicationDto {
     private long competitors;
     private String status;
     private String message;
-    private LocalDate appliedOn;
+    private LocalDateTime appliedOn;
 
 }

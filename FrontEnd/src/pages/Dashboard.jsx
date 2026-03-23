@@ -26,6 +26,7 @@ const Dashboard = () => {
         return <CreateProfile/>
     }
 
+    else{
     // Default fallback for unknown roles
     return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-amber-50/50 to-orange-50/30">
@@ -34,6 +35,10 @@ const Dashboard = () => {
             </div>
         </div>
     );
+    
+    }
+
+
 };
 
 export default Dashboard;

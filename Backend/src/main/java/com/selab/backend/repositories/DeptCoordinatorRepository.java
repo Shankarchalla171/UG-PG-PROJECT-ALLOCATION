@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface DeptCoordinatorRepository extends JpaRepository<DeptCoordinator, Long> {
     Optional<DeptCoordinator> findByDeptName(String deptName);
     Optional<DeptCoordinator> findByUser(User user);
+    Optional<DeptCoordinator> findByUserId(Long userId);
 }
