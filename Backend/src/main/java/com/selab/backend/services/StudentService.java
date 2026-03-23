@@ -2,12 +2,14 @@ package com.selab.backend.services;
 
 import com.selab.backend.Dto.StudentDto;
 import com.selab.backend.Dto.StudentProfileRequest;
+import com.selab.backend.Dto.TeamDto;
 import com.selab.backend.Dto.UpdateProfileRequest;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.Student;
+import com.selab.backend.models.Team;
 import com.selab.backend.models.User;
 import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.repositories.UserRepository;
@@ -36,6 +38,30 @@ public class StudentService {
 
     public Student getStudentProfile(User user) {
         return studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("profile for user with name"+user.getUsername()+" not found"));
+    }
+
+    public TeamDto getTeamDetails(Student student){
+
+        Team team = student.getTeam();
+
+        List<StudentDto> members = team.getTeamMembers().stream().map(s -> {
+            StudentDto dto = new StudentDto();
+            dto.setStudentId(s.getStudentId());
+            dto.setName(s.getName());
+            dto.setCollegeEmailId(s.getCollegeEmailId());
+            dto.setDepartmentName(s.getDepartmentName());
+            dto.setRollNumber(s.getRollNumber());
+            dto.setResumePath(s.getResumePath());
+            dto.setProfilePhotoLink(s.getProfilePhotoLink());
+            dto.setTeamRole(s.getTeamRole().name());
+            return dto;
+        }).toList();
+
+        return TeamDto.builder()
+                .teamId(team.getTeamId())
+                .members(members)
+                .isFinalized(team.getIsFinalized())
+                .build();
     }
 
     @Transactional

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class ProjectApplications {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long AppliedProjectsId;
+    private Long appliedProjectsId;
 
     @ManyToOne
     @JoinColumn(name="projectId",nullable = false)

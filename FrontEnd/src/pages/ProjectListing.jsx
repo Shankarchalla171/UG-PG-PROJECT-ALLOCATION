@@ -4,12 +4,17 @@ import Sidebar from '../components/Sidebar';
 import ProjectCard from '../components/ProjectCard';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { useRef } from 'react';
 
 const ProjectListing = () => {
   const { token } = useContext(AuthContext);
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+  const domainRef = useRef(null);
+  const facultyRef = useRef(null);
   
   const [projectlist, setProjectlist] = useState([]);
+  const [page, setPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('');
   const [selectedFaculty, setSelectedFaculty] = useState('');
@@ -20,6 +25,83 @@ const ProjectListing = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const navigate = useNavigate();
+  const [totalPages, setTotalPages] = useState(0);
+  
+  const [isFilterLoading, setIsFilterLoading] = useState(true);
+  const [allDomains, setAllDomains] = useState([]);
+  const [allFaculty, setAllFaculty] = useState([]);
+
+  const [showDomainDropdown, setShowDomainDropdown] = useState(false);
+  const [showFacultyDropdown, setShowFacultyDropdown] = useState(false);
+
+  const [domainSearch, setDomainSearch] = useState("");
+  const [facultySearch, setFacultySearch] = useState('');
+
+  const [student, setStudent] = useState(null);
+
+  const filteredDomains = (allDomains || []).filter(d =>
+    d.toLowerCase().includes((domainSearch || "").toLowerCase())
+  );
+
+  const filteredFaculty = allFaculty.filter(f =>
+    f.toLowerCase().includes(facultySearch.toLowerCase())
+  );
+
+  const handlePrev = () => {
+    if (page > 0) setPage(prev => prev - 1);
+  };
+
+  const handleNext = () => {
+    if (page < totalPages - 1) setPage(prev => prev + 1);
+  };
+
+  const handlePageClick = (pageNumber) => {
+    setPage(pageNumber);
+  };
+
+  const [pageInput, setPageInput] = useState('');
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
+
+  const handlePageInput = () => {
+    const pageNum = parseInt(pageInput);
+
+    if (isNaN(pageNum)) return;
+
+    if (pageNum < 1) {
+      setPage(0);
+    } else if (pageNum > totalPages) {
+      setPage(totalPages - 1);
+    } else {
+      setPage(pageNum - 1);
+    }
+
+    setPageInput('');
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 1; // pages around current
+
+    for (let i = 0; i < totalPages; i++) {
+      if (
+        i === 0 || // first
+        i === totalPages - 1 || // last
+        (i >= page - maxVisible && i <= page + maxVisible)
+      ) {
+        pages.push(i);
+      } else if (
+        i === page - maxVisible - 1 ||
+        i === page + maxVisible + 1
+      ) {
+        pages.push("...");
+      }
+    }
+
+    return pages;
+  };
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -33,7 +115,11 @@ const ProjectListing = () => {
           return;
         }
         
-        const url = `${API_URL}/api/student/projects`;
+        const url = `${API_URL}/api/student/projects?page=${page}&size=6`
+          + `&search=${searchQuery || ''}`
+          + `&domain=${selectedDomain || ''}`
+          + `&faculty=${selectedFaculty || ''}`
+          + `&slots=${slotFilter}`;
         console.log('Fetching from:', url);
         console.log('Token available:', !!token);
         
@@ -71,22 +157,23 @@ const ProjectListing = () => {
         }
         
         // Validate response is an array
-        if (!Array.isArray(data)) {
-          console.error('Invalid response format: expected array, got', typeof data, data);
-          setLoadError(`Invalid response format. Expected array, got ${typeof data}.`);
+        if (!data.content) {
+          setLoadError('Invalid response format');
           setIsLoading(false);
           return;
         }
+
+        const newProjects = data.content;
         
-        console.log('Number of projects received:', data.length);
+        console.log('Number of projects received:', newProjects.length);
         
         // Log first project structure for debugging
-        if (data.length > 0) {
-          console.log('First project structure:', data[0]);
+        if (newProjects.length > 0) {
+          console.log('First project structure:', newProjects[0]);
         }
         
         // Validate and clean data
-        const validatedProjects = data.filter(project => {
+        const validatedProjects = newProjects.filter(project => {
           const hasRequiredFields = project && 
             project.id !== undefined && 
             project.id !== null;
@@ -102,22 +189,56 @@ const ProjectListing = () => {
           domains: Array.isArray(project.domains) ? project.domains : [],
           facultyName: project.facultyName || 'Unknown',
           description: project.description || '',
+          duration: project.duration || "",
           availableSlots: typeof project.availableSlots === 'number' ? project.availableSlots : 0,
-          preRequisites: project.preRequisites || ''
+          preRequisites: project.preRequisites || '',
+          teamConfirmed: project.teamConfirmed ?? false,
+          teamSize: project.teamSize ?? 1,
         }));
+
         
         console.log('Validated projects:', validatedProjects.length);
         setProjectlist(validatedProjects);
+        setTotalPages(data.totalPages);
       } catch (error) {
         console.error('Error fetching projects:', error.message, error);
         setLoadError(`Failed to load projects: ${error.message || 'Unknown error. Please check that the backend is running.'}`);
       } finally {
-        setIsLoading(false);
+          setIsLoading(false);
       }
     };
     
     fetchProjects();
-  }, [token, API_URL])
+  }, [token, API_URL, page, searchQuery, selectedDomain, selectedFaculty, slotFilter])
+
+  useEffect(() => {
+  const fetchStudent = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/students/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      console.log("Student data:", data);
+      setStudent(data);
+    } catch (err) {
+      console.error("Error fetching student:", err);
+    }
+  };
+
+  if (token) fetchStudent();
+}, [token]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, selectedDomain, selectedFaculty, slotFilter]);
+
+  useEffect(() => {
+    setProjectlist([]);
+    setPage(0);
+  }, [token]);
 
   useEffect(() => {
     if (activeProjectId === null) {
@@ -128,57 +249,51 @@ const ProjectListing = () => {
     }
   }, [activeProjectId, projectlist])
 
-  // Extract unique domains and faculty names for filter options
-  const allDomains = useMemo(() => {
-    const domains = new Set();
-    projectlist.forEach(p => {
-      if (p && Array.isArray(p.domains)) {
-        p.domains.forEach(d => {
-          if (d) domains.add(d);  // Only add non-null domains
+  useEffect(() => {
+    console.log("useEffect triggered, token:", token);
+    const fetchFilters = async () => {
+      try {
+        setIsFilterLoading(true);
+
+        const response = await fetch(`${API_URL}/api/students/projects/filters`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
+
+        const data = await response.json();
+
+        setAllDomains((data.domains || []).sort());
+        setAllFaculty((data.faculty || []).sort());
+        console.log("Filters API:", data);
+      } catch (error) {
+        console.error("Error fetching filters:", error);
       }
-    });
-    return Array.from(domains).sort();
-  }, [projectlist]);
-
-  const allFaculty = useMemo(() => {
-    const faculty = new Set();
-    projectlist.forEach(p => {
-      if (p && p.facultyName) {
-        faculty.add(p.facultyName);
+      finally {
+        setIsFilterLoading(false);
       }
-    });
-    return Array.from(faculty).sort();
-  }, [projectlist]);
+    };
 
-  // Filter projects based on selected filters
-  const filteredProjects = useMemo(() => {
-    return projectlist.filter(project => {
-      if (!project) return false;  // Skip null/undefined projects
-      
-      // Search filter
-      const matchesSearch = !searchQuery ||
-        (project.projectTitle && project.projectTitle.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (token) fetchFilters();
+  }, [token]);
 
-      // Domain filter
-      const matchesDomain = !selectedDomain ||
-        (Array.isArray(project.domains) && project.domains.includes(selectedDomain));
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (domainRef.current && !domainRef.current.contains(event.target)) {
+        setShowDomainDropdown(false);
+      }
 
-      // Faculty filter
-      const matchesFaculty = !selectedFaculty ||
-        project.facultyName === selectedFaculty;
+      if (facultyRef.current && !facultyRef.current.contains(event.target)) {
+        setShowFacultyDropdown(false);
+      }
+    };
 
-      // Slots filter - ensure availableSlots is a number
-      const availableSlots = typeof project.availableSlots === 'number' ? project.availableSlots : 0;
-      const matchesSlots =
-        slotFilter === 'all' ||
-        (slotFilter === 'available' && availableSlots > 0) ||
-        (slotFilter === 'full' && availableSlots === 0);
+    document.addEventListener("mousedown", handleClickOutside);
 
-      return matchesSearch && matchesDomain && matchesFaculty && matchesSlots;
-    });
-  }, [projectlist, searchQuery, selectedDomain, selectedFaculty, slotFilter]);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -239,7 +354,7 @@ const ProjectListing = () => {
               </div>
 
               {/* Collapsible Content */}
-              <div className={`overflow-hidden transition-all duration-300 ease-out ${isFilterExpanded ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
+              <div className={`overflow-visible transition-all duration-300 ease-out ${isFilterExpanded ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
 
                 <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
                   {/* Search */}
@@ -260,33 +375,143 @@ const ProjectListing = () => {
                   </div>
 
                   {/* Domain Filter */}
-                  <div>
+                  <div className="relative" ref={domainRef}>
                     <label className='block text-xs font-medium text-amber-700 mb-1.5'>Domain</label>
-                    <select
-                      value={selectedDomain}
-                      onChange={(e) => setSelectedDomain(e.target.value)}
-                      className='w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all cursor-pointer'
+
+                    {/* Trigger */}
+                    <div
+                      onClick={() => {
+                        if(isFilterLoading) return;
+                        setShowDomainDropdown(prev => !prev);
+                        setShowFacultyDropdown(false);
+                      }}
+                      className={`w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 cursor-pointer
+                        ${isFilterLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <option value="">All Domains</option>
-                      {allDomains.map(domain => (
-                        <option key={domain} value={domain}>{domain}</option>
-                      ))}
-                    </select>
+                      {isFilterLoading ? "Loading..." : (selectedDomain || "All Domains")}
+                    </div>
+
+                    {/* Dropdown */}
+                    {showDomainDropdown && (
+                      <div className="absolute z-20 mt-1 w-full bg-white border border-orange-200 rounded-lg shadow max-h-60 overflow-y-auto">
+
+                        {/* 🔍 Search inside dropdown */}
+                        <input
+                          type="text"
+                          placeholder="Search domain..."
+                          value={domainSearch}
+                          onChange={(e) => setDomainSearch(e.target.value)}
+                          className="w-full px-3 py-2 border-b border-orange-200 text-sm outline-none"
+                        />
+
+                        {/* All option */}
+                        <div
+                          className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                          onClick={() => {
+                            setSelectedDomain('');
+                            setShowDomainDropdown(false);
+                            setDomainSearch('');
+                          }}
+                        >
+                          All Domains
+                        </div>
+
+                        {/* Filtered list */}
+                        {isFilterLoading ? (
+                          <div className="px-3 py-2 text-sm text-gray-500">
+                            Loading...
+                          </div>
+                        ) : filteredDomains.length > 0 ? (
+                          filteredDomains.map(domain => (
+                            <div
+                              key={domain}
+                              onClick={() => {
+                                setSelectedDomain(domain);
+                                setShowDomainDropdown(false);
+                                setDomainSearch('');
+                              }}
+                              className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                            >
+                              {domain}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-gray-500">
+                            No results
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Faculty Filter */}
-                  <div>
+                  <div className="relative" ref={facultyRef}>
                     <label className='block text-xs font-medium text-amber-700 mb-1.5'>Faculty</label>
-                    <select
-                      value={selectedFaculty}
-                      onChange={(e) => setSelectedFaculty(e.target.value)}
-                      className='w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all cursor-pointer'
+
+                    {/* Trigger */}
+                    <div
+                      onClick={() => {
+                        if(isFilterLoading) return;
+                        setShowFacultyDropdown(prev => !prev);
+                        setShowDomainDropdown(false);
+                      }}   
+                      className={`w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 cursor-pointer
+                        ${isFilterLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <option value="">All Faculty</option>
-                      {allFaculty.map(faculty => (
-                        <option key={faculty} value={faculty}>{faculty}</option>
-                      ))}
-                    </select>
+                      {isFilterLoading ? "Loading..." : (selectedFaculty || "All Faculty")}
+                    </div>
+
+                    {/* Dropdown */}
+                    {showFacultyDropdown && (
+                      <div className="absolute z-20 mt-1 w-full bg-white border border-orange-200 rounded-lg shadow max-h-60 overflow-y-auto">
+
+                        {/* 🔍 Search inside dropdown */}
+                        <input
+                          type="text"
+                          placeholder="Search faculty..."
+                          value={facultySearch}
+                          onChange={(e) => setFacultySearch(e.target.value)}
+                          className="w-full px-3 py-2 border-b border-orange-200 text-sm outline-none"
+                        />
+
+                        {/* All option */}
+                        <div
+                          className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                          onClick={() => {
+                            setSelectedFaculty('');
+                            setShowFacultyDropdown(false);
+                            setFacultySearch('');
+                          }}
+                        >
+                          All Faculty
+                        </div>
+
+                        {/* Filtered list */}
+                        {isFilterLoading ? (
+                          <div className="px-3 py-2 text-sm text-gray-500">
+                            Loading...
+                          </div>
+                        ) : filteredFaculty.length > 0 ? (
+                          filteredFaculty.map(faculty => (
+                            <div
+                              key={faculty}
+                              onClick={() => {
+                                setSelectedFaculty(faculty);
+                                setShowFacultyDropdown(false);
+                                setFacultySearch('');
+                              }}
+                              className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                            >
+                              {faculty}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-gray-500">
+                            No results
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Slots Filter */}
@@ -298,8 +523,11 @@ const ProjectListing = () => {
                       className='w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all cursor-pointer'
                     >
                       <option value="all">All Projects</option>
-                      <option value="available">Available Slots</option>
-                      <option value="full">Full</option>
+                      <option value="available">Vacant (&gt;0)</option>
+                      <option value="full">Full (0)</option>
+                      <option value="1">Exactly 1</option>
+                      <option value="2">Exactly 2</option>
+                      <option value="3">Exactly 3</option>
                     </select>
                   </div>
                 </div>
@@ -307,7 +535,7 @@ const ProjectListing = () => {
                 {/* Results count */}
                 <div className='mt-4 pt-3 border-t border-orange-100'>
                   <p className='text-sm text-amber-600'>
-                    Showing <span className='font-semibold text-amber-800'>{filteredProjects.length}</span> of <span className='font-semibold text-amber-800'>{projectlist.length}</span> projects
+                    Showing <span className='font-semibold text-amber-800'>{projectlist.length}</span> projects
                   </p>
                 </div>
               </div>
@@ -322,6 +550,72 @@ const ProjectListing = () => {
                 </svg>
                 <p className='text-lg font-medium text-amber-700'>Loading projects...</p>
                 <p className='text-sm text-amber-500 mt-1'>Please wait</p>
+              </div>
+            )}
+
+            {!isLoading && !loadError && totalPages > 1 && (
+              <div className="flex flex-col items-center mt-8 gap-4">
+
+                {/* Page buttons */}
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+
+                  {/* Prev */}
+                  <button
+                    onClick={handlePrev}
+                    disabled={page === 0 || isLoading}
+                    className="px-3 py-1 border rounded disabled:opacity-50"
+                  >
+                    Prev
+                  </button>
+
+                  {/* Page numbers */}
+                  {getPageNumbers().map((item, index) =>
+                    item === "..." ? (
+                      <span key={index} className="px-2">...</span>
+                    ) : (
+                      <button
+                        key={item}
+                        onClick={() => handlePageClick(item)}
+                        disabled={isLoading}
+                        className={`px-3 py-1 border rounded ${
+                          page === item ? 'bg-orange-500 text-white' : ''
+                        }`}
+                      >
+                        {item + 1}
+                      </button>
+                    )
+                  )}
+
+                  {/* Next */}
+                  <button
+                    onClick={handleNext}
+                    disabled={page === totalPages - 1 || isLoading}
+                    className="px-3 py-1 border rounded disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+
+                {/* Manual input */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-amber-700">Go to page:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={totalPages}
+                    value={pageInput}
+                    onChange={(e) => setPageInput(e.target.value)}
+                    className="w-16 px-2 py-1 border rounded text-sm"
+                  />
+                  <button
+                    onClick={handlePageInput}
+                    disabled={isLoading}
+                    className="px-2 py-1 bg-orange-500 text-white rounded text-sm"
+                  >
+                    Go
+                  </button>
+                </div>
+
               </div>
             )}
 
@@ -345,21 +639,24 @@ const ProjectListing = () => {
             )}
 
             {!isLoading && !loadError && (
-            <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
-              {filteredProjects && filteredProjects.length > 0 ? (
-                filteredProjects.map(project =>
-                  project && project.id ? <ProjectCard key={project.id} project={project} activeProjectId={activeProjectId} setActiveProjectId={setActiveProjectId} /> : null
-                )
-              ) : (
-                <div className='col-span-full flex flex-col items-center justify-center py-16 text-amber-600'>
-                  <svg className="w-16 h-16 mb-4 text-amber-300" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                  </svg>
-                  <p className='text-lg font-medium'>No projects found</p>
-                  <p className='text-sm text-amber-500 mt-1'>Try adjusting your filters</p>
-                </div>
-              )}
-            </div>
+              <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
+                {projectlist && projectlist.length > 0 ? (
+                  projectlist.map(project =>
+                    project && project.id ? (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        activeProjectId={activeProjectId}
+                        setActiveProjectId={setActiveProjectId}
+                      />
+                    ) : null
+                  )
+                ) : (
+                  <div className='col-span-full text-center text-amber-600 py-10'>
+                    No projects found
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -393,7 +690,14 @@ const ProjectListing = () => {
                   <h3 className='text-base lg:text-lg font-semibold text-amber-900 mb-2 lg:mb-3 leading-tight'>{activeProject.projectTitle}</h3>
 
                   {/* Description */}
-                  <p className='text-sm text-amber-700 mb-3 lg:mb-4 leading-relaxed'>{activeProject.description}</p>
+                  <div className="mb-3 lg:mb-4">
+                    <p className="text-xs font-medium text-amber-600 mb-1 uppercase tracking-wide">
+                      Description
+                    </p>
+                    <p className="text-sm text-amber-800 leading-relaxed bg-amber-50 p-3 rounded-lg border border-orange-100">
+                      {activeProject.description || "No description available"}
+                    </p>
+                  </div>
 
                   {/* Faculty */}
                   <div className='flex items-center gap-2 text-sm text-amber-700 mb-3 lg:mb-4 p-2 lg:p-3 bg-amber-50 rounded-lg'>
@@ -420,6 +724,16 @@ const ProjectListing = () => {
                     </div>
                   )}
 
+                  {/* Duration */}
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-1">
+                      Duration
+                    </p>
+                    <p className="text-sm text-amber-800">
+                      {activeProject.duration ? `${activeProject.duration} weeks` : "Not specified"}
+                    </p>
+                  </div>
+
                   {/* Slots Available */}
                   <div className='flex items-center justify-between p-2 lg:p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-orange-100 mb-3 lg:mb-4'>
                     <div className='flex items-center gap-2'>
@@ -428,7 +742,7 @@ const ProjectListing = () => {
                       </svg>
                       <span className='text-sm text-amber-700'>Available Slots</span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${activeProject.availableSlots > 0
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${activeProject.teamSize && activeProject.availableSlots >= activeProject.teamSize
                         ? 'bg-emerald-100 text-emerald-700'
                         : 'bg-red-100 text-red-700'
                       }`}>
@@ -436,14 +750,54 @@ const ProjectListing = () => {
                     </span>
                   </div>
 
+                  {activeProject.teamSize && activeProject.availableSlots < activeProject.teamSize && (
+                    <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                      <svg className="w-4 h-4 mt-0.5 text-red-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 
+                                10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                      </svg>
+                      <p className="text-sm text-red-700 font-medium">
+                        Not enough slots (Required: {activeProject.teamSize}, Available: {activeProject.availableSlots})
+                      </p>
+                    </div>
+                  )}
+
                   {/* Apply Button */}
                   {activeProject.availableSlots > 0 && (
-                    <button className='w-full py-2.5 lg:py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-2 text-sm lg:text-base
-                    hover:cursor-pointer'
-                      onClick={() => { navigate(`/applicationform/${activeProject.id}`) }}>
-                      <svg className="w-4 h-4 lg:w-5 lg:h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
+                    <button
+                      disabled={
+                        student?.teamRole?.toUpperCase() !== "TEAMLEAD" ||
+                        activeProject.availableSlots < activeProject.teamSize ||
+                        activeProject.teamConfirmed
+                      }
+                      title={
+                        activeProject.teamConfirmed
+                          ? "Your team has already confirmed a project"
+                          : student?.teamRole?.toUpperCase() !== "TEAMLEAD"
+                          ? "Only team lead can apply"
+                          : activeProject.availableSlots < activeProject.teamSize
+                          ? "Not enough slots for your team"
+                          : ""
+                      }
+                      onClick={() => {
+                        console.log("CLICK CHECK", {
+                          role: student?.teamRole,
+                          slots: activeProject.availableSlots,
+                          teamSize: activeProject.teamSize,
+                          confirmed: activeProject.teamConfirmed
+                        });
+
+                        navigate(`/applicationform/${activeProject.id}`);
+                      }}
+                      className={`w-full py-2.5 px-4 rounded-lg transition-all
+                        ${
+                          student?.teamRole?.toUpperCase() === "TEAMLEAD" &&
+                          activeProject.availableSlots >= activeProject.teamSize &&
+                          !activeProject.teamConfirmed
+                            ? "bg-orange-500 hover:bg-orange-600 text-white"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
+                    >
                       Apply Now
                     </button>
                   )}
