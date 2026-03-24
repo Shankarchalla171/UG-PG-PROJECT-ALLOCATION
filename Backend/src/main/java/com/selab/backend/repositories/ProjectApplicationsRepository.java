@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 //import org.springframework.data.repository.query.Param;
 
 //import java.util.List;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 //import java.util.UUID;
@@ -37,4 +38,14 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
                             @Param("status") ApplicationStatus status);
 
     long countByProject(Project project);
+
+
+    @Query("""
+    SELECT pa FROM ProjectApplications pa
+    JOIN FETCH pa.project
+    JOIN FETCH pa.team
+    WHERE pa.project.deptCoordinator = :coordinator
+    AND pa.status = :status
+""")
+    List<ProjectApplications>  getAllFinal(@Param("coordinator") DeptCoordinator coordinator,@Param("status")ApplicationStatus status);
 }
