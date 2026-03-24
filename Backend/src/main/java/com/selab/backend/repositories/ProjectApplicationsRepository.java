@@ -48,4 +48,7 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     AND pa.status = :status
 """)
     List<ProjectApplications>  getAllFinal(@Param("coordinator") DeptCoordinator coordinator,@Param("status")ApplicationStatus status);
+
+    Optional<ProjectApplications> findByAppliedProjectsId(Long appliedProjectsId);
+    
 }
