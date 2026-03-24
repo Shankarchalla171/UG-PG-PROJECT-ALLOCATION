@@ -23,6 +23,7 @@ const Student_teams = () => {
             const fetchTeamDetails = async () => {
                 try {
                     const url = `${API_URL}/api/teams`;
+                    console,log(url)
                     const response = await fetch('/api/teams', {
                         method: 'GET',
                         headers: {
