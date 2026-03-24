@@ -1,11 +1,13 @@
 package com.selab.backend.controller;
 
+import com.selab.backend.Dto.ApplicationDto;
 import com.selab.backend.Dto.ApplyProjectRequest;
 import com.selab.backend.models.*;
 import com.selab.backend.repositories.ProjectRepository;
 import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.services.ApplicationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.selab.backend.services.ProjectService;
@@ -44,4 +46,6 @@ public class ApplicationController {
 
         return "Application submitted successfully";
     }
+
+
 }

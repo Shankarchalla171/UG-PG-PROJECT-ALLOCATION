@@ -12,8 +12,6 @@ const Student_teams = () => {
     const [toast, setToast] = useState({ show: false, type: '', message: '' });
     const [copied, setCopied] = useState(false);
     const [isFinalized, setIsFinalized] = useState(false);
-    const [selectedNewLeaderId, setSelectedNewLeaderId] = useState('');
-    const [isTransferringLeadership, setIsTransferringLeadership] = useState(true);
     const [isLeavingTeam, setIsLeavingTeam] = useState(false);
     const [loading, setLoading] = useState(false);
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -191,57 +189,6 @@ const Student_teams = () => {
                 message: error.message || 'Failed to leave team. Please try again.',
             });
         } finally {
-            setIsLeavingTeam(false);
-        }
-    };
-
-    const handleTransferLeadership = async () => {
-        if (!selectedNewLeaderId) {
-            setToast({ show: true, type: 'error', message: 'Please select a member to transfer leadership.' });
-            return;
-        }
-
-        try {
-            setIsTransferringLeadership(true);
-            const url = `${API_URL}/api/teams/transfer-leadership/${selectedNewLeaderId}`;
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                const msg = await response.text();
-                throw new Error(msg || 'Failed to transfer leadership');
-            }
-
-            const updatedTeam = await response.json();
-            if (updatedTeam) {
-                setCurrentTeam(updatedTeam);
-                setTeamId(updatedTeam.teamId || teamId);
-            }
-
-            setSelectedNewLeaderId('');
-            authDispatch({
-                type: 'setTeam',
-                payload: {
-                    teamRole: 'TEAM_MEMBER',
-                },
-            });
-            setToast({ show: true, type: 'success', message: 'Leadership transferred. You can now leave the team.' });
-
-            if (isLeavingTeam) {
-                await leaveTeam();
-            } else {
-                setView('teamJoined');
-            }
-
-        } catch (error) {
-            setToast({ show: true, type: 'error', message: error.message || 'Failed to transfer leadership.' });
-        } finally {
-            setIsTransferringLeadership(false);
             setIsLeavingTeam(false);
         }
     };
@@ -554,173 +501,6 @@ const Student_teams = () => {
                             </div>
                         )}
 
-                        {/* Leave Steps View */}
-                        {view === 'leaveSteps' && (
-                            <div className='w-full max-w-md animate-fadeIn'>
-                                <div className='bg-white rounded-2xl border border-orange-200/60 shadow-lg shadow-orange-100/30 p-8'>
-                                    <div className='w-14 h-14 mx-auto mb-5 rounded-2xl bg-amber-100 flex items-center justify-center'>
-                                        <svg className="w-7 h-7 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-                                        </svg>
-                                    </div>
-
-                                    <h2 className='text-xl font-bold text-amber-900 mb-1 text-center'>Before You Leave</h2>
-                                    <p className='text-sm text-amber-600/80 mb-8 text-center'>
-                                        Your team has members. Follow these steps to leave safely.
-                                    </p>
-
-                                    {/* Steps */}
-                                    <div className='space-y-3 mb-8'>
-                                        <div className='flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-200/60'>
-                                            <div className='w-9 h-9 shrink-0 rounded-full bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center text-white text-sm font-bold shadow-md shadow-orange-500/20'>
-                                                1
-                                            </div>
-                                            <div>
-                                                <p className='text-sm font-semibold text-amber-900'>Transfer Leadership</p>
-                                                <p className='text-xs text-amber-600/80 mt-0.5'>
-                                                    Hand over the team leader role to another member
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Connector */}
-                                        <div className='flex justify-start ml-[1.35rem]'>
-                                            <div className='w-px h-4 bg-orange-200'></div>
-                                        </div>
-
-                                        <div className='flex items-center gap-4 p-4 rounded-xl bg-amber-50/60 border border-orange-200/40'>
-                                            <div className='w-9 h-9 shrink-0 rounded-full bg-amber-200 flex items-center justify-center text-amber-700 text-sm font-bold'>
-                                                2
-                                            </div>
-                                            <div>
-                                                <p className='text-sm font-semibold text-amber-800'>Leave the Team</p>
-                                                <p className='text-xs text-amber-500 mt-0.5'>
-                                                    Once leadership is transferred, you can leave freely
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Actions */}
-                                    <div className='flex flex-col sm:flex-row gap-3'>
-                                        <button
-                                            onClick={() => { setIsLeavingTeam(true); setSelectedNewLeaderId(''); setView('transferLeadership'); }}
-                                            className='flex-1 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-rose-600 shadow-lg shadow-orange-500/25 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2'
-                                        >
-                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-                                            </svg>
-                                            Transfer Leadership
-                                        </button>
-                                        <button
-                                            onClick={() => setView('teamCreated')}
-                                            className='flex-1 py-3 bg-white border border-orange-200 text-amber-700 font-medium rounded-xl hover:bg-orange-50 transition-all duration-200 cursor-pointer'
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Transfer Leadership View */}
-                        {view === 'transferLeadership' && currentTeam && (
-                            <div className='w-full max-w-lg animate-fadeIn'>
-                                <div className='bg-white rounded-2xl border border-orange-200/60 shadow-lg shadow-orange-100/30 p-8'>
-                                    <button
-                                        onClick={() => {
-                                            setSelectedNewLeaderId('');
-                                            setView('teamCreated');
-                                        }}
-                                        className='mb-6 flex items-center gap-1.5 text-sm text-amber-600 hover:text-orange-600 transition-colors cursor-pointer group'
-                                    >
-                                        <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-                                        </svg>
-                                        Back
-                                    </button>
-
-                                    <div className='text-center mb-8'>
-                                        <div className='w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-50 flex items-center justify-center'>
-                                            <svg className="w-7 h-7 text-orange-600" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-                                            </svg>
-                                        </div>
-                                        <h2 className='text-xl font-bold text-amber-900 mb-1.5'>Transfer Leadership</h2>
-                                        <p className='text-sm text-amber-600/80'>
-                                            Choose a team member to become the new leader
-                                        </p>
-                                    </div>
-
-                                    <div className='mb-6'>
-                                        <label className='block text-xs font-semibold text-amber-700 mb-3 uppercase tracking-wider'>Select New Leader</label>
-                                        <div className='space-y-2'>
-                                            {currentTeam.members
-                                                .filter((member) => member.teamRole !== 'TEAMLEAD' && member.teamRole !== 'TEAMlEAD')
-                                                .map((member) => (
-                                                    <label
-                                                        key={member.studentId}
-                                                        className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                                                            selectedNewLeaderId === String(member.studentId)
-                                                                ? 'border-orange-400 bg-orange-50/80 shadow-sm'
-                                                                : 'border-orange-100 bg-white hover:border-orange-200 hover:bg-orange-50/40'
-                                                        }`}
-                                                    >
-                                                        <input
-                                                            type="radio"
-                                                            name="newLeader"
-                                                            value={member.studentId}
-                                                            checked={selectedNewLeaderId === String(member.studentId)}
-                                                            onChange={(e) => setSelectedNewLeaderId(e.target.value)}
-                                                            className='sr-only'
-                                                        />
-                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                                            selectedNewLeaderId === String(member.studentId)
-                                                                ? 'border-orange-500 bg-orange-500'
-                                                                : 'border-orange-300'
-                                                        }`}>
-                                                            {selectedNewLeaderId === String(member.studentId) && (
-                                                                <div className='w-2 h-2 rounded-full bg-white'></div>
-                                                            )}
-                                                        </div>
-                                                        <div className='w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-bold text-xs'>
-                                                            {member.name?.charAt(0) || 'M'}
-                                                        </div>
-                                                        <div className='flex-1'>
-                                                            <p className='text-sm font-medium text-amber-900'>{member.name}</p>
-                                                            <p className='text-xs text-amber-500'>{member.rollNumber}</p>
-                                                        </div>
-                                                    </label>
-                                                ))}
-                                        </div>
-                                    </div>
-
-                                    <div className='flex flex-col sm:flex-row gap-3'>
-                                        <button
-                                            onClick={handleTransferLeadership}
-                                            disabled={!isTransferringLeadership || !selectedNewLeaderId}
-                                            className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                                                !isTransferringLeadership || !selectedNewLeaderId
-                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                    : 'bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:from-orange-600 hover:to-rose-600 shadow-lg shadow-orange-500/25 cursor-pointer'
-                                            }`}
-                                        >
-                                            {isTransferringLeadership && isLeavingTeam ? 'Transfer & Leave Team' : 'Transfer Leadership'}
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedNewLeaderId('');
-                                                setView('teamCreated');
-                                            }}
-                                            className='flex-1 py-3 rounded-xl text-sm font-medium border border-orange-200 text-amber-700 hover:bg-orange-50 cursor-pointer transition-all duration-200'
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Team Created/Joined/Finalized View */}
                         {(view === 'teamCreated' || view === 'teamJoined' || view === 'teamFinalized') && currentTeam && (
                             <div className='w-full max-w-3xl animate-fadeIn'>
@@ -894,17 +674,6 @@ const Student_teams = () => {
                                                         <path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
                                                     </svg>
                                                     Leave Team
-                                                </button>
-                                            )}
-                                            {view === 'teamCreated' && !isFinalized && currentTeam.members.length > 1 && (
-                                                <button
-                                                    onClick={() => { setSelectedNewLeaderId(''); setView('transferLeadership'); }}
-                                                    className='flex-1 py-3 bg-white border border-orange-300 text-orange-600 font-medium rounded-xl hover:bg-orange-50 hover:border-orange-400 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2'
-                                                >
-                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-                                                    </svg>
-                                                    Transfer Leadership
                                                 </button>
                                             )}
                                             {view === 'teamCreated' && !isFinalized && (
