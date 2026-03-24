@@ -16,12 +16,13 @@ const ProfessorStudentRequest = () => {
   const [reviewSaved, setReviewSaved] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [loadingResume, setLoadingResume] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
   // 🔥 Fetch Applications
   const fetchApplications = async () => {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/professor/applications?page=${page}&status=${filter}`,
+        `${API_URL}/api/professor/applications?page=${page}&status=${filter}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -63,7 +64,7 @@ const ProfessorStudentRequest = () => {
 
   // 🔥 Actions
   const handleAccept = async (id) => {
-    await fetch(`http://localhost:8080/api/professor/applications/${id}/accept`, {
+    await fetch(`${API_URL}/api/professor/applications/${id}/accept`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -71,7 +72,7 @@ const ProfessorStudentRequest = () => {
   };
 
   const handleReject = async (id) => {
-    await fetch(`http://localhost:8080/api/professor/applications/${id}/reject`, {
+    await fetch(`${API_URL}/api/professor/applications/${id}/reject`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -82,7 +83,7 @@ const ProfessorStudentRequest = () => {
     if (!reviewText.trim()) return;
 
     await fetch(
-      `http://localhost:8080/api/professor/applications/${selectedRequest.applicationId}/review`,
+      `${API_URL}/api/professor/applications/${selectedRequest.applicationId}/review`,
       {
         method: "PUT",
         headers: {
@@ -113,7 +114,7 @@ const ProfessorStudentRequest = () => {
     setLoadingResume(true);
     try {
       const res = await fetch(
-        `http://localhost:8080/api/resumes/${member.studentId}`,
+        `${API_URL}/api/resumes/${member.studentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
