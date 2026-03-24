@@ -9,7 +9,7 @@ const DeptViewAllocations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const {token}=useContext(AuthContext);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // Fetch allocations from API
   useEffect(() => {
