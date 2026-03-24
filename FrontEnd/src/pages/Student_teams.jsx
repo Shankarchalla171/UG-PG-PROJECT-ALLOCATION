@@ -14,7 +14,7 @@ const Student_teams = () => {
     const [isFinalized, setIsFinalized] = useState(false);
     const [isLeavingTeam, setIsLeavingTeam] = useState(false);
     const [loading, setLoading] = useState(false);
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    const API_URL = import.meta.env.VITE_API_URL ;
 
     useEffect(() => {
         if (teamRole == null)
@@ -23,7 +23,7 @@ const Student_teams = () => {
             const fetchTeamDetails = async () => {
                 try {
                     const url = `${API_URL}/api/teams`;
-                    const response = await fetch(url, {
+                    const response = await fetch('/api/teams', {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${token}`,
