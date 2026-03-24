@@ -125,27 +125,6 @@ public class TeamService {
     }
 
     @Transactional
-    public TeamDto transferLead(User user, Long newLeadId) {
-        Student oldLead = studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("user with email"+user.getEmail()+" not Found"));
-        Student newLead = studentRepository.findByStudentId(newLeadId).orElseThrow(()-> new UserNotFoundException("user with email"+user.getEmail()+" not Found"));
-
-        Team team = teamRepository.findByTeamLead(oldLead).orElseThrow(()-> new TeamInvalidException("Team with teamLead : "+oldLead.getName()+" not found"));
-
-        oldLead.setTeamRole(TeamRole.TEAM_MEMBER);
-        newLead.setTeamRole(TeamRole.TEAMlEAD);
-
-        team.setTeamLead(newLead);
-
-        List<StudentDto> membersDto= team.getTeamMembers().stream()
-                .map(studentMapper::toDto).toList();
-        return TeamDto.builder()
-                .teamId(team.getTeamId())
-                .members(membersDto)
-                .isFinalized(team.getIsFinalized())
-                .build();
-    }
-
-    @Transactional
     public void finalise(User user,UUID teamId) {
 
         Student member=studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("user with email"+user.getEmail()+" not Found"));

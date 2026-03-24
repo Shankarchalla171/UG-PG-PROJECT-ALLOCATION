@@ -1,16 +1,17 @@
 package com.selab.backend.services;
 
-import com.selab.backend.Dto.ProfessorApplicationDto;
-import com.selab.backend.Dto.StudentApplicationDto;
-import com.selab.backend.Dto.StudentDto;
-import com.selab.backend.Dto.TeamDto;
+import com.selab.backend.Dto.*;
+import com.selab.backend.exceptions.ResourceNotFoundException;
+import com.selab.backend.mappers.ProjectMapper;
 import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.*;
+import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.ProjectApplicationsRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,9 @@ public class ApplicationService {
 
     private final ProjectApplicationsRepository projectApplicationsRepository;
     private final StudentMapper studentMapper;
+    private final DeptCoordinatorRepository deptCoordinatorRepository;
+    private final ProjectMapper projectMapper;
+//    private final StudentMapper studentMapper;
 
     public void applyToProject(Project project, Team team, String message) {
 
@@ -156,5 +160,31 @@ public class ApplicationService {
         application.setStatus(ApplicationStatus.REJECTED);
 
         projectApplicationsRepository.save(application);
+    }
+
+    public List<ApplicationDto> getFinal(User user) {
+         DeptCoordinator coordinator = deptCoordinatorRepository.findByUser(user).orElseThrow(()-> new ResourceNotFoundException("user not found.."));
+
+        List<ProjectApplications> projectApplications= projectApplicationsRepository.getAllFinal(coordinator, ApplicationStatus.TEAM_CONFIRMED);
+        List<ApplicationDto> applicationDtos=new ArrayList<>();
+        for(ProjectApplications app:projectApplications){
+            Team team=app.getTeam();
+            List<StudentDto> memberDtos= team.getTeamMembers().stream()
+                    .map(studentMapper::toDto).toList();
+            TeamDto teamDto= TeamDto.builder()
+                            .teamId(team.getTeamId())
+                                    .isFinalized(team.getIsFinalized())
+                                            .members(memberDtos)
+                    .build();
+
+            ApplicationDto appDto=ApplicationDto.builder()
+                    .project(projectMapper.toResponseDto(app.getProject()))
+                    .team(teamDto)
+                    .build();
+
+            applicationDtos.add(appDto);
+        }
+
+        return applicationDtos;
     }
 }
