@@ -148,7 +148,7 @@ const Student_teams = () => {
     };
 
     const leaveTeam = async () => {
-        const url = 'api/teams/leave';
+        const url = '${API_URL}/api/teams/leave';
         const response = await fetch(url, {
             method: 'DELETE',
             headers: {

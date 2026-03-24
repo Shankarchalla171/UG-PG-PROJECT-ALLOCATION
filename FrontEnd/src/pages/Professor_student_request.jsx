@@ -16,7 +16,7 @@ const ProfessorStudentRequest = () => {
   const [reviewSaved, setReviewSaved] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [loadingResume, setLoadingResume] = useState(false);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // 🔥 Fetch Applications
   const fetchApplications = async () => {

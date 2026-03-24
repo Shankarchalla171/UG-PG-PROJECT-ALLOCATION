@@ -13,7 +13,7 @@ const ForgotPassword = () => {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    const API_URL = import.meta.env.VITE_API_URL;
 
     // Step 1: Send OTP to email
     const handleEmailSubmit = async (e) => {
