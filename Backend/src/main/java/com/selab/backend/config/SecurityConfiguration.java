@@ -32,7 +32,7 @@ public class SecurityConfiguration {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
 
-    @Value("${frontendUrl}")  
+    @Value("http://${frontendUrl}")
     private String frontendurl;
 
     @Bean
