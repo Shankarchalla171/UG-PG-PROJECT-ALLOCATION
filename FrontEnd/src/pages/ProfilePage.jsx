@@ -16,7 +16,7 @@ const ProfilePage = () => {
     const [error, setError] = useState(null);
     const [showResume, setShowResume] = useState(false);
     const { role, token } = useContext(AuthContext);
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    const API_URL = import.meta.env.VITE_API_URL;
 
     useEffect(() => {
         const fetchProfileData = async () => {

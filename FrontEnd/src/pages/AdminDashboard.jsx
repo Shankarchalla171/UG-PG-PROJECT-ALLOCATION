@@ -18,7 +18,7 @@ const DEPARTMENTS = [
 const AdminDashboard = () => {
   const { token, role } = useContext(AuthContext);
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // Check if user is admin
   useEffect(() => {
@@ -55,7 +55,7 @@ const AdminDashboard = () => {
     setError("");
 
     try {
-      const response = await fetch(`${API_URL}/admin/users`, {
+      const response = await fetch(`${API_URL}/api/admin/users`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -100,7 +100,7 @@ const AdminDashboard = () => {
         throw new Error("Please fill in all required fields");
       }
 
-      const response = await fetch(`${API_URL}/admin/users`, {
+      const response = await fetch(`${API_URL}/api/admin/users`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -168,7 +168,7 @@ const AdminDashboard = () => {
       }
 
       const response = await fetch(
-        `${API_URL}/admin/users/${coordinatorForm.userId}/make-coordinator`,
+        `${API_URL}/api/admin/users/${coordinatorForm.userId}/make-coordinator`,
         {
           method: "POST",
           headers: {
@@ -216,7 +216,7 @@ const AdminDashboard = () => {
       setError("");
 
       try {
-        const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+        const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,

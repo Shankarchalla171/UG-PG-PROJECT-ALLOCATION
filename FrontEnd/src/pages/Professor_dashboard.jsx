@@ -15,7 +15,7 @@ const ProfessorDashboard = () => {
   const [professorData, setProfessorData] = useState(null);
   const [myProjects, setMyProjects] = useState([]);
   const [myApplications, setMyApplications] = useState([]);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const API_URL = import.meta.env.VITE_API_URL;
   const [stats, setStats] = useState({
     totalProjects: 0,
     totalApplications: 0,
