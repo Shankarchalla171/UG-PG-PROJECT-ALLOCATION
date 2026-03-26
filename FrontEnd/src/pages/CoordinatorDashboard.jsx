@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import { AuthContext } from "../context/AuthContext";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const department = {
   name: "CSE",
@@ -18,6 +21,78 @@ const recentActivities = [
 
 export default function CoordinatorDashboard() {
   const navigate = useNavigate();
+  const { token } = useContext(AuthContext);
+
+  const [facultyIntakeLimit, setFacultyIntakeLimit] = useState("");
+  const [teamSizeLimit, setTeamSizeLimit] = useState("");
+  const [isSettingIntake, setIsSettingIntake] = useState(false);
+  const [isSettingTeamSize, setIsSettingTeamSize] = useState(false);
+
+  const handleSetFacultyIntakeLimit = async () => {
+    if (!facultyIntakeLimit || isNaN(facultyIntakeLimit) || parseInt(facultyIntakeLimit) <= 0) {
+      alert("Please enter a valid positive number for faculty intake limit");
+      return;
+    }
+
+    setIsSettingIntake(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/deptCoordinators/faculty-intake-limit`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ limit: parseInt(facultyIntakeLimit) })
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        alert(`Error setting faculty intake limit: ${message}`);
+        return;
+      }
+
+      alert("Faculty intake limit set successfully!");
+      setFacultyIntakeLimit("");
+    } catch (error) {
+      console.error("Error setting faculty intake limit:", error);
+      alert("Error setting faculty intake limit. Please try again.");
+    } finally {
+      setIsSettingIntake(false);
+    }
+  };
+
+  const handleSetTeamSizeLimit = async () => {
+    if (!teamSizeLimit || isNaN(teamSizeLimit) || parseInt(teamSizeLimit) <= 0) {
+      alert("Please enter a valid positive number for team size limit");
+      return;
+    }
+
+    setIsSettingTeamSize(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/deptCoordinators/student-teamsize-limit`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ limit: parseInt(teamSizeLimit) })
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        alert(`Error setting team size limit: ${message}`);
+        return;
+      }
+
+      alert("Team size limit set successfully!");
+      setTeamSizeLimit("");
+    } catch (error) {
+      console.error("Error setting team size limit:", error);
+      alert("Error setting team size limit. Please try again.");
+    } finally {
+      setIsSettingTeamSize(false);
+    }
+  };
 
   const pendingAllocations =
     department.totalStudents - department.allocatedStudents;
@@ -47,6 +122,73 @@ export default function CoordinatorDashboard() {
               <StatCard title="Allocated Students" value={department.allocatedStudents} />
               <StatCard title="Available Projects" value={department.totalProjects} />
               <StatCard title="Pending Allocations" value={pendingAllocations} />
+            </div>
+
+            {/* Settings Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Faculty Intake Limit */}
+              <div className="bg-white rounded-2xl border border-orange-200/60 shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-amber-800">Faculty Intake Limit</h3>
+                    <p className="text-xs text-amber-600/70">Set maximum students per faculty</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    min="1"
+                    value={facultyIntakeLimit}
+                    onChange={(e) => setFacultyIntakeLimit(e.target.value)}
+                    placeholder="Enter limit"
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
+                  />
+                  <button
+                    onClick={handleSetFacultyIntakeLimit}
+                    disabled={isSettingIntake}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSettingIntake ? "Setting..." : "Set Limit"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Team Size Limit */}
+              <div className="bg-white rounded-2xl border border-orange-200/60 shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-amber-800">Max Team Size</h3>
+                    <p className="text-xs text-amber-600/70">Set maximum students per team</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    min="1"
+                    value={teamSizeLimit}
+                    onChange={(e) => setTeamSizeLimit(e.target.value)}
+                    placeholder="Enter limit"
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
+                  />
+                  <button
+                    onClick={handleSetTeamSizeLimit}
+                    disabled={isSettingTeamSize}
+                    className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSettingTeamSize ? "Setting..." : "Set Limit"}
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Main Section */}
