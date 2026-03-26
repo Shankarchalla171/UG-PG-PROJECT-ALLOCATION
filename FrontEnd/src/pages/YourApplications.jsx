@@ -9,7 +9,7 @@ import { useLocation } from "react-router-dom";
 
 const YourApplications = () => {
     const { token } = useContext(AuthContext);
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+    const API_URL = import.meta.env.VITE_API_URL;
     const [yourApplications, setYourApplications] = useState([]);
     const [sortBy, setSortBy] = useState('all');
     const location = useLocation();
