@@ -1,6 +1,7 @@
 package com.selab.backend.controller;
 
 import com.selab.backend.Dto.ApplicationDto;
+import com.selab.backend.Dto.LimitsDto;
 import com.selab.backend.Dto.SetLimitRequest;
 import com.selab.backend.models.ProjectApplications;
 import com.selab.backend.models.User;
@@ -37,5 +38,11 @@ public class DeptCoordinatorController {
     public ResponseEntity<?> setStudentTeamLimit(@AuthenticationPrincipal User user,@Valid @RequestBody SetLimitRequest request){
         deptCoordinatorService.setStudentTeamLimit(user,request.getLimit());
         return ResponseEntity.ok().body("student team size limit set successfully ..");
+    }
+
+    @GetMapping("/limits")
+    public ResponseEntity<LimitsDto> getLimits(@AuthenticationPrincipal User user){
+
+        return new ResponseEntity<>( deptCoordinatorService.getLimits(user),HttpStatus.OK);
     }
 }

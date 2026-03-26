@@ -1,5 +1,6 @@
 package com.selab.backend.services;
 
+import com.selab.backend.Dto.LimitsDto;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.models.DeptCoordinator;
 import com.selab.backend.models.Professor;
@@ -33,5 +34,14 @@ public class DeptCoordinatorService {
             throw new RuntimeException("only deptCoordinator can set the faculty student intake limit");
         DeptCoordinator coordinator=deptCoordinatorRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("cant find coordinator with the email : "+ user.getEmail()));
         coordinator.setMaxTeamSize(limit);
+    }
+
+    public LimitsDto getLimits(User user) {
+        DeptCoordinator coordinator=deptCoordinatorRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("cant find coordinator with the email : "+ user.getEmail()));
+
+        return LimitsDto.builder()
+                .facultyIntakeLimit(coordinator.getMaxIntake())
+                .StudentTeamSizeLimit(coordinator.getMaxTeamSize())
+        .build();
     }
 }

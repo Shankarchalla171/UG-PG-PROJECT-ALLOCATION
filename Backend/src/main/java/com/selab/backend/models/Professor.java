@@ -46,4 +46,5 @@ public class Professor {
 
     @OneToMany(mappedBy = "professor" , cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private List<Project> projects;
+    private Long studentsTaken;
 }

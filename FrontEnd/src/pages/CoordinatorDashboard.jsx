@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
@@ -27,6 +27,36 @@ export default function CoordinatorDashboard() {
   const [teamSizeLimit, setTeamSizeLimit] = useState("");
   const [isSettingIntake, setIsSettingIntake] = useState(false);
   const [isSettingTeamSize, setIsSettingTeamSize] = useState(false);
+  const [currentLimits, setCurrentLimits] = useState({ facultyIntakeLimit: null, StudentTeamSizeLimit: null });
+  const [isEditingIntake, setIsEditingIntake] = useState(false);
+  const [isEditingTeamSize, setIsEditingTeamSize] = useState(false);
+
+  const fetchLimits = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/deptCoordinators/limits`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        }
+      });
+
+      if (!response.ok) {
+        console.error("Error fetching limits");
+        return;
+      }
+
+      const data = await response.json();
+      setCurrentLimits(data);
+    } catch (error) {
+      console.error("Error fetching limits:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchLimits();
+    }
+  }, [token]);
 
   const handleSetFacultyIntakeLimit = async () => {
     if (!facultyIntakeLimit || isNaN(facultyIntakeLimit) || parseInt(facultyIntakeLimit) <= 0) {
@@ -37,7 +67,7 @@ export default function CoordinatorDashboard() {
     setIsSettingIntake(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/deptCoordinators/faculty-intake-limit`, {
-        method: "POST",
+        method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -51,8 +81,10 @@ export default function CoordinatorDashboard() {
         return;
       }
 
-      alert("Faculty intake limit set successfully!");
+      alert("Faculty intake limit updated successfully!");
       setFacultyIntakeLimit("");
+      setIsEditingIntake(false);
+      fetchLimits();
     } catch (error) {
       console.error("Error setting faculty intake limit:", error);
       alert("Error setting faculty intake limit. Please try again.");
@@ -70,7 +102,7 @@ export default function CoordinatorDashboard() {
     setIsSettingTeamSize(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/deptCoordinators/student-teamsize-limit`, {
-        method: "POST",
+        method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -84,14 +116,36 @@ export default function CoordinatorDashboard() {
         return;
       }
 
-      alert("Team size limit set successfully!");
+      alert("Team size limit updated successfully!");
       setTeamSizeLimit("");
+      setIsEditingTeamSize(false);
+      fetchLimits();
     } catch (error) {
       console.error("Error setting team size limit:", error);
       alert("Error setting team size limit. Please try again.");
     } finally {
       setIsSettingTeamSize(false);
     }
+  };
+
+  const startEditingIntake = () => {
+    setFacultyIntakeLimit(currentLimits.facultyIntakeLimit?.toString() || "");
+    setIsEditingIntake(true);
+  };
+
+  const startEditingTeamSize = () => {
+    setTeamSizeLimit(currentLimits.StudentTeamSizeLimit?.toString() || "");
+    setIsEditingTeamSize(true);
+  };
+
+  const cancelEditingIntake = () => {
+    setFacultyIntakeLimit("");
+    setIsEditingIntake(false);
+  };
+
+  const cancelEditingTeamSize = () => {
+    setTeamSizeLimit("");
+    setIsEditingTeamSize(false);
   };
 
   const pendingAllocations =
@@ -128,66 +182,132 @@ export default function CoordinatorDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {/* Faculty Intake Limit */}
               <div className="bg-white rounded-2xl border border-orange-200/60 shadow-sm p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-amber-800">Faculty Intake Limit</h3>
-                    <p className="text-xs text-amber-600/70">Set maximum students per faculty</p>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-amber-800">Faculty Intake Limit</h3>
+                      <p className="text-xs text-amber-600/70">Maximum students per faculty</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <input
-                    type="number"
-                    min="1"
-                    value={facultyIntakeLimit}
-                    onChange={(e) => setFacultyIntakeLimit(e.target.value)}
-                    placeholder="Enter limit"
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                  />
-                  <button
-                    onClick={handleSetFacultyIntakeLimit}
-                    disabled={isSettingIntake}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSettingIntake ? "Setting..." : "Set Limit"}
-                  </button>
-                </div>
+
+                {currentLimits.facultyIntakeLimit !== null && !isEditingIntake ? (
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl">
+                    <div>
+                      <p className="text-xs text-blue-600 mb-1">Current Limit</p>
+                      <p className="text-2xl font-bold text-blue-800">{currentLimits.facultyIntakeLimit}</p>
+                    </div>
+                    <button
+                      onClick={startEditingIntake}
+                      className="px-4 py-2 bg-white text-blue-600 font-medium rounded-lg border border-blue-200 hover:bg-blue-50 transition-all duration-200 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex gap-3">
+                      <input
+                        type="number"
+                        min="1"
+                        value={facultyIntakeLimit}
+                        onChange={(e) => setFacultyIntakeLimit(e.target.value)}
+                        placeholder="Enter limit"
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSetFacultyIntakeLimit}
+                        disabled={isSettingIntake}
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSettingIntake ? "Saving..." : (currentLimits.facultyIntakeLimit !== null ? "Update" : "Set Limit")}
+                      </button>
+                      {isEditingIntake && (
+                        <button
+                          onClick={cancelEditingIntake}
+                          className="px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all duration-200"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Team Size Limit */}
               <div className="bg-white rounded-2xl border border-orange-200/60 shadow-sm p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-amber-800">Max Team Size</h3>
-                    <p className="text-xs text-amber-600/70">Set maximum students per team</p>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-amber-800">Max Team Size</h3>
+                      <p className="text-xs text-amber-600/70">Maximum students per team</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <input
-                    type="number"
-                    min="1"
-                    value={teamSizeLimit}
-                    onChange={(e) => setTeamSizeLimit(e.target.value)}
-                    placeholder="Enter limit"
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                  />
-                  <button
-                    onClick={handleSetTeamSizeLimit}
-                    disabled={isSettingTeamSize}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSettingTeamSize ? "Setting..." : "Set Limit"}
-                  </button>
-                </div>
+
+                {currentLimits.StudentTeamSizeLimit !== null && !isEditingTeamSize ? (
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl">
+                    <div>
+                      <p className="text-xs text-purple-600 mb-1">Current Limit</p>
+                      <p className="text-2xl font-bold text-purple-800">{currentLimits.StudentTeamSizeLimit}</p>
+                    </div>
+                    <button
+                      onClick={startEditingTeamSize}
+                      className="px-4 py-2 bg-white text-purple-600 font-medium rounded-lg border border-purple-200 hover:bg-purple-50 transition-all duration-200 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex gap-3">
+                      <input
+                        type="number"
+                        min="1"
+                        value={teamSizeLimit}
+                        onChange={(e) => setTeamSizeLimit(e.target.value)}
+                        placeholder="Enter limit"
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSetTeamSizeLimit}
+                        disabled={isSettingTeamSize}
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSettingTeamSize ? "Saving..." : (currentLimits.StudentTeamSizeLimit !== null ? "Update" : "Set Limit")}
+                      </button>
+                      {isEditingTeamSize && (
+                        <button
+                          onClick={cancelEditingTeamSize}
+                          className="px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all duration-200"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
