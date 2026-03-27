@@ -18,12 +18,13 @@ const ProfessorStudentRequest = () => {
   const [previewData, setPreviewData] = useState(null);
   const [loadingResume, setLoadingResume] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const fetchApplications = async () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:8080/api/professor/applications?page=${page}&status=${filter}`,
+        `${API_URL}/api/professor/applications?page=${page}&status=${filter}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -96,7 +97,7 @@ const ProfessorStudentRequest = () => {
     if (!reviewText.trim()) return;
 
     await fetch(
-      `http://localhost:8080/api/professor/applications/${selectedRequest.applicationId}/review`,
+      `${API_URL}/api/professor/applications/${selectedRequest.applicationId}/review`,
       {
         method: "PUT",
         headers: {
@@ -123,7 +124,7 @@ const ProfessorStudentRequest = () => {
     setLoadingResume(true);
     try {
       const res = await fetch(
-        `http://localhost:8080/api/resumes/${member.studentId}`,
+        `${API_URL}/api/resumes/${member.studentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

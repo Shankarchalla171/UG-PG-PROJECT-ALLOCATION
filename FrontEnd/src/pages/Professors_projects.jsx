@@ -10,7 +10,7 @@ const ProfessorViewProjects = () => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    const API_URL = import.meta.env.VITE_API_URL;
 
     // State for editing (includes domain)
     const [editingId, setEditingId] = useState(null);

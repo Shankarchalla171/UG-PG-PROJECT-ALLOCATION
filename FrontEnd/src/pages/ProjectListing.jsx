@@ -8,7 +8,7 @@ import { useRef } from 'react';
 
 const ProjectListing = () => {
   const { token } = useContext(AuthContext);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const domainRef = useRef(null);
   const facultyRef = useRef(null);
