@@ -222,7 +222,7 @@ public class ConfirmationService {
     public ViewConfirmationsDto confirmApplication(Long applicationId, User currentUser) {
 
         // 1. Get the application
-        ProjectApplications application = applicationRepository.findById(applicationId)
+        ProjectApplications application = applicationRepository.findByAppliedProjectsId(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
 
         // 2. Verify status is CONFIRMED
@@ -289,7 +289,7 @@ public class ConfirmationService {
     public void rejectApplication(Long applicationId, User currentUser) {
 
         // 1. Get the application
-        ProjectApplications application = applicationRepository.findById(applicationId)
+        ProjectApplications application = applicationRepository.findByAppliedProjectsId(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
 
         // 2. Get student and team
