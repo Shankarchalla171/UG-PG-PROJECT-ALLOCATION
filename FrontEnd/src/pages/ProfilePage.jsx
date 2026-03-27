@@ -392,7 +392,7 @@ const ProfilePage = () => {
                                         {getDisplayFields().map((field) => (
                                             <div
                                                 key={field}
-                                                className={`${field === 'areaOfExpertise' || field === 'gScholarLink' ? 'lg:col-span-2' : ''}`}
+                                                className={`${field === 'areaOfExpertise' || field === 'googleScholarLink' ? 'lg:col-span-2' : ''}`}
                                             >
                                                 <div className='flex items-center gap-2.5 text-sm font-semibold text-amber-800 mb-2'>
                                                     <span className='w-8 h-8 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex items-center justify-center text-orange-500'>
@@ -510,7 +510,7 @@ const ProfilePage = () => {
                                     )}
 
                                     {/* Quick Links Card for Faculty */}
-                                    {role === 'faculty' && profile.gScholarLink && (
+                                    {role === 'PROFF' && profile.googleScholarLink && (
                                         <div className='mt-6 bg-white rounded-2xl shadow-lg shadow-orange-100/30 border border-orange-100/50 p-6'>
                                             <h3 className='text-lg font-bold text-amber-900 flex items-center gap-3 mb-4'>
                                                 <div className='w-10 h-10 bg-gradient-to-br from-orange-100 to-amber-100 rounded-xl flex items-center justify-center'>
@@ -521,7 +521,7 @@ const ProfilePage = () => {
                                                 Quick Links
                                             </h3>
                                             <a
-                                                href={profile.gScholarLink}
+                                                href={profile.googleScholarLink}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className='inline-flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200/50 rounded-xl text-orange-600 hover:text-orange-700 hover:border-orange-300 hover:shadow-md transition-all group'
@@ -538,7 +538,7 @@ const ProfilePage = () => {
                                     )}
 
                                     {/* Stats Cards for Faculty */}
-                                    {role === 'faculty' && (
+                                    {role === 'PROFF' && (
                                         <div className='mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4'>
                                             <div className='bg-white rounded-2xl shadow-lg shadow-orange-100/30 border border-orange-100/50 p-6'>
                                                 <div className='flex items-center gap-4'>
@@ -563,7 +563,7 @@ const ProfilePage = () => {
                                                     <div>
                                                         <p className='text-sm text-amber-600 font-medium'>Expertise Areas</p>
                                                         <p className='text-lg font-bold text-amber-900 line-clamp-1'>
-                                                            {profile.areaOfExpertise?.split(',').length || 0} Fields
+                                                            {profile.domain?.split(',').length || 0} Fields
                                                         </p>
                                                     </div>
                                                 </div>
