@@ -1,13 +1,14 @@
 package com.selab.backend.services;
 
 import com.selab.backend.Dto.ProfCreateProfileRequest;
-import com.selab.backend.Dto.ProfDto;
 import com.selab.backend.Dto.UpdateProfileRequest;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.mappers.ProfessorMapper;
+import com.selab.backend.models.DeptCoordinator;
 import com.selab.backend.models.Professor;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.User;
+import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.ProfessorRepository;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.utils.FileValidator;
@@ -20,6 +21,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ public class ProfessorService {
     private final ProfessorRepository professorRepository;
     private final UserRepository userRepository;
     private final ProfessorMapper professorMapper;
+    private  final DeptCoordinatorRepository coordinatorRepository;
 
     public Professor createProfile(@Valid ProfCreateProfileRequest profileRequest, User user) {
         String baseDir = System.getProperty("user.dir") + File.separator+"uploads"+File.separator;
@@ -98,5 +101,17 @@ public class ProfessorService {
         }
         professorMapper.updateProf(request,prof);
         return professorRepository.save(prof);
+    }
+
+    public List<Professor> filterBySlots(Long slots, User user) {
+        if(slots == null)
+              return professorRepository.findAll();
+        else{
+            Professor professor=professorRepository.findByUser(user).orElseThrow(()->new RuntimeException("only professors are allowed to user this filter"));
+            DeptCoordinator coordinator= coordinatorRepository.findByDeptName(professor.getDepartmentName()).orElseThrow(()-> new RuntimeException("no dept coordinator found for your department"));
+            Long maxIntakeAllowed=coordinator.getMaxIntake();
+            long allowed=maxIntakeAllowed-slots;
+            return professorRepository.findAllByStudentsTakenLessThanEqual(allowed);
+        }
     }
 }
