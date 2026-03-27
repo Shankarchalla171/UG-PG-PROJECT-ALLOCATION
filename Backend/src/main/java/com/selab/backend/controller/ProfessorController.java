@@ -3,6 +3,7 @@ package com.selab.backend.controller;
 
 import com.selab.backend.Dto.ProfCreateProfileRequest;
 import com.selab.backend.Dto.ProfDto;
+import com.selab.backend.Dto.ProfessorSlotListingDto;
 import com.selab.backend.Dto.UpdateProfileRequest;
 import com.selab.backend.mappers.ProfessorMapper;
 import com.selab.backend.models.Professor;
@@ -15,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/professors")
@@ -40,6 +43,13 @@ public class ProfessorController {
     public ResponseEntity<ProfDto> updateProfile(@AuthenticationPrincipal User user, @ModelAttribute UpdateProfileRequest request){
         Professor updatedProf = professorService.update(user, request);
         return new ResponseEntity<>(professorMapper.toDto(updatedProf),HttpStatus.OK);
+    }
+
+    @GetMapping()
+    public ResponseEntity<List<ProfessorSlotListingDto>> getAllUsingSlotsLeft(@AuthenticationPrincipal User user,@RequestParam(required = false) Long slots){
+        List<Professor> professors=professorService.filterBySlots(slots,user);
+        List<ProfessorSlotListingDto> professorSlotListingDtos=professors.stream().map(professorMapper::toSlotsDto).toList();
+        return new ResponseEntity<>(professorSlotListingDtos, HttpStatus.OK);
     }
 
 }

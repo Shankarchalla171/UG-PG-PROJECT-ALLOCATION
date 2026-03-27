@@ -28,5 +28,6 @@ public class DeptCoordinator {
     @OneToMany(mappedBy = "deptCoordinator", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private List<Project> projects;
 
-
+    private Long maxIntake;
+    private Long maxTeamSize;
 }

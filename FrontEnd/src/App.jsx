@@ -18,6 +18,7 @@ import Student_confirmations from './pages/Student_confirmations';
 import ProfilePage from './pages/ProfilePage';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
+import CoordinatorDashboard from './pages/CoordinatorDashboard';
 
 function App() {
     return (
@@ -38,6 +39,7 @@ function App() {
         <Route path='/professor_student_request' element={<Professor_student_request/>}/> 
         <Route path='/dept_view_allocations' element={<Dept_view_allocatoins/>}/> 
         <Route path='/dept_enforce_deadlines' element={<Dept_enforce_deadlines/>}/>
+        <Route path='/dept_dashboard' element={<CoordinatorDashboard/>}/>
         <Route path='/profile' element={<ProfilePage/>}/>
         <Route path='/verify-email' element={<VerifyEmail/>}/>
         <Route path='/forgot-password' element={<ForgotPassword/>}/>
