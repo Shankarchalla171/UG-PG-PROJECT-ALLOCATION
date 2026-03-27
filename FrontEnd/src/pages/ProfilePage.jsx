@@ -392,7 +392,7 @@ const ProfilePage = () => {
                                         {getDisplayFields().map((field) => (
                                             <div
                                                 key={field}
-                                                className={`${field === 'areaOfExpertise' || field === 'googleScholarLink' ? 'lg:col-span-2' : ''}`}
+                                                className={`${field === 'areaOfExpertise' ? 'lg:col-span-2' : ''}`}
                                             >
                                                 <div className='flex items-center gap-2.5 text-sm font-semibold text-amber-800 mb-2'>
                                                     <span className='w-8 h-8 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex items-center justify-center text-orange-500'>
