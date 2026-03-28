@@ -35,6 +35,8 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       TZ: ${TZ}
+    volumes:
+        - ./Backend/uploads:/app/uploads  
     depends_on:
       mysql:
         condition: service_healthy
