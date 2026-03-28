@@ -418,6 +418,22 @@ const CreateProfile = () => {
                     </div>
 
                     <div className={FIELD_CLASS}>
+                      <label htmlFor="experience" className={LABEL_CLASS}>Years of Experience *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        id="experience"
+                        name="experience"
+                        value={professorForm.experience}
+                        onChange={handleProfessorChange}
+                        required
+                        className={INPUT_CLASS}
+                        placeholder="Enter your years of teaching/research experience"
+                      />
+                    </div>
+
+                    <div className={FIELD_CLASS}>
                       <label htmlFor="officeNumber" className={LABEL_CLASS}>Office Number *</label>
                       <input
                         type="text"
