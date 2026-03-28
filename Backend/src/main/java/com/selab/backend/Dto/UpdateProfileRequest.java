@@ -1,8 +1,6 @@
 package com.selab.backend.Dto;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,26 +8,34 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
 @Data
+
+// NOTE !!! - dont write NotNull/ NotBlank validations here since this is a used in only patch request
 public class UpdateProfileRequest {
-    @NotBlank(message = "name cant be blank or null")
+
+    @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
     private  String name;
-    @NotBlank(message = "department name cant be blank or null")
+
+
     private  String departmentName;
-    @NotBlank(message = "roll number cant be blank or null")
-    private  String rollNumber;
-    @NotBlank(message = "college email id cant be blank or null")
-    private  String collegeEmailId;
-    @NotBlank(message = "email cant be blank or null")
+    @Email
     private  String email;
-    @NotBlank(message = "domain cant be blank or null")
     private  String domain;
-    @NotNull(message = "experience cant be blank or null")
     @Min(0)
     private Integer experience;
-    @NotBlank(message = "google scholar link cant be blank or null")
     private  String googleScholarLink;
-    @NotBlank(message = "office number cant be blank or null")
     private  String officeNumber;
+
+    @Pattern(
+            regexp = "^[BMP][0-9]{6}[A-Z]{2}$",
+            message = "Invalid roll number format (e.g., B230668CS)"
+    )
+    private  String rollNumber;
+
+    @Pattern(
+            regexp = "^[A-Za-z0-9._]+@nitc\\.ac\\.in$",
+            message = "College email must end with @nitc.ac.in"
+    )
+    private  String collegeEmailId;
 
     private  MultipartFile profilePhoto;
     private  MultipartFile resume;

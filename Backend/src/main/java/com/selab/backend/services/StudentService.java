@@ -106,7 +106,7 @@ public class StudentService {
             return studentRepository.save(student);
 
         } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException("Error while creating student profile", e);
         }
     }
 

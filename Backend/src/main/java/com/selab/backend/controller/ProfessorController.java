@@ -40,7 +40,7 @@ public class ProfessorController {
     }
 
     @PatchMapping
-    public ResponseEntity<ProfDto> updateProfile(@AuthenticationPrincipal User user, @ModelAttribute UpdateProfileRequest request){
+    public ResponseEntity<ProfDto> updateProfile(@AuthenticationPrincipal User user, @ModelAttribute@Valid UpdateProfileRequest request){
         Professor updatedProf = professorService.update(user, request);
         return new ResponseEntity<>(professorMapper.toDto(updatedProf),HttpStatus.OK);
     }
