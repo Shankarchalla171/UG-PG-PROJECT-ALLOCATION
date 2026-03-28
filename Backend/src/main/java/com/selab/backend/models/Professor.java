@@ -40,6 +40,9 @@ public class Professor {
     @Column(nullable = false)
     private String profilePhotoPath;
 
+    @Column(nullable = false)
+    private Integer experience;
+
     @OneToOne
     @JoinColumn(name="user_id")
     private User user;
