@@ -15,6 +15,7 @@ public class ProfDto {
     private String email;
     private String departmentName;
     private String domain;
+    private Integer experience;
     private String officeNumber;
     private String googleScholarLink;
     private String profilePhotoPath;
