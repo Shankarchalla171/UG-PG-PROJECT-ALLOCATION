@@ -53,7 +53,7 @@ public class StudentController {
     }
 
     @PatchMapping
-    public ResponseEntity<StudentDto> updateStudent(@ModelAttribute  UpdateProfileRequest request, @AuthenticationPrincipal User user){
+    public ResponseEntity<StudentDto> updateStudent(@ModelAttribute@Valid  UpdateProfileRequest request, @AuthenticationPrincipal User user){
         Student updatedStudent=studentService.update(request,user);
         return new ResponseEntity<>(studentMapper.toDto(updatedStudent),HttpStatus.OK);
     }
