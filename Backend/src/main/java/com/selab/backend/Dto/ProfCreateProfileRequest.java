@@ -23,6 +23,8 @@ public class ProfCreateProfileRequest {
     private String googleScholarLink;
     @NotBlank(message = "officeNumber  cant be blank or null")
     private String officeNumber;
+    @NotBlank(message = "experience cant be blank or null")
+    private Integer experience;
 
     private MultipartFile profilePhoto;
 }
