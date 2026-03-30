@@ -68,7 +68,7 @@ const ProfessorStudentRequest = () => {
   const handleAccept = async (id) => {
     setActionLoading('accept');
     try {
-      await fetch(`http://localhost:8080/api/professor/applications/${id}/accept`, {
+      await fetch(`${API_URL}/api/professor/applications/${id}/accept`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -82,7 +82,7 @@ const ProfessorStudentRequest = () => {
   const handleReject = async (id) => {
     setActionLoading('reject');
     try {
-      await fetch(`http://localhost:8080/api/professor/applications/${id}/reject`, {
+      await fetch(`${API_URL}/api/professor/applications/${id}/reject`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
