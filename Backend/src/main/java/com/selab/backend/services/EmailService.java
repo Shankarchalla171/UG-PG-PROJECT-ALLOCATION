@@ -1,6 +1,8 @@
 package com.selab.backend.services;
 
 import com.selab.backend.models.EmailDetails;
+import com.selab.backend.models.Professor;
+import com.selab.backend.models.Project;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.Properties;
 
 @Service
@@ -127,5 +130,50 @@ public class EmailService implements EmailServiceInterface {
         mailMessage.setText(body);
 
         javaMailSender.send(mailMessage);
+    }
+
+     private String loadInvitationTemplate(){
+         try {
+             ClassPathResource resource = new ClassPathResource("templates/Invitation.html");
+             byte[] bytes = StreamUtils.copyToByteArray(resource.getInputStream());
+             return new String(bytes, StandardCharsets.UTF_8);
+         } catch (IOException e) {
+             log.error("Failed to load email template", e);
+             throw new RuntimeException("Failed to load email template", e);
+         }
+     }
+
+    @Override
+    public void sendCollaboratioMail(Project project, Professor senderP, Professor receiver) {
+        try{
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(sender);
+            helper.setTo(receiver.getEmail());
+            helper.setSubject("New Collaboration Request");
+
+            // Load and populate template
+            String template = loadInvitationTemplate();
+            String emailContent = template
+                    .replace("${receiverName}", receiver.getName())
+                    .replace("${senderName}", senderP.getName())
+                    .replace("${department}", senderP.getDepartmentName())
+                    .replace("${projectTitle}", project.getTitle())
+                    .replace("${projectDescription}", project.getDescription())
+                    .replace("${peopleNeeded}", String.valueOf(project.getSlots()))
+                    .replace("${domains}",
+                            Optional.ofNullable(project.getDomain()).orElse("N/A"));
+
+
+            helper.setText(emailContent, true);
+
+            javaMailSender.send(message);
+            log.info("Invitation email sent to: {}", receiver.getEmail());
+
+        }catch (MessagingException e) {
+            log.error("Failed to send collaboration email to: {}", receiver.getName(), e);
+            throw new RuntimeException("Failed to send collaboration email", e);
+        }
     }
 }
