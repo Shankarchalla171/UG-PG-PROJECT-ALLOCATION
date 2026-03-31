@@ -38,8 +38,8 @@ public class TeamService {
         team.setTeamLead(teamLead);
         team.setIsFinalized(false);
 
-         teamLead.setTeam(team);
-         teamLead.setTeamRole(TeamRole.TEAMlEAD);
+        teamLead.setTeam(team);
+        teamLead.setTeamRole(TeamRole.TEAMlEAD);
 
         team.setTeamMembers(List.of(teamLead));
 
@@ -79,11 +79,6 @@ public class TeamService {
 
         Student student =studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("user with email"+user.getEmail()+" not Found"));
         Team currentTeam = teamRepository.findTeamWithMembers(teamId).orElseThrow(()-> new RuntimeException("team not found"));
-
-        if(currentTeam.getIsFinalized()){
-            throw new TeamInvalidException("The team you wished to join has been finalized");
-        }
-
         if(currentTeam.getTeamMembers().size()==3){
             throw new TeamInvalidException("This team is full! Maximum 3 members allowed.");
         }
@@ -122,6 +117,27 @@ public class TeamService {
         }
         teamMember.setTeamRole(null);
         teamMember.setTeam(null);
+    }
+
+    @Transactional
+    public TeamDto transferLead(User user, Long newLeadId) {
+        Student oldLead = studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("user with email"+user.getEmail()+" not Found"));
+        Student newLead = studentRepository.findByStudentId(newLeadId).orElseThrow(()-> new UserNotFoundException("user with email"+user.getEmail()+" not Found"));
+
+        Team team = teamRepository.findByTeamLead(oldLead).orElseThrow(()-> new TeamInvalidException("Team with teamLead : "+oldLead.getName()+" not found"));
+
+        oldLead.setTeamRole(TeamRole.TEAM_MEMBER);
+        newLead.setTeamRole(TeamRole.TEAMlEAD);
+
+        team.setTeamLead(newLead);
+
+        List<StudentDto> membersDto= team.getTeamMembers().stream()
+                .map(studentMapper::toDto).toList();
+        return TeamDto.builder()
+                .teamId(team.getTeamId())
+                .members(membersDto)
+                .isFinalized(team.getIsFinalized())
+                .build();
     }
 
     @Transactional
