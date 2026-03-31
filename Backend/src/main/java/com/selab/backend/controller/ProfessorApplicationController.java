@@ -25,7 +25,8 @@ public class ProfessorApplicationController {
             @AuthenticationPrincipal User user,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
-            @RequestParam(required = false) String status
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long projectId
     ){
 
         Professor professor = professorRepository.findByUser(user)
@@ -33,7 +34,7 @@ public class ProfessorApplicationController {
 
         Pageable pageable = PageRequest.of(page, size);
 
-        return applicationService.getProfessorApplications(professor, status, pageable);
+        return applicationService.getProfessorApplications(professor, status, projectId, pageable);
     }
 
     @PutMapping("/applications/{id}/review")

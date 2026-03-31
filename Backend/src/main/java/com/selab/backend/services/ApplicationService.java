@@ -82,14 +82,31 @@ public class ApplicationService {
 
     public Page<ProfessorApplicationDto> getProfessorApplications(Professor professor,
                                                                   String status,
+                                                                  Long projectId,
                                                                   Pageable pageable) {
 
         Page<ProjectApplications> applications;
 
-        if(status != null && !status.isEmpty() && !status.equalsIgnoreCase("all")){
+        boolean hasStatus = status != null && !status.isEmpty() && !status.equalsIgnoreCase("all");
+        boolean hasProject = projectId != null;
+
+        if (hasProject && hasStatus) {
             ApplicationStatus enumStatus = ApplicationStatus.valueOf(status.toUpperCase());
             applications = projectApplicationsRepository
-                    .findByProject_ProfessorAndStatus(professor, enumStatus, pageable);
+                    .findByProject_ProjectIdAndProject_ProfessorAndStatus(
+                            projectId, professor, enumStatus, pageable);
+
+        } else if (hasProject) {
+            applications = projectApplicationsRepository
+                    .findByProject_ProjectIdAndProject_Professor(
+                            projectId, professor, pageable);
+
+        } else if (hasStatus) {
+            ApplicationStatus enumStatus = ApplicationStatus.valueOf(status.toUpperCase());
+            applications = projectApplicationsRepository
+                    .findByProject_ProfessorAndStatus(
+                            professor, enumStatus, pageable);
+
         } else {
             applications = projectApplicationsRepository
                     .findByProject_Professor(professor, pageable);
