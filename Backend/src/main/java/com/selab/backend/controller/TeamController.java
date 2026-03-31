@@ -40,6 +40,11 @@ public class TeamController {
         return ResponseEntity.ok().body("you left the Team Succesfully");
     }
 
+    @PutMapping("/transfer-leadership/{newLeadId}")
+    public ResponseEntity<TeamDto> transferLead(@PathVariable Long newLeadId,@AuthenticationPrincipal  User user){
+        return new ResponseEntity<>(teamService.transferLead(user,newLeadId),HttpStatus.OK);
+    }
+
     @PutMapping("/finalize/{teamId}")
     public ResponseEntity<?> finaliseTeam(@AuthenticationPrincipal User user,@PathVariable UUID teamId){
         System.out.println("reached controller");
