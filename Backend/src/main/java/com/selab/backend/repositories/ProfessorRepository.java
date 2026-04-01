@@ -1,6 +1,7 @@
 package com.selab.backend.repositories;
 
 import com.selab.backend.models.Professor;
+import com.selab.backend.models.Project;
 import com.selab.backend.models.User;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,4 +17,16 @@ public interface ProfessorRepository extends JpaRepository<Professor,Long> {
 
     Optional<Professor> findByProfessorId(Long professorId);
     List<Professor> findAllByStudentsTakenLessThanEqual(Long allowed);
+
+    @Query("""
+        SELECT p FROM Professor p
+        LEFT JOIN Collaboration c
+            ON c.receiver = p AND c.project = :project
+        WHERE c.id IS NULL
+        AND p.studentsTaken <= :allowed
+   """)
+    List<Professor> findAllAvailableForProject(
+            @Param("project") Project project,
+            @Param("allowed") Long allowed
+    );
 }
