@@ -3,7 +3,8 @@ package com.selab.backend.models;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Entity(name="collaborations")
+@Entity
+@Table(name="collaborations")
 @Getter
 @Setter
 @Builder
@@ -14,13 +15,13 @@ public class Collaboration {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
+    @ManyToOne
     private Professor sender;
 
-    @OneToOne
+    @ManyToOne
     private Professor receiver;
 
-    @OneToOne
+    @ManyToOne
     private Project project;
 
     @Enumerated(EnumType.STRING)

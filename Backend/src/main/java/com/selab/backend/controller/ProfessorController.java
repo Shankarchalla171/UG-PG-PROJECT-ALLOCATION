@@ -45,9 +45,9 @@ public class ProfessorController {
         return new ResponseEntity<>(professorMapper.toDto(updatedProf),HttpStatus.OK);
     }
 
-    @GetMapping("/collaborate")
-    public ResponseEntity<List<ProfessorSlotListingDto>> getAllUsingSlotsLeft(@AuthenticationPrincipal User user,@RequestParam(required = false) Long slots){
-        List<Professor> professors=professorService.filterBySlots(slots,user);
+    @GetMapping("/{projectId}/available-professors")
+    public ResponseEntity<List<ProfessorSlotListingDto>> getAllUsingSlotsLeft(@AuthenticationPrincipal User user,@PathVariable Long projectId){
+        List<Professor> professors=professorService.filterBySlots(projectId,user);
         List<ProfessorSlotListingDto> professorSlotListingDtos=professors.stream().map(professorMapper::toSlotsDto).toList();
         return new ResponseEntity<>(professorSlotListingDtos, HttpStatus.OK);
     }

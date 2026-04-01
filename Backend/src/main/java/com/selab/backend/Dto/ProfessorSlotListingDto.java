@@ -6,6 +6,7 @@ import java.util.List;
 
 @Data
 public class ProfessorSlotListingDto {
+    private Long professorId;
     private String name;
     private String profilePhotoPath;
     private List<String> domains;

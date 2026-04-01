@@ -46,4 +46,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long>, JpaSpec
     List<Project> findByProfessorProfessorId(Long professorId);
     List<Project> findBySlots(int slots);
     List<Project> findBySlotsGreaterThanEqual(int minSlots);
+
+    Optional<Project> findByProjectId(Long projectId);
 }
