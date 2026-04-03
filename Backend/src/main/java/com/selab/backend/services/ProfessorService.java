@@ -2,14 +2,13 @@ package com.selab.backend.services;
 
 import com.selab.backend.Dto.ProfCreateProfileRequest;
 import com.selab.backend.Dto.UpdateProfileRequest;
+import com.selab.backend.exceptions.ResourceNotFoundException;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.mappers.ProfessorMapper;
-import com.selab.backend.models.DeptCoordinator;
-import com.selab.backend.models.Professor;
-import com.selab.backend.models.Role;
-import com.selab.backend.models.User;
+import com.selab.backend.models.*;
 import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.ProfessorRepository;
+import com.selab.backend.repositories.ProjectRepository;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.utils.FileValidator;
 import jakarta.validation.Valid;
@@ -28,6 +27,7 @@ import java.util.List;
 public class ProfessorService {
     private final ProfessorRepository professorRepository;
     private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
     private final ProfessorMapper professorMapper;
     private  final DeptCoordinatorRepository coordinatorRepository;
 
@@ -42,7 +42,7 @@ public class ProfessorService {
         try{
             new File(profilePhotoDir).mkdirs();
 
-            String profilePhotoName=user.getId()+"-"+photo.getOriginalFilename();
+            String profilePhotoName=user.getId()+"_"+photo.getOriginalFilename();
             String profilePhotoPath=profilePhotoDir+profilePhotoName;
             String relativePath="uploads/profilePhoto/"+profilePhotoName;
             photo.transferTo(new File(profilePhotoPath));
@@ -58,6 +58,7 @@ public class ProfessorService {
                     .googleScholarLink(profileRequest.getGoogleScholarLink())
                     .officeNumber(profileRequest.getOfficeNumber())
                     .profilePhotoPath(relativePath)
+                    .experience(profileRequest.getExperience())
                     .user(user)
                     .build();
             return professorRepository.save(professor);
@@ -103,15 +104,19 @@ public class ProfessorService {
         return professorRepository.save(prof);
     }
 
-    public List<Professor> filterBySlots(Long slots, User user) {
-        if(slots == null)
-              return professorRepository.findAll();
-        else{
+    public List<Professor> filterBySlots(Long projectId, User user) {
+
             Professor professor=professorRepository.findByUser(user).orElseThrow(()->new RuntimeException("only professors are allowed to user this filter"));
             DeptCoordinator coordinator= coordinatorRepository.findByDeptName(professor.getDepartmentName()).orElseThrow(()-> new RuntimeException("no dept coordinator found for your department"));
+            Project project=projectRepository.findByProjectId(projectId).orElseThrow(()-> new ResourceNotFoundException("Project with ProjectID  : "+projectId+" not found"));
+
             Long maxIntakeAllowed=coordinator.getMaxIntake();
-            long allowed=maxIntakeAllowed-slots;
-            return professorRepository.findAllByStudentsTakenLessThanEqual(allowed);
-        }
+
+            long allowed=maxIntakeAllowed-(project.getSlots()/2);
+            return  professorRepository
+                    .findAllAvailableForProject(project,allowed)
+                    .stream()
+                    .filter(prof -> !prof.getProfessorId().equals(professor.getProfessorId()))
+                    .toList();
     }
 }

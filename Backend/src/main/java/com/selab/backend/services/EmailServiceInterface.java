@@ -1,5 +1,7 @@
 package com.selab.backend.services;
 import com.selab.backend.models.EmailDetails;
+import com.selab.backend.models.Professor;
+import com.selab.backend.models.Project;
 
 
 public interface EmailServiceInterface {
@@ -10,4 +12,5 @@ public interface EmailServiceInterface {
     String sendMailWithAttachment(EmailDetails details);
 
     void sendRemainerMail(String to,String subject, String body);
+    void sendCollaboratioMail(Project project, Professor senderP, Professor receiver);
 }

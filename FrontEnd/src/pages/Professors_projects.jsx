@@ -12,6 +12,13 @@ const ProfessorViewProjects = () => {
     const [error, setError] = useState(null);
     const API_URL = import.meta.env.VITE_API_URL;
 
+    // Collaborate feature states
+    const [showCollaborateModal, setShowCollaborateModal] = useState(false);
+    const [collaborateStep, setCollaborateStep] = useState('select'); // 'select' or 'results'
+    const [selectedProject, setSelectedProject] = useState(null);
+    const [collaborateProfessors, setCollaborateProfessors] = useState([]);
+    const [collaborateLoading, setCollaborateLoading] = useState(false);
+
     // State for editing (includes domain)
     const [editingId, setEditingId] = useState(null);
     const [editFormData, setEditFormData] = useState({
@@ -188,6 +195,87 @@ const ProfessorViewProjects = () => {
         }
     };
 
+    // Collaborate feature functions
+    const handleCollaborateClick = () => {
+        setShowCollaborateModal(true);
+        setCollaborateStep('select');
+        setSelectedProject(null);
+        setCollaborateProfessors([]);
+    };
+
+    const handleProjectSelect = async (project) => {
+        setSelectedProject(project);
+        setCollaborateLoading(true);
+        
+        const requiredSlots = Math.floor(project.slots / 2);
+        
+        try {
+            const url=`${API_URL}/api/professors/${project.projectId}/available-professors`
+            console.log(`Fetching collaborating professors from: ${url} with for project: ${project.title} requiring ${requiredSlots} slots`);
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to send collaboration request: ${errorData}`);
+            }
+
+            const professors = await response.json();
+            console.log('Collaborating professors:', professors);
+            setCollaborateProfessors(professors);
+            setCollaborateStep('results');
+        } catch (err) {
+            alert(`Error: ${err.message}`);
+        } finally {
+            setCollaborateLoading(false);
+        }
+    };
+
+    const handleSendCollaborationRequest = async (professor) => {
+      setCollaborateStep("sending request");
+       setCollaborateLoading(true);
+       console.log(`Sending collaboration request to Professor ${professor.name} for project ${selectedProject.title}`);
+       const url=`${API_URL}/api/collaborations`;
+      
+       try{
+           const response = await fetch(url,{
+               method: "POST",
+               headers:{
+                 "Authorization": `Bearer ${token}`,
+                 "Content-Type": "application/json"
+               },
+               body: JSON.stringify({
+                   receiverId: professor.professorId,
+                   projectId: selectedProject.projectId,
+               }),
+            });
+
+            if(!response.ok){
+                const errorData = await response.json();
+                throw new Error(`Failed to send collaboration request: ${errorData}`);
+            }
+
+            alert(`Collaboration request sent to Professor ${professor.name}`);
+            handleProjectSelect(selectedProject); // Refresh the list 
+           
+       }catch(err){
+           alert(`Error: ${err.message}`);
+       }finally{
+              setCollaborateLoading(false);
+       }
+    };
+
+    const closeCollaborateModal = () => {
+        setShowCollaborateModal(false);
+        setCollaborateStep('select');
+        setSelectedProject(null);
+        setCollaborateProfessors([]);
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
@@ -235,9 +323,20 @@ const ProfessorViewProjects = () => {
                 <div className="flex-1 p-6 ml-0 md:ml-0 mt-16">
                     <div className="max-w-7xl mx-auto">
                         {/* Header */}
-                        <div className="mb-8">
-                            <h1 className="text-3xl font-bold text-amber-800">Your Projects</h1>
-                            <p className="text-amber-600/70 mt-2">Manage and track all your projects</p>
+                        <div className="mb-8 flex justify-between items-center">
+                            <div>
+                                <h1 className="text-3xl font-bold text-amber-800">Your Projects</h1>
+                                <p className="text-amber-600/70 mt-2">Manage and track all your projects</p>
+                            </div>
+                            <button
+                                onClick={handleCollaborateClick}
+                                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 flex items-center gap-2"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                Collaborate
+                            </button>
                         </div>
 
                         {/* Stats Cards (unchanged) */}
@@ -469,6 +568,160 @@ const ProfessorViewProjects = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Collaborate Modal */}
+            {showCollaborateModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-orange-200 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50">
+                            <h2 className="text-xl font-bold text-amber-800">
+                                {collaborateStep === 'select' ? 'Select a Project to Collaborate' : 'Available Professors'}
+                            </h2>
+                            <button
+                                onClick={closeCollaborateModal}
+                                className="p-2 rounded-lg text-amber-700 hover:bg-amber-100 transition-colors"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="p-6 overflow-y-auto max-h-[60vh]">
+                            {collaborateLoading ? (
+                                <div className="text-center py-8">
+                                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-amber-500 border-r-transparent"></div>
+                                    <p className="mt-4 text-amber-600">{collaborateStep === 'sending request' ? 'Sending collaboration request...' : 'Loading projects...'}</p>
+                                </div>
+                            ) : collaborateStep === 'select' ? (
+                                // Project Selection Step
+                                <div className="space-y-3">
+                                    {projects.length === 0 ? (
+                                        <p className="text-center text-amber-600/70 py-8">No projects available</p>
+                                    ) : (
+                                        projects.map((project) => (
+                                            <div
+                                                key={project.projectId}
+                                                onClick={() => handleProjectSelect(project)}
+                                                className="p-4 border border-orange-200 rounded-xl cursor-pointer hover:bg-amber-50 hover:border-amber-400 transition-all duration-300"
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <h3 className="font-semibold text-amber-800">{project.title}</h3>
+                                                        <p className="text-sm text-amber-600/70 mt-1">{project.description}</p>
+                                                        <div className="flex gap-4 mt-2 text-xs text-amber-600">
+                                                            <span>Slots: {project.slots}</span>
+                                                            <span>Required: {Math.floor(project.slots / 2)}</span>
+                                                        </div>
+                                                    </div>
+                                                    <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            ) : (
+                                // Results Step - Professor Cards
+                                <div className="space-y-4">
+                                    {selectedProject && (
+                                        <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                                            <p className="text-sm text-amber-700">
+                                                <span className="font-medium">Selected Project:</span> {selectedProject.title}
+                                            </p>
+                                            <p className="text-xs text-amber-600 mt-1">
+                                                Looking for professors with {Math.floor(selectedProject.slots / 2)} available slots
+                                            </p>
+                                        </div>
+                                    )}
+                                    
+                                    {collaborateProfessors.length === 0 ? (
+                                        <p className="text-center text-amber-600/70 py-8">No professors found matching your requirements</p>
+                                    ) : (
+                                        collaborateProfessors.map((professor, index) => (
+                                            <div
+                                                key={professor.professorId || index}
+                                                className="p-4 border border-orange-200 rounded-xl bg-white hover:shadow-md transition-all duration-300"
+                                            >
+                                                <div className="flex items-start gap-4">
+                                                    {/* Profile Photo */}
+                                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-amber-100 flex-shrink-0">
+                                                        {professor.profilePhotoPath ? (
+                                                            <img
+                                                                src={`${API_URL}/${professor.profilePhotoPath}`}
+                                                                alt={professor.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-amber-600 text-xl font-bold">
+                                                                {professor.name?.charAt(0)?.toUpperCase() || 'P'}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Professor Details */}
+                                                    <div className="flex-1">
+                                                        <h3 className="font-semibold text-amber-800 text-lg">{professor.name}</h3>
+                                                        
+                                                        {/* Domains */}
+                                                        {professor.domains && (
+                                                            <div className="mt-2">
+                                                                <p className="text-xs text-amber-600/70 mb-1">Domains</p>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {(Array.isArray(professor.domains) 
+                                                                        ? professor.domains 
+                                                                        : professor.domains.split(',')
+                                                                    ).slice(0, 4).map((domain, idx) => (
+                                                                        <span
+                                                                            key={idx}
+                                                                            className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full"
+                                                                        >
+                                                                            {domain.trim()}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Send Button */}
+                                                    <button
+                                                        onClick={() => handleSendCollaborationRequest(professor)}
+                                                        className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 flex items-center gap-2"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                                        </svg>
+                                                        Send
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+
+                                    {/* Back Button */}
+                                    <button
+                                        onClick={() => {
+                                            setCollaborateStep('select');
+                                            setSelectedProject(null);
+                                            setCollaborateProfessors([]);
+                                        }}
+                                        className="mt-4 px-4 py-2 text-amber-700 hover:bg-amber-100 rounded-lg transition-colors flex items-center gap-2"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                        Back to Projects
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
