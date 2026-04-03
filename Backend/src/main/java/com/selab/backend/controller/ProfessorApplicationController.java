@@ -61,5 +61,4 @@ public class ProfessorApplicationController {
 
         return "Application rejected";
     }
-
 }

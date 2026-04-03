@@ -25,6 +25,9 @@ public class Project {
     @JoinColumn(name="professorId",nullable = false)
     private Professor professor;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="coGuideId")
+    private Professor coGuide;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="deptCoordinatorId",nullable = false)
