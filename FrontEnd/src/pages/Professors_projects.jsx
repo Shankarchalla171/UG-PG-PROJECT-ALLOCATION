@@ -236,9 +236,11 @@ const ProfessorViewProjects = () => {
     };
 
     const handleSendCollaborationRequest = async (professor) => {
+      setCollaborateStep("sending request");
+       setCollaborateLoading(true);
        console.log(`Sending collaboration request to Professor ${professor.name} for project ${selectedProject.title}`);
        const url=`${API_URL}/api/collaborations`;
-       
+      
        try{
            const response = await fetch(url,{
                method: "POST",
@@ -262,6 +264,8 @@ const ProfessorViewProjects = () => {
            
        }catch(err){
            alert(`Error: ${err.message}`);
+       }finally{
+              setCollaborateLoading(false);
        }
     };
 
@@ -589,7 +593,7 @@ const ProfessorViewProjects = () => {
                             {collaborateLoading ? (
                                 <div className="text-center py-8">
                                     <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-amber-500 border-r-transparent"></div>
-                                    <p className="mt-4 text-amber-600">Finding professors...</p>
+                                    <p className="mt-4 text-amber-600">{collaborateStep === 'sending request' ? 'Sending collaboration request...' : 'Loading projects...'}</p>
                                 </div>
                             ) : collaborateStep === 'select' ? (
                                 // Project Selection Step

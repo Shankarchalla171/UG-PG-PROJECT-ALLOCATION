@@ -19,6 +19,7 @@ import ProfilePage from './pages/ProfilePage';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import CoordinatorDashboard from './pages/CoordinatorDashboard';
+import Professor_Collaboration from './pages/Professor_Collaboration';
 
 function App() {
     return (
@@ -43,7 +44,7 @@ function App() {
         <Route path='/profile' element={<ProfilePage/>}/>
         <Route path='/verify-email' element={<VerifyEmail/>}/>
         <Route path='/forgot-password' element={<ForgotPassword/>}/>
-      
+        <Route path='/professor_collaboration' element={<Professor_Collaboration/>}/>
       </Routes>
     </>
   )
