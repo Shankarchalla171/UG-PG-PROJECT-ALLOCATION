@@ -61,6 +61,8 @@ public class CollaborationService {
                     .receiverName(collaboration.getReceiver().getName())
                     .senderName(collaboration.getSender().getName())
                     .status(collaboration.getStatus().toString())
+                    .senderProfilePhotoPath(collaboration.getSender().getProfilePhotoPath())
+                    .receiverProfilePhotoPath(collaboration.getReceiver().getProfilePhotoPath())
                     .build();
             collaborationDtos.add(collaborationDto);
         }

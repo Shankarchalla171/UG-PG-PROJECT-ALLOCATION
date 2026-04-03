@@ -12,7 +12,9 @@ import lombok.NoArgsConstructor;
 public class CollaborationDto {
     private Long id;
     private String senderName;
+    private String senderProfilePhotoPath;
     private String receiverName;
+    private String receiverProfilePhotoPath;
     private String status;
     private String projectTitle;
 }
