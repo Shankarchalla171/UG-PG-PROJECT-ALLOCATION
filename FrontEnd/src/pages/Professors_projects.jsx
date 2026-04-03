@@ -126,7 +126,7 @@ const ProfessorViewProjects = () => {
 
             console.log('Saving edits with payload:', payload);
 
-            const response = await fetch(`/api/projects/${id}`, {
+            const response = await fetch(`http://localhost:8080/api/projects/${id}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
