@@ -7,9 +7,8 @@ import java.time.LocalDate;
 @Data
 public class DeadLineDto {
     private Long id;
-    private String title;
+    private Phase title;
     private  String description;
-    private Phase phase;
     private LocalDate startDate;
     private LocalDate endDate;
     private String status;
