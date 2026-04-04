@@ -14,11 +14,11 @@ import java.util.Optional;
 public interface DeadLineRepository extends JpaRepository<Event,Long> {
     List<Event> findAllByDeptCoordinator(DeptCoordinator deptCoordinator);
 
-    @Query("select max(d.endDate) from Event d where d.deptCoordinator = :coordinator and d.phase= :phaseType")
+    @Query("select max(d.endDate) from Event d where d.deptCoordinator = :coordinator and d.title= :phaseType")
     LocalDate findDeadLineEndDate(@Param("coordinator") DeptCoordinator coordinator, @Param("phaseType") Phase phaseType);
 
 
-    @Query("select min(d.startDate) from Event d where d.deptCoordinator = :coordinator and d.phase= :phaseType")
+    @Query("select min(d.startDate) from Event d where d.deptCoordinator = :coordinator and d.title= :phaseType")
     LocalDate findDeadLineStartDate(@Param("coordinator") DeptCoordinator coordinator, @Param("phaseType") Phase phaseType);
 
     Optional<Event> findById(Long id);
