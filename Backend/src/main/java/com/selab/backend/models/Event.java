@@ -18,13 +18,10 @@ public class Event {
     private Long id;
 
     @Column(nullable = false)
-    private String title;
-
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private Phase phase;
+    private Phase title;
 
-//    @Column(nullable = false)
+
     private LocalDate startDate;
 
     @Column(nullable = false)

@@ -30,22 +30,21 @@ public class DeadlineService {
         }
         DeptCoordinator deptCoordinator=deptCoordinatorRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("user with email id : "+user.getEmail()+" not found"));
 
-        if(request.getPhase().equals(Phase.TEAM_FORMATION) || request.getPhase().equals(Phase.PROJECT_CREATION)){
+        if(request.getTitle().equals(Phase.TEAM_FORMATION) || request.getTitle().equals(Phase.PROJECT_CREATION)){
              LocalDate allocationStartDate= deadLineRepository.findDeadLineStartDate(deptCoordinator, Phase.PROJECT_ALLOCATION);
              if(allocationStartDate != null && request.getEndDate().isAfter(allocationStartDate))
-                   throw new RuntimeException(request.getPhase()+" events can only end before the existing Project Allocation starts..");
+                   throw new RuntimeException(request.getTitle()+" events can only end before the existing Project Allocation starts..");
         }
-        if(request.getPhase().equals(Phase.PROJECT_ALLOCATION)){
+        if(request.getTitle().equals(Phase.PROJECT_ALLOCATION)){
             LocalDate teamFormationEndDate = deadLineRepository.findDeadLineEndDate(deptCoordinator,Phase.TEAM_FORMATION);
             LocalDate creationEndDate= deadLineRepository.findDeadLineEndDate(deptCoordinator,Phase.PROJECT_CREATION);
 
             if(teamFormationEndDate != null && request.getStartDate().isBefore(teamFormationEndDate))
-                 throw new RuntimeException("Allocation can only start after TeamFormation ends");
+                 throw new RuntimeException("Allocation can only start after TeamFormation and Project Creation end");
             if(creationEndDate != null &&  request.getStartDate().isBefore(creationEndDate))
-                 throw new RuntimeException("Allocation can only after Project Creation, please check you team formation and project creation end dates");
+                 throw new RuntimeException("Allocation can only start after TeamFormation and Project Creation end");
         }
         Event createdDeadLine= Event.builder()
-                .phase(request.getPhase())
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .startDate(request.getStartDate())
@@ -79,12 +78,12 @@ public class DeadlineService {
         if(!deptCoordinator.getDeptCoordinatorId().equals(currentDeadLine.getDeptCoordinator().getDeptCoordinatorId()))
             throw  new RuntimeException("That deadLine does not belong to you, you can only update your deadlines..");
 
-        Phase currentPhase = (request.getPhase() != null) ? request.getPhase() : currentDeadLine.getPhase();
+        Phase currentPhase = (request.getTitle() != null) ? request.getTitle() : currentDeadLine.getTitle();
 
         if(request.getEndDate() != null && currentPhase.equals(Phase.TEAM_FORMATION) || currentPhase.equals(Phase.PROJECT_CREATION)){
             LocalDate allocationStartDate= deadLineRepository.findDeadLineStartDate(deptCoordinator, Phase.PROJECT_ALLOCATION);
             if(allocationStartDate != null && request.getEndDate().isAfter(allocationStartDate))
-                throw new RuntimeException("events of the "+currentPhase+"phase  can only start or end before the existing events of the  Project Allocation phase start..");
+                throw new RuntimeException("events of the "+currentPhase+" phase  can only start or end before the existing events of the  Project Allocation phase start..");
         }
         if(request.getStartDate() != null && currentPhase.equals(Phase.PROJECT_ALLOCATION)){
             LocalDate teamFormationEndDate = deadLineRepository.findDeadLineEndDate(deptCoordinator,Phase.TEAM_FORMATION);
