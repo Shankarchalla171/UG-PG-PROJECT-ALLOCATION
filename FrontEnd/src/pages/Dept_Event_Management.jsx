@@ -6,11 +6,11 @@ import { AuthContext } from '../context/AuthContext';
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const normalizeStatus = (status = '') => status.toLowerCase();
-const normalizePhase = (phase = '') => phase.toUpperCase();
+const normalizePhase = (phase = '') => String(phase || '').toUpperCase();
 
 const normalizeEvent = (event = {}) => ({
   ...event,
-  phase: normalizePhase(event.phase),
+  title: normalizePhase(event.title),
   status: event.status || 'Upcoming',
   startDate: event.startDate || '',
   endDate: event.endDate || '',
@@ -57,21 +57,24 @@ const DeptEventManagement = () => {
     fetchEvents();
   }, [])
 
+  // Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
   const [newEvent, setNewEvent] = useState({
-    phase: "",
     title: "",
     description: "",
-    startDate: "",
-    endDate: "",
-    notifications: true
+    startDate: getTodayDate(),
+    endDate: ""
   });
 
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
-    phase: "",
+    title: "",
     startDate: "",
     endDate: "",
-    title: "",
     description: ""
   });
   const [originalForm, setOriginalForm] = useState(null);
@@ -171,12 +174,10 @@ const DeptEventManagement = () => {
 
       // Reset form and close
       setNewEvent({
-        phase: "",
         title: "",
         description: "",
-        startDate: "",
-        endDate: "",
-        notifications: true
+        startDate: getTodayDate(),
+        endDate: ""
       });
       setShowAddForm(false);
 
@@ -186,8 +187,8 @@ const DeptEventManagement = () => {
   }
 
   const handleAddEvent = () => {
-    if (!newEvent.phase || !newEvent.title || !newEvent.startDate || !newEvent.endDate) {
-      alert('Please fill in all required fields');
+    if (!newEvent.title || !newEvent.endDate) {
+      alert('Please fill in all required fields (Phase and End Date)');
       return;
     }
     addEvent();
@@ -196,10 +197,9 @@ const DeptEventManagement = () => {
   const handleEditEvent = (id) => {
     const event = events.find(e => e.id === id);
     const formData = {
-      phase: normalizePhase(event.phase || ''),
+      title: normalizePhase(event.title || ''),
       startDate: event.startDate || '',
       endDate: event.endDate || '',
-      title: event.title || '',
       description: event.description || ''
     };
     setEditingId(id);
@@ -254,8 +254,8 @@ const DeptEventManagement = () => {
   }
 
   const handleSaveEdit = (id) => {
-    if (!editForm.phase || !editForm.startDate || !editForm.endDate) {
-      alert('Please fill in all required fields');
+    if (!editForm.title || !editForm.endDate) {
+      alert('Please fill in all required fields (Phase and End Date)');
       return;
     }
     saveEdit(id);
@@ -562,8 +562,8 @@ const DeptEventManagement = () => {
                             Phase *
                           </label>
                           <select
-                            value={newEvent.phase}
-                            onChange={(e) => setNewEvent({ ...newEvent, phase: e.target.value })}
+                            value={newEvent.title}
+                            onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                             className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
                           >
                             <option value="">Select Phase</option>
@@ -575,14 +575,27 @@ const DeptEventManagement = () => {
 
                         <div>
                           <label className="block text-sm font-medium text-amber-600/70 mb-2">
-                            Title *
+                            Start Date
                           </label>
                           <input
-                            type="text"
-                            value={newEvent.title}
-                            onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                            type="date"
+                            value={newEvent.startDate}
+                            min={getTodayDate()}
+                            onChange={(e) => setNewEvent({ ...newEvent, startDate: e.target.value })}
                             className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                            placeholder="Enter event title"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-amber-600/70 mb-2">
+                            End Date *
+                          </label>
+                          <input
+                            type="date"
+                            value={newEvent.endDate}
+                            min={getTodayDate()}
+                            onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
+                            className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
                           />
                         </div>
 
@@ -598,43 +611,6 @@ const DeptEventManagement = () => {
                             placeholder="Enter event description"
                           />
                         </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-amber-600/70 mb-2">
-                            Start Date *
-                          </label>
-                          <input
-                            type="date"
-                            value={newEvent.startDate}
-                            onChange={(e) => setNewEvent({ ...newEvent, startDate: e.target.value })}
-                            className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-amber-600/70 mb-2">
-                            End Date *
-                          </label>
-                          <input
-                            type="date"
-                            value={newEvent.endDate}
-                            onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
-                            className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                          />
-                        </div>
-
-                        {/* <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id="notifications"
-                            checked={newEvent.notifications}
-                            onChange={(e) => setNewEvent({ ...newEvent, notifications: e.target.checked })}
-                            className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
-                          />
-                          <label htmlFor="notifications" className="text-sm text-amber-600/70">
-                            Send email notifications
-                          </label>
-                        </div> */}
                       </div>
 
                       <div className="flex gap-3 mt-6">
@@ -672,8 +648,8 @@ const DeptEventManagement = () => {
                           <div>
                             <label className="block text-sm font-medium text-amber-700 mb-1">Phase *</label>
                             <select
-                              value={editForm.phase}
-                              onChange={(e) => setEditForm({ ...editForm, phase: e.target.value })}
+                              value={editForm.title}
+                              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                               className="w-full px-4 py-2.5 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
                             >
                               <option value="">Select Phase</option>
@@ -682,22 +658,13 @@ const DeptEventManagement = () => {
                               <option value="PROJECT_ALLOCATION">Project Allocation</option>
                             </select>
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-amber-700 mb-1">Title</label>
-                            <input
-                              type="text"
-                              value={editForm.title}
-                              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                              className="w-full px-4 py-2.5 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                              placeholder="Event title"
-                            />
-                          </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="block text-sm font-medium text-amber-700 mb-1">Start Date *</label>
+                              <label className="block text-sm font-medium text-amber-700 mb-1">Start Date</label>
                               <input
                                 type="date"
                                 value={editForm.startDate}
+                                min={getTodayDate()}
                                 onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
                                 className="w-full px-3 py-2.5 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800 text-sm"
                               />
@@ -707,12 +674,13 @@ const DeptEventManagement = () => {
                               <input
                                 type="date"
                                 value={editForm.endDate}
+                                min={getTodayDate()}
                                 onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
                                 className="w-full px-3 py-2.5 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800 text-sm"
                               />
                             </div>
                           </div>
-                          <div className="md:col-span-2 lg:col-span-3">
+                          <div className="md:col-span-2 lg:col-span-2">
                             <label className="block text-sm font-medium text-amber-700 mb-1">Description</label>
                             <textarea
                               value={editForm.description}
@@ -744,20 +712,19 @@ const DeptEventManagement = () => {
                         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                           {/* Phase Icon & Status */}
                           <div className="flex items-center gap-3 lg:w-56 shrink-0">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-transform duration-300 hover:scale-110 hover:rotate-3 ${getPhaseColor(event.phase)}`}>
-                              {getPhaseIcon(event.phase)}
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-transform duration-300 hover:scale-110 hover:rotate-3 ${getPhaseColor(event.title)}`}>
+                              {getPhaseIcon(event.title)}
                             </div>
                             <div>
                               <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 ${getStatusColor(event.status)}`}>
                                 {getStatusText(event.status)}
                               </span>
-                              <p className="text-xs text-amber-600/70 mt-1">{formatPhaseLabel(event.phase)}</p>
                             </div>
                           </div>
 
-                          {/* Title & Description */}
+                          {/* Phase as Title & Description */}
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-semibold text-amber-800 truncate">{event.title}</h3>
+                            <h3 className="text-lg font-semibold text-amber-800 truncate">{formatPhaseLabel(event.title)}</h3>
                             <p className="text-sm text-amber-600/70 mt-0.5 line-clamp-2">{event.description}</p>
                           </div>
 
