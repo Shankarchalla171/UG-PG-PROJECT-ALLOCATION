@@ -1,5 +1,6 @@
 package com.selab.backend.repositories;
 
+import com.selab.backend.models.Professor;
 import com.selab.backend.models.Project;
 import com.selab.backend.models.Team;
 import org.springframework.data.domain.Page;
@@ -48,4 +49,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long>, JpaSpec
     List<Project> findBySlotsGreaterThanEqual(int minSlots);
 
     Optional<Project> findByProjectId(Long projectId);
+
+    @Query("select count(p) from Project p where p.professor = :professor or p.coGuide = :professor")
+    Long countByProfessor(Professor professor);
 }

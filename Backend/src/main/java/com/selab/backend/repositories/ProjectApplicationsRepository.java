@@ -63,5 +63,17 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
             ApplicationStatus status,
             Pageable pageable
     );
+
+     @Query("select pa.status, count(pa) from ProjectApplications  pa where pa.team =:team group by pa.status")
+     List <Object[]>countByTeam(Team team);
+
+    @Query("""
+        SELECT pa.status, COUNT(pa)
+        FROM ProjectApplications pa
+        WHERE pa.project.professor = :professor 
+           OR pa.project.coGuide = :professor
+        GROUP BY pa.status
+   """)
+    List<Object[]> countByProfessor(Professor professor);
     
 }
