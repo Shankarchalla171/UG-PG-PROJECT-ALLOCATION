@@ -127,6 +127,7 @@ public class ApplicationService {
 
             dto.setTeamId(application.getTeam().getTeamId());
             dto.setTeamName(application.getTeam().getTeamName());
+            dto.setTeamSize(application.getTeam().getTeamMembers().size());
 
             dto.setProfessorReview(application.getProfessorReview());
 

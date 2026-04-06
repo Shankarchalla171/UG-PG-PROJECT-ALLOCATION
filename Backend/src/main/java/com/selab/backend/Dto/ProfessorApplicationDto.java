@@ -11,6 +11,7 @@ public class ProfessorApplicationDto {
     private String projectTitle;
     private UUID teamId;
     private String teamName;
+    private int teamSize;
     private String message;
     private String status;
     private String professorReview;
