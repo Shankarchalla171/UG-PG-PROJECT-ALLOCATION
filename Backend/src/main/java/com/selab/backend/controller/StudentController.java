@@ -1,9 +1,6 @@
 package com.selab.backend.controller;
 
-import com.selab.backend.Dto.StudentProfileRequest;
-import com.selab.backend.Dto.StudentDto;
-import com.selab.backend.Dto.TeamDto;
-import com.selab.backend.Dto.UpdateProfileRequest;
+import com.selab.backend.Dto.*;
 import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.Student;
@@ -76,5 +73,10 @@ public class StudentController {
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
         return ResponseEntity.ok(projectService.getProjectFilters(student));
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<StudentDashboardDto> getDashboard(@AuthenticationPrincipal User user){
+        return new ResponseEntity<>(studentService.getDashboard(user),HttpStatus.OK);
     }
 }

@@ -1,10 +1,7 @@
 package com.selab.backend.controller;
 
 
-import com.selab.backend.Dto.ProfCreateProfileRequest;
-import com.selab.backend.Dto.ProfDto;
-import com.selab.backend.Dto.ProfessorSlotListingDto;
-import com.selab.backend.Dto.UpdateProfileRequest;
+import com.selab.backend.Dto.*;
 import com.selab.backend.mappers.ProfessorMapper;
 import com.selab.backend.models.Professor;
 import com.selab.backend.models.Role;
@@ -50,6 +47,11 @@ public class ProfessorController {
         List<Professor> professors=professorService.filterBySlots(projectId,user);
         List<ProfessorSlotListingDto> professorSlotListingDtos=professors.stream().map(professorMapper::toSlotsDto).toList();
         return new ResponseEntity<>(professorSlotListingDtos, HttpStatus.OK);
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<ProfDashboardDto> getDashboard(@AuthenticationPrincipal User user){
+        return new ResponseEntity<>(professorService.getDashboard(user),HttpStatus.OK);
     }
 
 
