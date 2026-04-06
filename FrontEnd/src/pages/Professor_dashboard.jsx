@@ -8,6 +8,7 @@ const ProfessorDashboard = () => {
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
+  const [recentApplications, setRecentApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -30,16 +31,57 @@ const ProfessorDashboard = () => {
       setDashboardData(data);
     } catch (error) {
       console.error("Error fetching professor dashboard data:", error.message);
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const fetchRecentApplications = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/professor/applications?page=0&size=3`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message);
+      }
+
+      const data = await response.json();
+      console.log("Fetched recent applications:", data);
+      setRecentApplications(data?.content || data || []);
+    } catch (error) {
+      console.error("Error fetching recent applications:", error.message);
     }
   };
 
   useEffect(() => {
     if (token) {
-      fetchDashboardData();
+      Promise.all([fetchDashboardData(), fetchRecentApplications()])
+        .finally(() => setLoading(false));
     }
   }, [token]);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'CONFIRMED':
+      case 'APPROVED':
+        return 'bg-green-100 text-green-700';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
 
   if (loading || !dashboardData) {
     return (
@@ -227,6 +269,59 @@ const ProfessorDashboard = () => {
                 </div>
               </div>
             </button>
+          </div>
+
+          {/* Recent Applications */}
+          <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-amber-900 flex items-center gap-2">
+                <svg className="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                </svg>
+                Recent Applications
+              </h3>
+              <button
+                onClick={() => navigate("/professor_student_request")}
+                className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+              >
+                View All →
+              </button>
+            </div>
+
+            {recentApplications.length > 0 ? (
+              <div className="space-y-3">
+                {recentApplications.map((app) => (
+                  <div
+                    key={app.applicationId}
+                    className="flex items-start justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-orange-100/50 hover:border-orange-200 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold text-amber-900">{app.teamName} • {app.teamSize} member{app.teamSize !== 1 ? 's' : ''}</p>
+                      <p className="text-sm text-amber-600">{app.projectTitle}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className={`text-xs font-medium px-3 py-1 rounded-full ${getStatusStyle(app.status)}`}>
+                          {app.status}
+                        </span>
+                        <span className="text-xs text-amber-500">Applied on {formatDate(app.appliedOn)}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate("/professor_student_request")}
+                      className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-sm font-medium hover:bg-orange-200 transition-colors"
+                    >
+                      Review
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <svg className="w-12 h-12 mx-auto mb-3 text-amber-200" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                </svg>
+                <p className="text-amber-600">No applications yet. Once students apply, they'll appear here.</p>
+              </div>
+            )}
           </div>
 
           {/* Important Notice */}
