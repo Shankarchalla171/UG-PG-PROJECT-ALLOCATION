@@ -6,6 +6,7 @@ import com.selab.backend.models.User;
 import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.services.ApplicationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
@@ -30,7 +31,7 @@ public class StudentApplicationController {
         Student student = studentRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("appliedOn").descending());
 
         return applicationService.getApplications(student, pageable);
     }

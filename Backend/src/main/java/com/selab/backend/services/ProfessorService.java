@@ -1,15 +1,13 @@
 package com.selab.backend.services;
 
 import com.selab.backend.Dto.ProfCreateProfileRequest;
+import com.selab.backend.Dto.ProfDashboardDto;
 import com.selab.backend.Dto.UpdateProfileRequest;
 import com.selab.backend.exceptions.ResourceNotFoundException;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.mappers.ProfessorMapper;
 import com.selab.backend.models.*;
-import com.selab.backend.repositories.DeptCoordinatorRepository;
-import com.selab.backend.repositories.ProfessorRepository;
-import com.selab.backend.repositories.ProjectRepository;
-import com.selab.backend.repositories.UserRepository;
+import com.selab.backend.repositories.*;
 import com.selab.backend.utils.FileValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +18,9 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +30,7 @@ public class ProfessorService {
     private final ProjectRepository projectRepository;
     private final ProfessorMapper professorMapper;
     private  final DeptCoordinatorRepository coordinatorRepository;
+    private final ProjectApplicationsRepository projectApplicationsRepository;
 
     public Professor createProfile(@Valid ProfCreateProfileRequest profileRequest, User user) {
         String baseDir = System.getProperty("user.dir") + File.separator+"uploads"+File.separator;
@@ -118,5 +119,44 @@ public class ProfessorService {
                     .stream()
                     .filter(prof -> !prof.getProfessorId().equals(professor.getProfessorId()))
                     .toList();
+    }
+
+    public ProfDashboardDto getDashboard(User user) {
+        if(!user.getRole().equals(Role.PROFF))
+            throw new RuntimeException("Please request Dashboard according to your  role");
+
+        Professor professor= professorRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("professor not found with mail id : "+user.getEmail()));
+
+        Map<ApplicationStatus, Long> stats= getApplicationsStats(professor);
+        Long pending = stats.getOrDefault(ApplicationStatus.PENDING, 0L);
+        Long approved = stats.getOrDefault(ApplicationStatus.CONFIRMED, 0L);
+        Long rejected = stats.getOrDefault(ApplicationStatus.REJECTED, 0L);
+        Long totalProjects= projectRepository.countByProfessor(professor);
+        Long total = pending + approved + rejected;
+
+       return ProfDashboardDto.builder()
+               .name(professor.getName())
+               .departmentName(professor.getDepartmentName())
+               .email(professor.getEmail())
+               .profilePhotoPath(professor.getProfilePhotoPath())
+               .totalApplication(total)
+               .approved(approved)
+               .pending(pending)
+               .rejected(rejected)
+               .totalProjects(totalProjects)
+               .build();
+    }
+
+    private Map<ApplicationStatus, Long> getApplicationsStats(Professor professor) {
+        List<Object[]> results=projectApplicationsRepository.countByProfessor(professor);
+        Map<ApplicationStatus, Long>  stats=new HashMap<>();
+
+        for (Object[] row : results) {
+            ApplicationStatus status = (ApplicationStatus) row[0];
+            Long count = (Long) row[1];
+            stats.put(status, count);
+        }
+
+        return stats;
     }
 }
