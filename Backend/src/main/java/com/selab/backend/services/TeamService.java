@@ -2,6 +2,7 @@ package com.selab.backend.services;
 
 import com.selab.backend.Dto.StudentDto;
 import com.selab.backend.Dto.TeamDto;
+import com.selab.backend.exceptions.ResourceNotFoundException;
 import com.selab.backend.exceptions.TeamInvalidException;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.mappers.StudentMapper;
@@ -37,6 +38,11 @@ public class TeamService {
         Team team= new Team();
         team.setTeamLead(teamLead);
         team.setIsFinalized(false);
+
+        String fullName = teamLead.getName();
+        String teamName = fullName + "_and_team";
+
+        team.setTeamName(teamName);
 
         teamLead.setTeam(team);
         teamLead.setTeamRole(TeamRole.TEAMlEAD);
@@ -131,6 +137,11 @@ public class TeamService {
 
         team.setTeamLead(newLead);
 
+        String fullName = newLead.getName();
+        String teamName = fullName + "_and_team";
+
+        team.setTeamName(teamName);
+
         List<StudentDto> membersDto= team.getTeamMembers().stream()
                 .map(studentMapper::toDto).toList();
         return TeamDto.builder()
@@ -157,5 +168,22 @@ public class TeamService {
         System.out.println("reached update statement");
         team.setIsFinalized(true);
         System.out.println("update done");
+    }
+
+    public TeamDto getTeamFromId(UUID teamId) {
+        Team team = teamRepository.findTeamByTeamId(teamId).orElseThrow(()-> new ResourceNotFoundException("Team not found.."));
+        List<StudentDto> memberDtos= team.getTeamMembers().stream()
+                .sorted((a, b) -> {
+                    if (a.getTeamRole() == TeamRole.TEAMlEAD) return -1;
+                    if (b.getTeamRole() == TeamRole.TEAMlEAD) return 1;
+                    return 0;
+                })
+                .map(studentMapper::toDto).toList();
+
+        return TeamDto.builder()
+                .teamId(team.getTeamId())
+                .members(memberDtos)
+                .isFinalized(team.getIsFinalized())
+                .build();
     }
 }
