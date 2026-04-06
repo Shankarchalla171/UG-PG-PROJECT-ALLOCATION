@@ -27,6 +27,11 @@ public class TeamController {
     public ResponseEntity<TeamDto> getTeam(@AuthenticationPrincipal User user) {
         return new ResponseEntity<>(teamService.getTeam(user), HttpStatus.OK);
     }
+    @GetMapping("/{teamId}")
+    public ResponseEntity<TeamDto> getTeam(@PathVariable("teamId") UUID teamId) {
+      return new ResponseEntity<>(teamService.getTeamFromId(teamId),HttpStatus.OK);
+
+    }
 
     @PostMapping("/{teamId}")
     public ResponseEntity<TeamDto> joinTeams(@AuthenticationPrincipal User user, @PathVariable String teamId) {
