@@ -125,20 +125,8 @@ public class ApplicationService {
                 dto.setAppliedOn(application.getAppliedOn().toLocalDate());
             }
 
-            // ✅ Map team using existing DTOs
-            List<StudentDto> members = application.getTeam()
-                    .getTeamMembers()
-                    .stream()
-                    .map(studentMapper::toDto)
-                    .toList();
-
-            TeamDto teamDto = TeamDto.builder()
-                    .teamId(application.getTeam().getTeamId())
-                    .members(members)
-                    .isFinalized(application.getTeam().getIsFinalized())
-                    .build();
-
-            dto.setTeam(teamDto);
+            dto.setTeamId(application.getTeam().getTeamId());
+            dto.setTeamName(application.getTeam().getTeamName());
 
             dto.setProfessorReview(application.getProfessorReview());
 
