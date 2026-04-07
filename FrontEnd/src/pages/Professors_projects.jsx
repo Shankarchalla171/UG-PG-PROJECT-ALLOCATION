@@ -75,7 +75,7 @@ const ProfessorViewProjects = () => {
         if (!window.confirm('Are you sure you want to delete this project?')) return;
 
         try {
-            const response = await fetch(`/api/projects/${id}`, {
+            const response = await fetch(`http://localhost:8080/api/projects/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
