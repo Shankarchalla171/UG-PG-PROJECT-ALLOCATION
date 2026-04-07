@@ -5,11 +5,7 @@ import { AuthContext } from "../context/AuthContext";
 
 /* ─── Helper: format team display name ──────────────────────────────────── */
 const getTeamName = (req) => {
-  const members = req.team?.members;
-  if (!members || members.length === 0) return "Unknown Team";
-  const leader = members.find((m) => m.teamRole === "TEAMlEAD") || members[0];
-  const firstName = leader.name?.split(" ")[0] || leader.name || "Student";
-  return `${firstName}_and_team`;
+  return req.teamName || "Unknown Team";
 };
 
 /* ─── Expandable Horizontal Application Card ─────────────────────────────── */
@@ -42,7 +38,8 @@ const ApplicationCard = ({
   };
 
   const s = statusStyles[req.status] || statusStyles.PENDING;
-  const memberCount = req.team?.members?.length || 0;
+  // ← Use teamSize from DTO directly, no more req.team?.members
+  const memberCount = req.teamSize || 0;
   const teamName = getTeamName(req);
 
   const handleMouseEnter = () => {
@@ -133,7 +130,7 @@ const ApplicationCard = ({
               <p className="text-sm font-medium text-amber-800">
                 {req.appliedOn
                   ? new Date(req.appliedOn).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-                  : req.appliedOn || "N/A"}
+                  : "N/A"}
               </p>
             </div>
           </div>
@@ -273,6 +270,25 @@ const ApplicationCard = ({
   );
 };
 
+/* ─── Team Members Skeleton Loader ───────────────────────────────────────── */
+const TeamMembersSkeleton = ({ count = 2 }) => (
+  <div className="space-y-2">
+    {Array.from({ length: count }).map((_, i) => (
+      <div
+        key={i}
+        className="flex items-center gap-3 p-2 lg:p-3 rounded-lg bg-amber-50 border border-orange-100 animate-pulse"
+      >
+        <div className="w-8 h-8 rounded-full bg-orange-200 shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-3 bg-orange-200 rounded w-2/3" />
+          <div className="h-2.5 bg-orange-100 rounded w-1/3" />
+        </div>
+        <div className="w-14 h-6 bg-orange-100 rounded-lg" />
+      </div>
+    ))}
+  </div>
+);
+
 /* ─── Main Page ──────────────────────────────────────────────────────────── */
 const ProfessorStudentRequest = () => {
   const { token } = useContext(AuthContext);
@@ -280,7 +296,7 @@ const ProfessorStudentRequest = () => {
   const [requests, setRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [reviewText, setReviewText] = useState("");
-  const [editingPanelReview, setEditingPanelReview] = useState(false); // ← NEW
+  const [editingPanelReview, setEditingPanelReview] = useState(false);
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -290,6 +306,11 @@ const ProfessorStudentRequest = () => {
   const [previewData, setPreviewData] = useState(null);
   const [loadingResume, setLoadingResume] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
+
+  // ← NEW: lazy team fetch state
+  const [teamDetails, setTeamDetails] = useState(null);
+  const [loadingTeam, setLoadingTeam] = useState(false);
+  const teamCache = useRef({}); // keyed by teamId string
 
   const params = new URLSearchParams(window.location.search);
   const projectIdFromURL = params.get("projectId") ? String(params.get("projectId")) : null;
@@ -337,6 +358,42 @@ const ProfessorStudentRequest = () => {
       setPage(0);
     }
   }, []);
+
+  // ← NEW: fetch team details lazily, with cache
+  const fetchTeamDetails = async (teamId) => {
+    if (!teamId) return;
+
+    // Return cached result immediately
+    if (teamCache.current[teamId]) {
+      setTeamDetails(teamCache.current[teamId]);
+      return;
+    }
+
+    setLoadingTeam(true);
+    setTeamDetails(null);
+    try {
+      const res = await fetch(`${API_URL}/api/teams/${teamId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch team");
+      const data = await res.json();
+      teamCache.current[teamId] = data;
+      setTeamDetails(data);
+    } catch (err) {
+      console.error("Error fetching team details", err);
+      setTeamDetails(null);
+    } finally {
+      setLoadingTeam(false);
+    }
+  };
+
+  // ← NEW: unified handler for selecting a request (card click OR view details)
+  const handleSelectRequest = (req) => {
+    setSelectedRequest(req);
+    setReviewText(req.professorReview || "");
+    setEditingPanelReview(false);
+    fetchTeamDetails(req.teamId);
+  };
 
   const formatStatus = (status) => {
     switch (status) {
@@ -480,7 +537,10 @@ const ProfessorStudentRequest = () => {
     const handleEsc = (e) => {
       if (e.key === "Escape") {
         if (previewData) setPreviewData(null);
-        else if (selectedRequest) setSelectedRequest(null);
+        else if (selectedRequest) {
+          setSelectedRequest(null);
+          setTeamDetails(null); // ← clear team on close
+        }
       }
     };
     window.addEventListener("keydown", handleEsc);
@@ -549,7 +609,7 @@ const ProfessorStudentRequest = () => {
                   <span className="text-xs font-medium text-amber-600">Project:</span>
                   <select
                     value={projectFilter}
-                    onChange={(e) => { setProjectFilter(e.target.value); setPage(0); setSelectedRequest(null); }}
+                    onChange={(e) => { setProjectFilter(e.target.value); setPage(0); setSelectedRequest(null); setTeamDetails(null); }}
                     className="px-3 py-1.5 rounded-lg text-xs border border-orange-200 bg-white text-amber-700"
                   >
                     <option value="all">All Projects</option>
@@ -560,16 +620,16 @@ const ProfessorStudentRequest = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { key: "all", label: "All" },
-                    { key: "PENDING", label: "Pending" },
-                    { key: "CONFIRMED", label: "Accepted" },
-                    { key: "REJECTED", label: "Rejected" },
-                    { key: "TEAM_CONFIRMED", label: "Team Confirmed" },
+                    { key: "all",           label: "All" },
+                    { key: "PENDING",       label: "Pending" },
+                    { key: "CONFIRMED",     label: "Accepted" },
+                    { key: "REJECTED",      label: "Rejected" },
+                    { key: "TEAM_CONFIRMED",label: "Team Confirmed" },
                     { key: "TEAM_REJECTED", label: "Team Declined" },
                   ].map((f) => (
                     <button
                       key={f.key}
-                      onClick={() => { setFilter(f.key); setPage(0); setSelectedRequest(null); }}
+                      onClick={() => { setFilter(f.key); setPage(0); setSelectedRequest(null); setTeamDetails(null); }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                         filter === f.key
                           ? "bg-orange-500 text-white"
@@ -616,11 +676,7 @@ const ProfessorStudentRequest = () => {
                     key={req.applicationId}
                     req={req}
                     isSelected={selectedRequest?.applicationId === req.applicationId}
-                    onClick={() => {
-                      setSelectedRequest(req);
-                      setReviewText(req.professorReview || "");
-                      setEditingPanelReview(false); // ← RESET on card switch
-                    }}
+                    onClick={() => handleSelectRequest(req)}      // ← updated
                     onQuickReviewSave={handleQuickReviewSave}
                     formatStatus={formatStatus}
                     token={token}
@@ -666,7 +722,7 @@ const ProfessorStudentRequest = () => {
               <div className="w-full max-w-md mx-auto lg:max-w-none">
 
                 <button
-                  onClick={() => setSelectedRequest(null)}
+                  onClick={() => { setSelectedRequest(null); setTeamDetails(null); }}
                   className="lg:hidden mb-4 flex items-center gap-2 text-amber-700 hover:text-orange-600 transition-colors"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -702,7 +758,7 @@ const ProfessorStudentRequest = () => {
                     </p>
                   </div>
 
-                  {/* ── Your Review (matches ApplicationCard pattern) ── */}
+                  {/* ── Your Review ── */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2">
@@ -778,34 +834,57 @@ const ProfessorStudentRequest = () => {
                     )}
                   </div>
 
+                  {/* ── Team Members (lazy loaded) ── */}
                   <div className="mb-4">
                     <p className="text-xs font-medium text-amber-600 mb-2 uppercase tracking-wide">
-                      Team Members ({selectedRequest.team?.members?.length || 0})
+                      Team Members ({selectedRequest.teamSize || 0})
                     </p>
-                    <div className="space-y-2">
-                      {selectedRequest.team?.members?.map((m) => (
-                        <div key={m.studentId} className="flex items-center justify-between p-2 lg:p-3 rounded-lg bg-amber-50 border border-orange-100 hover:bg-orange-50 transition-colors">
-                          <div className="flex items-center gap-2 lg:gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-400 to-amber-400 flex items-center justify-center text-xs font-bold text-white">
-                              {m.name?.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-amber-800">{m.name}</p>
-                              <p className="text-xs text-amber-500">{m.rollNumber}</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleViewResume(m)}
-                            disabled={loadingResume}
-                            className={`text-xs px-2 lg:px-3 py-1 lg:py-1.5 rounded-lg font-medium transition-colors ${
-                              loadingResume ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100"
-                            }`}
+
+                    {loadingTeam ? (
+                      // Skeleton: use teamSize from DTO so skeleton has the right count
+                      <TeamMembersSkeleton count={selectedRequest.teamSize || 2} />
+                    ) : teamDetails?.members?.length > 0 ? (
+                      <div className="space-y-2">
+                        {teamDetails.members.map((m) => (
+                          <div
+                            key={m.studentId}
+                            className="flex items-center justify-between p-2 lg:p-3 rounded-lg bg-amber-50 border border-orange-100 hover:bg-orange-50 transition-colors"
                           >
-                            {loadingResume ? "..." : "Resume"}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                            <div className="flex items-center gap-2 lg:gap-3">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-400 to-amber-400 flex items-center justify-center text-xs font-bold text-white">
+                                {m.name?.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-amber-800 flex items-center gap-1.5">
+                                  {m.name}
+                                  {m.teamRole === "TEAMlEAD" && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 font-semibold border border-orange-200">
+                                      Lead
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="text-xs text-amber-500">{m.rollNumber}</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleViewResume(m)}
+                              disabled={loadingResume}
+                              className={`text-xs px-2 lg:px-3 py-1 lg:py-1.5 rounded-lg font-medium transition-colors ${
+                                loadingResume
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100"
+                              }`}
+                            >
+                              {loadingResume ? "..." : "Resume"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-amber-400 italic px-1">
+                        No member details available.
+                      </p>
+                    )}
                   </div>
 
                   {selectedRequest.status === "PENDING" && (
