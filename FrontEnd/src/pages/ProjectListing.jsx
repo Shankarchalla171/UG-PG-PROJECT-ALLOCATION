@@ -730,7 +730,7 @@ const ProjectListing = () => {
                       Duration
                     </p>
                     <p className="text-sm text-amber-800">
-                      {activeProject.duration ? `${activeProject.duration} weeks` : "Not specified"}
+                      {activeProject.duration ? `${activeProject.duration} semesters` : "Not specified"}
                     </p>
                   </div>
 
