@@ -74,12 +74,12 @@ public class GoogleAuthService {
                 throw new RuntimeException("Username already exists with this email");
             }
 
-            // Create new user with STUDENT role
+            // Create new user with   role
             var user = new User(
                     email, // username
                     email, // email
                     passwordEncoder.encode(UUID.randomUUID().toString()), // random password
-                    Role.STUDENT
+                    Role.USER
             );
 
             userRepository.save(user);
