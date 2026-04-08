@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { AuthContext } from "../context/AuthContext";
 import Sidebar from "../components/Sidebar";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 const StudentDashboard = () => {
     const { token } = useContext(AuthContext);
@@ -90,10 +92,94 @@ const StudentDashboard = () => {
                 <Navbar />
                 <main className="flex min-h-screen bg-gradient-to-br from-amber-50/50 to-orange-50/30">
                     <Sidebar />
-                    <div className="flex-1 p-6 flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-amber-600">Loading dashboard...</p>
+                    <div className="flex-1 p-6">
+                        <div className="mb-8">
+                            <Skeleton height={36} width={340} />
+                            <Skeleton height={20} width={420} className="mt-3" />
+                        </div>
+
+                        <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-6 mb-8">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-full bg-slate-100" />
+                                    <div className="space-y-3">
+                                        <Skeleton height={16} width={120} />
+                                        <Skeleton height={20} width={200} />
+                                        <Skeleton height={16} width={220} />
+                                        <Skeleton height={16} width={180} />
+                                    </div>
+                                </div>
+                                <div className="w-32 h-10 rounded-lg bg-slate-100" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                            {Array.from({ length: 4 }).map((_, idx) => (
+                                <div key={idx} className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-5">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="space-y-3 w-full">
+                                            <Skeleton height={12} width={120} />
+                                            <Skeleton height={32} width={80} />
+                                        </div>
+                                        <div className="w-12 h-12 rounded-lg bg-slate-100" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                            {Array.from({ length: 2 }).map((_, idx) => (
+                                <div key={idx} className="rounded-xl border border-orange-200/60 shadow-sm p-6 bg-slate-50">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="w-12 h-12 rounded-lg bg-slate-100" />
+                                        <div className="space-y-2 flex-1">
+                                            <Skeleton height={18} width={140} />
+                                            <Skeleton height={14} width={180} />
+                                        </div>
+                                    </div>
+                                    <Skeleton height={14} width={220} />
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-6 mb-8">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-5 h-5 rounded bg-slate-100" />
+                                    <Skeleton height={20} width={180} />
+                                </div>
+                                <div className="w-24 h-8 rounded-full bg-slate-100" />
+                            </div>
+
+                            <div className="space-y-3">
+                                {Array.from({ length: 3 }).map((_, idx) => (
+                                    <div key={idx} className="flex items-start justify-between p-4 bg-amber-50 rounded-lg border border-orange-100/50">
+                                        <div className="flex-1 space-y-2">
+                                            <Skeleton height={16} width={200} />
+                                            <Skeleton height={14} width={160} />
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-16 h-6 rounded-full bg-slate-100" />
+                                                <div className="w-32 h-6 rounded-full bg-slate-100" />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className="w-10 h-10 rounded-full bg-slate-100" />
+                                            <div className="w-10 h-10 rounded-full bg-slate-100" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-200/60 shadow-sm p-6">
+                            <div className="flex gap-4 items-start">
+                                <div className="w-10 h-10 bg-slate-100 rounded-lg flex-shrink-0" />
+                                <div className="space-y-3 flex-1">
+                                    <Skeleton height={18} width={220} />
+                                    <Skeleton height={14} width={420} />
+                                    <Skeleton height={14} width={380} />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </main>

@@ -5,6 +5,8 @@ import ProjectCard from '../components/ProjectCard';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useRef } from 'react';
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 const ProjectListing = () => {
   const { token } = useContext(AuthContext);
@@ -356,200 +358,263 @@ const ProjectListing = () => {
               {/* Collapsible Content */}
               <div className={`overflow-visible transition-all duration-300 ease-out ${isFilterExpanded ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
 
-                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-                  {/* Search */}
-                  <div className='relative'>
-                    <label className='block text-xs font-medium text-amber-700 mb-1.5'>Search</label>
+                {isFilterLoading ? (
+                  <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <div key={idx} className='space-y-2'>
+                        <Skeleton height={14} width={60} />
+                        <Skeleton height={40} width="100%" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+                    {/* Search */}
                     <div className='relative'>
-                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-                      </svg>
-                      <input
-                        type="text"
-                        placeholder="Search projects..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className='w-full pl-9 pr-4 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 placeholder-amber-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all'
-                      />
-                    </div>
-                  </div>
-
-                  {/* Domain Filter */}
-                  <div className="relative" ref={domainRef}>
-                    <label className='block text-xs font-medium text-amber-700 mb-1.5'>Domain</label>
-
-                    {/* Trigger */}
-                    <div
-                      onClick={() => {
-                        if(isFilterLoading) return;
-                        setShowDomainDropdown(prev => !prev);
-                        setShowFacultyDropdown(false);
-                      }}
-                      className={`w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 cursor-pointer
-                        ${isFilterLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      {isFilterLoading ? "Loading..." : (selectedDomain || "All Domains")}
-                    </div>
-
-                    {/* Dropdown */}
-                    {showDomainDropdown && (
-                      <div className="absolute z-20 mt-1 w-full bg-white border border-orange-200 rounded-lg shadow max-h-60 overflow-y-auto">
-
-                        {/* 🔍 Search inside dropdown */}
+                      <label className='block text-xs font-medium text-amber-700 mb-1.5'>Search</label>
+                      <div className='relative'>
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                        </svg>
                         <input
                           type="text"
-                          placeholder="Search domain..."
-                          value={domainSearch}
-                          onChange={(e) => setDomainSearch(e.target.value)}
-                          className="w-full px-3 py-2 border-b border-orange-200 text-sm outline-none"
+                          placeholder="Search projects..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className='w-full pl-9 pr-4 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 placeholder-amber-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all'
                         />
-
-                        {/* All option */}
-                        <div
-                          className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                          onClick={() => {
-                            setSelectedDomain('');
-                            setShowDomainDropdown(false);
-                            setDomainSearch('');
-                          }}
-                        >
-                          All Domains
-                        </div>
-
-                        {/* Filtered list */}
-                        {isFilterLoading ? (
-                          <div className="px-3 py-2 text-sm text-gray-500">
-                            Loading...
-                          </div>
-                        ) : filteredDomains.length > 0 ? (
-                          filteredDomains.map(domain => (
-                            <div
-                              key={domain}
-                              onClick={() => {
-                                setSelectedDomain(domain);
-                                setShowDomainDropdown(false);
-                                setDomainSearch('');
-                              }}
-                              className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                            >
-                              {domain}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-sm text-gray-500">
-                            No results
-                          </div>
-                        )}
                       </div>
-                    )}
-                  </div>
-
-                  {/* Faculty Filter */}
-                  <div className="relative" ref={facultyRef}>
-                    <label className='block text-xs font-medium text-amber-700 mb-1.5'>Faculty</label>
-
-                    {/* Trigger */}
-                    <div
-                      onClick={() => {
-                        if(isFilterLoading) return;
-                        setShowFacultyDropdown(prev => !prev);
-                        setShowDomainDropdown(false);
-                      }}   
-                      className={`w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 cursor-pointer
-                        ${isFilterLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      {isFilterLoading ? "Loading..." : (selectedFaculty || "All Faculty")}
                     </div>
 
-                    {/* Dropdown */}
-                    {showFacultyDropdown && (
-                      <div className="absolute z-20 mt-1 w-full bg-white border border-orange-200 rounded-lg shadow max-h-60 overflow-y-auto">
+                    {/* Domain Filter */}
+                    <div className="relative" ref={domainRef}>
+                      <label className='block text-xs font-medium text-amber-700 mb-1.5'>Domain</label>
 
-                        {/* 🔍 Search inside dropdown */}
-                        <input
-                          type="text"
-                          placeholder="Search faculty..."
-                          value={facultySearch}
-                          onChange={(e) => setFacultySearch(e.target.value)}
-                          className="w-full px-3 py-2 border-b border-orange-200 text-sm outline-none"
-                        />
-
-                        {/* All option */}
-                        <div
-                          className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                          onClick={() => {
-                            setSelectedFaculty('');
-                            setShowFacultyDropdown(false);
-                            setFacultySearch('');
-                          }}
-                        >
-                          All Faculty
-                        </div>
-
-                        {/* Filtered list */}
-                        {isFilterLoading ? (
-                          <div className="px-3 py-2 text-sm text-gray-500">
-                            Loading...
-                          </div>
-                        ) : filteredFaculty.length > 0 ? (
-                          filteredFaculty.map(faculty => (
-                            <div
-                              key={faculty}
-                              onClick={() => {
-                                setSelectedFaculty(faculty);
-                                setShowFacultyDropdown(false);
-                                setFacultySearch('');
-                              }}
-                              className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                            >
-                              {faculty}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-sm text-gray-500">
-                            No results
-                          </div>
-                        )}
+                      {/* Trigger */}
+                      <div
+                        onClick={() => {
+                          if(isFilterLoading) return;
+                          setShowDomainDropdown(prev => !prev);
+                          setShowFacultyDropdown(false);
+                        }}
+                        className={`w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 cursor-pointer
+                          ${isFilterLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {isFilterLoading ? "Loading..." : (selectedDomain || "All Domains")}
                       </div>
-                    )}
-                  </div>
 
-                  {/* Slots Filter */}
-                  <div>
-                    <label className='block text-xs font-medium text-amber-700 mb-1.5'>Availability</label>
-                    <select
-                      value={slotFilter}
-                      onChange={(e) => setSlotFilter(e.target.value)}
-                      className='w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all cursor-pointer'
-                    >
-                      <option value="all">All Projects</option>
-                      <option value="available">Vacant (&gt;0)</option>
-                      <option value="full">Full (0)</option>
-                      <option value="1">Exactly 1</option>
-                      <option value="2">Exactly 2</option>
-                      <option value="3">Exactly 3</option>
-                    </select>
+                      {/* Dropdown */}
+                      {showDomainDropdown && (
+                        <div className="absolute z-20 mt-1 w-full bg-white border border-orange-200 rounded-lg shadow max-h-60 overflow-y-auto">
+
+                          {/* 🔍 Search inside dropdown */}
+                          <input
+                            type="text"
+                            placeholder="Search domain..."
+                            value={domainSearch}
+                            onChange={(e) => setDomainSearch(e.target.value)}
+                            className="w-full px-3 py-2 border-b border-orange-200 text-sm outline-none"
+                          />
+
+                          {/* All option */}
+                          <div
+                            className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                            onClick={() => {
+                              setSelectedDomain('');
+                              setShowDomainDropdown(false);
+                              setDomainSearch('');
+                            }}
+                          >
+                            All Domains
+                          </div>
+
+                          {/* Filtered list */}
+                          {isFilterLoading ? (
+                            <div className="px-3 py-2 text-sm text-gray-500">
+                              Loading...
+                            </div>
+                          ) : filteredDomains.length > 0 ? (
+                            filteredDomains.map(domain => (
+                              <div
+                                key={domain}
+                                onClick={() => {
+                                  setSelectedDomain(domain);
+                                  setShowDomainDropdown(false);
+                                  setDomainSearch('');
+                                }}
+                                className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                              >
+                                {domain}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-sm text-gray-500">
+                              No results
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Faculty Filter */}
+                    <div className="relative" ref={facultyRef}>
+                      <label className='block text-xs font-medium text-amber-700 mb-1.5'>Faculty</label>
+
+                      {/* Trigger */}
+                      <div
+                        onClick={() => {
+                          if(isFilterLoading) return;
+                          setShowFacultyDropdown(prev => !prev);
+                          setShowDomainDropdown(false);
+                        }}   
+                        className={`w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 cursor-pointer
+                          ${isFilterLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {isFilterLoading ? "Loading..." : (selectedFaculty || "All Faculty")}
+                      </div>
+
+                      {/* Dropdown */}
+                      {showFacultyDropdown && (
+                        <div className="absolute z-20 mt-1 w-full bg-white border border-orange-200 rounded-lg shadow max-h-60 overflow-y-auto">
+
+                          {/* 🔍 Search inside dropdown */}
+                          <input
+                            type="text"
+                            placeholder="Search faculty..."
+                            value={facultySearch}
+                            onChange={(e) => setFacultySearch(e.target.value)}
+                            className="w-full px-3 py-2 border-b border-orange-200 text-sm outline-none"
+                          />
+
+                          {/* All option */}
+                          <div
+                            className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                            onClick={() => {
+                              setSelectedFaculty('');
+                              setShowFacultyDropdown(false);
+                              setFacultySearch('');
+                            }}
+                          >
+                            All Faculty
+                          </div>
+
+                          {/* Filtered list */}
+                          {isFilterLoading ? (
+                            <div className="px-3 py-2 text-sm text-gray-500">
+                              Loading...
+                            </div>
+                          ) : filteredFaculty.length > 0 ? (
+                            filteredFaculty.map(faculty => (
+                              <div
+                                key={faculty}
+                                onClick={() => {
+                                  setSelectedFaculty(faculty);
+                                  setShowFacultyDropdown(false);
+                                  setFacultySearch('');
+                                }}
+                                className="px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                              >
+                                {faculty}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-sm text-gray-500">
+                              No results
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Slots Filter */}
+                    <div>
+                      <label className='block text-xs font-medium text-amber-700 mb-1.5'>Availability</label>
+                      <select
+                        value={slotFilter}
+                        onChange={(e) => setSlotFilter(e.target.value)}
+                        className='w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all cursor-pointer'
+                      >
+                        <option value="all">All Projects</option>
+                        <option value="available">Vacant (&gt;0)</option>
+                        <option value="full">Full (0)</option>
+                        <option value="1">Exactly 1</option>
+                        <option value="2">Exactly 2</option>
+                        <option value="3">Exactly 3</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Results count */}
                 <div className='mt-4 pt-3 border-t border-orange-100'>
-                  <p className='text-sm text-amber-600'>
-                    Showing <span className='font-semibold text-amber-800'>{projectlist.length}</span> projects
-                  </p>
+                  {isFilterLoading ? (
+                    <Skeleton height={16} width={120} />
+                  ) : (
+                    <p className='text-sm text-amber-600'>
+                      Showing <span className='font-semibold text-amber-800'>{projectlist.length}</span> projects
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Project Cards Grid */}
             {isLoading && (
-              <div className='col-span-full flex flex-col items-center justify-center py-16'>
-                <svg className="animate-spin w-12 h-12 mb-4 text-amber-500" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                <p className='text-lg font-medium text-amber-700'>Loading projects...</p>
-                <p className='text-sm text-amber-500 mt-1'>Please wait</p>
+              <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className='bg-white rounded-xl border border-orange-200/60 shadow-sm p-5 transition-all duration-300 hover:shadow-lg hover:border-orange-300 hover:-translate-y-1'>
+                    <div className='space-y-4'>
+                      {/* Header with icon and status */}
+                      <div className='flex items-center justify-between'>
+                        <div className='flex items-center gap-3'>
+                          <div className='w-10 h-10 rounded-lg bg-slate-100' />
+                          <div className='space-y-2'>
+                            <Skeleton height={16} width={120} />
+                            <Skeleton height={12} width={80} />
+                          </div>
+                        </div>
+                        <div className='w-16 h-6 rounded-full bg-slate-100' />
+                      </div>
+
+                      {/* Title */}
+                      <div className='space-y-2'>
+                        <Skeleton height={20} width="85%" />
+                        <Skeleton height={16} width="60%" />
+                      </div>
+
+                      {/* Faculty */}
+                      <div className='flex items-center gap-3'>
+                        <div className='w-8 h-8 rounded-full bg-slate-100' />
+                        <div className='space-y-1'>
+                          <Skeleton height={12} width={60} />
+                          <Skeleton height={14} width={100} />
+                        </div>
+                      </div>
+
+                      {/* Domains */}
+                      <div className='space-y-2'>
+                        <Skeleton height={12} width={70} />
+                        <div className='flex gap-2'>
+                          <div className='w-20 h-6 rounded-lg bg-slate-100' />
+                          <div className='w-16 h-6 rounded-lg bg-slate-100' />
+                          <div className='w-18 h-6 rounded-lg bg-slate-100' />
+                        </div>
+                      </div>
+
+                      {/* Duration and Slots */}
+                      <div className='flex justify-between items-center'>
+                        <div className='space-y-1'>
+                          <Skeleton height={12} width={60} />
+                          <Skeleton height={14} width={80} />
+                        </div>
+                        <div className='w-12 h-8 rounded-full bg-slate-100' />
+                      </div>
+
+                      {/* Apply button */}
+                      <div className='w-full h-10 rounded-lg bg-slate-100' />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
