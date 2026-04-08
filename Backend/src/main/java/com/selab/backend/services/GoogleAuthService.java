@@ -1,4 +1,3 @@
-// com/selab/backend/services/GoogleAuthService.java
 package com.selab.backend.services;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -7,8 +6,11 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.selab.backend.auth.AuthenticationResponse;
 import com.selab.backend.auth.JwtService;
-import com.selab.backend.models.User;
+import com.selab.backend.exceptions.AuthenticationFailedException;
 import com.selab.backend.models.Role;
+import com.selab.backend.models.Student;
+import com.selab.backend.models.User;
+import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ import java.util.UUID;
 public class GoogleAuthService {
 
     private final UserRepository userRepository;
+    private final StudentRepository studentRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
@@ -47,7 +50,7 @@ public class GoogleAuthService {
         GoogleIdToken idToken = verifier.verify(idTokenString);
 
         if (idToken == null) {
-            throw new RuntimeException("Invalid Google token");
+            throw new AuthenticationFailedException("Invalid Google token");
         }
 
         GoogleIdToken.Payload payload = idToken.getPayload();
@@ -56,26 +59,20 @@ public class GoogleAuthService {
         // Check if user exists by email
         var existingUser = userRepository.findByEmail(email);
 
+        User user;
+        boolean isNewUser = false;
+
         if (existingUser.isPresent()) {
             // User exists - just login
-            User user = existingUser.get();
-
-            // Generate JWT token
-            String jwtToken = jwtService.generateToken(user);
-
-            return AuthenticationResponse.builder()
-                    .token(jwtToken)
-                    .role(user.getRole().toString())
-                    .message("Login successful")
-                    .build();
+            user = existingUser.get();
         } else {
             // Check if username exists (using email as username)
             if (userRepository.findByUsername(email).isPresent()) {
-                throw new RuntimeException("Username already exists with this email");
+                throw new AuthenticationFailedException("Username already exists with this email");
             }
 
-            // Create new user with   role
-            var user = new User(
+            // Create new user with USER role (automatically verified via Google)
+            user = new User(
                     email, // username
                     email, // email
                     passwordEncoder.encode(UUID.randomUUID().toString()), // random password
@@ -83,17 +80,34 @@ public class GoogleAuthService {
             );
 
             userRepository.save(user);
-
+            isNewUser = true;
             log.info("New user created via Google Sign-In: {}", email);
-
-            // Generate JWT token for new user
-            String jwtToken = jwtService.generateToken(user);
-
-            return AuthenticationResponse.builder()
-                    .token(jwtToken)
-                    .role(user.getRole().toString())
-                    .message("Registration successful with Google")
-                    .build();
         }
+
+        // Generate JWT token
+        String jwtToken = jwtService.generateToken(user);
+
+        // Get team info if student (same logic as normal authentication)
+        UUID teamId = null;
+        String teamRole = null;
+        if (user.getRole() == Role.STUDENT) {
+            Student student = studentRepository.findByUser(user)
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+            if (student.getTeamRole() != null) {
+                teamId = student.getTeam().getTeamId();
+                teamRole = student.getTeamRole().toString();
+            }
+        }
+
+        String message = isNewUser ? "Registration successful with Google" : "Login successful";
+
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .role(user.getRole().toString())
+                .teamRole(teamRole)
+                // You may also want to add teamId to AuthenticationResponse if needed
+                // .teamId(teamId)
+                .message(message)
+                .build();
     }
 }
