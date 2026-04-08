@@ -91,4 +91,4 @@ Backend setup will be added later. For now this section is a placeholder.
 
 ---
 
-If you want, I can also create the branch and open a PR for you locally — tell me the branch name to use and whether you want me to merge it after creating the PR.
+If you want, I can also create the branch and open a PR for you locally — tell me the branch name to use and whether you want me to merge it after creating the PR
