@@ -75,5 +75,23 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
         GROUP BY pa.status
    """)
     List<Object[]> countByProfessor(Professor professor);
-    
+
+    // Get all TEAM_CONFIRMED applications for a professor's projects
+    @Query("SELECT pa FROM ProjectApplications pa " +
+            "JOIN FETCH pa.project p " +
+            "JOIN FETCH p.professor prof " +
+            "JOIN FETCH pa.team t " +
+            "WHERE prof.professorId = :professorId " +
+            "AND pa.status = :status")
+    List<ProjectApplications> findByProfessorIdAndStatus(
+            @Param("professorId") Long professorId,
+            @Param("status") ApplicationStatus status
+    );
+
+
+    // Count TEAM_CONFIRMED applications for a professor
+    @Query("SELECT COUNT(pa) FROM ProjectApplications pa " +
+            "WHERE pa.project.professor.professorId = :professorId " +
+            "AND pa.status = 'TEAM_CONFIRMED'")
+    Long countTeamConfirmedByProfessorId(@Param("professorId") Long professorId);
 }

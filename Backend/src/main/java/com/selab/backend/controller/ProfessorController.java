@@ -6,6 +6,7 @@ import com.selab.backend.mappers.ProfessorMapper;
 import com.selab.backend.models.Professor;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.User;
+import com.selab.backend.services.ConfirmationService;
 import com.selab.backend.services.ProfessorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class ProfessorController {
 
     private final ProfessorService professorService;
     private final ProfessorMapper professorMapper;
+    private final ConfirmationService confirmationService;
 
     @PostMapping("/profile")
     public ResponseEntity<Role> createProfile(@ModelAttribute @Valid ProfCreateProfileRequest profileRequest, @AuthenticationPrincipal User user){
