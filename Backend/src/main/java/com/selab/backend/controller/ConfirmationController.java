@@ -1,6 +1,8 @@
 package com.selab.backend.controller;
 
+import com.selab.backend.Dto.ProfessorFinalAllocationDto;
 import com.selab.backend.Dto.ViewConfirmationsDto;
+import com.selab.backend.models.Role;
 import com.selab.backend.services.ConfirmationService;
 import com.selab.backend.models.User;
 import lombok.RequiredArgsConstructor;
@@ -60,6 +62,26 @@ public class ConfirmationController {
 
         confirmationService.rejectApplication(applicationId, currentUser);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Get all TEAM_CONFIRMED applications for professor's projects
+     * Used for the "Final Team Allocations" page
+     * GET /api/confirmations/professor/allocations
+     */
+    @GetMapping("/professor/allocations")
+    public ResponseEntity<List<ProfessorFinalAllocationDto>> getProfessorTeamAllocations(
+            @AuthenticationPrincipal User currentUser) {
+
+        // Verify user is professor
+        if (currentUser.getRole() != Role.PROFF) {
+            return ResponseEntity.status(403).build();
+        }
+
+        List<ProfessorFinalAllocationDto> allocations =
+                confirmationService.getTeamConfirmedAllocationsForProfessor(currentUser);
+
+        return ResponseEntity.ok(allocations);
     }
 
 }

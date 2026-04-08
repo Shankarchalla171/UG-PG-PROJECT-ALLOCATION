@@ -34,4 +34,7 @@ public class ProjectApplications {
     @Column(name = "professorReview")
     private String professorReview;
 
+    @Column(name = "confirmed_date")
+    private LocalDateTime confirmedDate;
+
 }

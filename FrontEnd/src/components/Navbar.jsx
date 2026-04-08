@@ -58,7 +58,7 @@ const Navbar = () => {
       </div>
 
       {/* Navigation Section */}
-      <nav className="flex items-center">
+      <nav className="flex items-center gap-1">
         {/* Profile */}
         {role !== "ADMIN" && (
           <NavLink to="/profile" className={navLinkClasses} title="Profile">
