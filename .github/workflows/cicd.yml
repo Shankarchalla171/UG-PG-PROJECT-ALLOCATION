@@ -1,0 +1,42 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy with automatic rollback on failure
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/UG-PG-PROJECT-ALLOCATION/
+            
+            # Save current commit hash before pulling
+            CURRENT_COMMIT=$(git rev-parse HEAD)
+            echo "Current commit: $CURRENT_COMMIT"
+            
+            # Pull latest changes
+            git pull origin main
+            
+            # Try to build and deploy
+            if docker compose up -d --build; then
+              echo "✅ Deployment successful!"
+              echo $CURRENT_COMMIT > .last_stable_commit
+            else
+              echo "❌ Deployment failed! Rolling back..."
+              
+              # Rollback to previous commit
+              git checkout $CURRENT_COMMIT
+              
+              # Rebuild with previous working version
+              docker compose up -d --build
+              
+              echo "⚠️ Rolled back to commit: $CURRENT_COMMIT"
+              exit 1  
+            fi

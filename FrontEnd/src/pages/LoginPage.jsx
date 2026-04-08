@@ -67,6 +67,11 @@ const LoginPage = () => {
             setErr("Please fill in all fields");
             return;
         }
+        if (password.length < 4) {
+            setErr("Password must be at least 4 characters long");
+            alert("Password must be at least 4 characters long");
+            return;
+        }
 
         setErr("");
         setSuccessMsg("");
@@ -302,7 +307,7 @@ const LoginPage = () => {
                             {/* Password Field */}
                             <div>
                                 <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
-                                    Password
+                                    Password(Please use a strong password with at least 4 characters)
                                 </label>
                                 <div className="relative">
                                     <input
