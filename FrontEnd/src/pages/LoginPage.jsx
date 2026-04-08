@@ -125,8 +125,8 @@ const LoginPage = () => {
             return;
         }
 
-        if (password.length < 3) {
-            setErr("Password must be at least 3 characters long");
+        if (password.length < 4) {
+            setErr("Password must be at least 4 characters long");
             return;
         }
 
@@ -331,6 +331,11 @@ const LoginPage = () => {
                                         )}
                                     </button>
                                 </div>
+                                {isRegistering && (
+                                    <p className="mt-1 text-xs text-white/60">
+                                        Password must be at least 4 characters long
+                                    </p>
+                                )}
                             </div>
 
                             {/* Confirm Password Field (only for registration) */}
