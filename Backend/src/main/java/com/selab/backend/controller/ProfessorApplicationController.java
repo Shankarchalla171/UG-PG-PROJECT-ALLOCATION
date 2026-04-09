@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +33,7 @@ public class ProfessorApplicationController {
         Professor professor = professorRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Professor not found"));
 
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("appliedOn").descending());
 
         return applicationService.getProfessorApplications(professor, status, projectId, pageable);
     }

@@ -3,6 +3,32 @@ import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import { AuthContext } from '../context/AuthContext';
 const API_URL = import.meta.env.VITE_API_URL ;
+
+const normalizeStatus = (status = '') => String(status || '').toLowerCase();
+
+const getStatusText = (status = '') => {
+    switch (normalizeStatus(status)) {
+        case 'active':
+            return 'Active';
+        case 'upcoming':
+            return 'Upcoming';
+        case 'passed':
+            return 'Passed';
+        default:
+            return 'Unknown';
+    }
+};
+
+const parseEventDate = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    date.setHours(0, 0, 0, 0);
+    return date;
+};
+
+const formatDays = (days) => `${days} day${days === 1 ? '' : 's'}`;
+
 const Student_teams = () => {
     const { token,  teamRole, authDispatch } = useContext(AuthContext);
     const [view, setView] = useState('selection');
@@ -16,6 +42,44 @@ const Student_teams = () => {
     const [isTransferringLeadership, setIsTransferringLeadership] = useState(true);
     const [isLeavingTeam, setIsLeavingTeam] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [teamFormationEvent, setTeamFormationEvent] = useState(null);
+    const [eventLoading, setEventLoading] = useState(true);
+    const [eventError, setEventError] = useState('');
+
+    const isTeamFormationActive = normalizeStatus(teamFormationEvent?.status) === 'active';
+    const canManageTeamFormation = isTeamFormationActive && !eventLoading && !eventError;
+
+    const eventStatus = normalizeStatus(teamFormationEvent?.status);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = parseEventDate(teamFormationEvent?.startDate);
+    const endDate = parseEventDate(teamFormationEvent?.endDate);
+
+    let countdownTitle = 'Team Formation Event';
+    let countdownSubtext = 'Waiting for event details.';
+
+    if (eventLoading) {
+        countdownTitle = 'Checking Event Window';
+        countdownSubtext = 'Loading event timing...';
+    } else if (eventError) {
+        countdownTitle = 'Event Details Unavailable';
+        countdownSubtext = 'Could not load TEAM_FORMATION event right now.';
+    } else if (eventStatus === 'upcoming' && startDate) {
+        const diffDays = Math.ceil((startDate - today) / 86400000);
+        countdownTitle = diffDays <= 0 ? 'Event starts today' : `Event starts in ${formatDays(diffDays)}`;
+        countdownSubtext = `Start date: ${teamFormationEvent?.startDate || 'N/A'}`;
+    } else if (eventStatus === 'active' && endDate) {
+        const diffDays = Math.ceil((endDate - today) / 86400000);
+        countdownTitle = diffDays <= 0 ? 'Event ends today' : `Event ends in ${formatDays(diffDays)}`;
+        countdownSubtext = `End date: ${teamFormationEvent?.endDate || 'N/A'}`;
+    } else if (eventStatus === 'passed' && endDate) {
+        const diffDays = Math.abs(Math.floor((today - endDate) / 86400000));
+        countdownTitle = `Event ended ${formatDays(diffDays)} ago`;
+        countdownSubtext = `Ended on: ${teamFormationEvent?.endDate || 'N/A'}`;
+    } else {
+        countdownTitle = 'Event schedule unavailable';
+        countdownSubtext = 'Start/end date is missing for TEAM_FORMATION.';
+    }
 
     useEffect(() => {
         if (teamRole == null)
@@ -58,6 +122,42 @@ const Student_teams = () => {
             fetchTeamDetails();
         }
     }, []);
+
+    useEffect(() => {
+        const fetchTeamFormationEvent = async () => {
+            try {
+                setEventLoading(true);
+                setEventError('');
+                const url = `${API_URL}/api/events/TEAM_FORMATION`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    }
+                });
+
+                if (!response.ok) {
+                    const message = await response.text();
+                    throw new Error(message || 'Failed to fetch team formation event');
+                }
+
+                const data = await response.json();
+                setTeamFormationEvent(data);
+            } catch (error) {
+                setTeamFormationEvent(null);
+                setEventError(error.message || 'Failed to fetch team formation event');
+                setToast({
+                    show: true,
+                    type: 'error',
+                    message: error.message || 'Unable to verify team formation window. Actions are temporarily disabled.',
+                });
+            } finally {
+                setEventLoading(false);
+            }
+        };
+
+        fetchTeamFormationEvent();
+    }, [token]);
 
     useEffect(() => {
         if (toast.show) {
@@ -352,7 +452,7 @@ const Student_teams = () => {
                     </div>
 
                     {/* Header */}
-                    <div className='mb-2'>
+                    <div className='mb-2 flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
                         <div className='flex items-center gap-3 mb-1'>
                             <div className='w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-500/25'>
                                 <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -362,6 +462,33 @@ const Student_teams = () => {
                             <div>
                                 <h1 className='text-2xl font-bold text-amber-900'>Team Management</h1>
                                 <p className='text-sm text-amber-600/80'>Create or join a team to collaborate on projects</p>
+                            </div>
+                        </div>
+
+                        <div
+                            className={`w-full md:w-auto md:min-w-[320px] md:max-w-sm rounded-2xl border px-4 py-3 shadow-md ${
+                                canManageTeamFormation
+                                    ? 'border-emerald-200 bg-emerald-50/90'
+                                    : eventLoading
+                                        ? 'border-amber-200 bg-amber-50/90'
+                                        : 'border-rose-200 bg-rose-50/90'
+                            }`}
+                        >
+                            <div className='flex items-start justify-between gap-3'>
+                                <div>
+                                    <p className='text-xs font-semibold uppercase tracking-wider text-amber-700'>Team Formation</p>
+                                    <p className='mt-1 text-sm font-bold text-amber-900'>{countdownTitle}</p>
+                                    <p className='text-xs mt-1 text-amber-700/80'>{countdownSubtext}</p>
+                                </div>
+                                <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${
+                                    canManageTeamFormation
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : eventLoading
+                                            ? 'bg-amber-100 text-amber-800'
+                                            : 'bg-rose-100 text-rose-800'
+                                }`}>
+                                    {eventLoading ? 'Loading' : getStatusText(teamFormationEvent?.status)}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -397,45 +524,48 @@ const Student_teams = () => {
                                         </div>
                                     </div>
 
-                                    <div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
-                                        {/* Create Team Card */}
-                                        <button
-                                            onClick={() => setView('createConfirm')}
-                                            className='group relative p-7 bg-white rounded-2xl border-2 border-orange-200/60 hover:border-orange-400 shadow-sm hover:shadow-xl hover:shadow-orange-100/50 transition-all duration-300 hover:-translate-y-1 cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-orange-500/30'
-                                        >
-                                            <div className='w-14 h-14 mb-5 rounded-xl bg-gradient-to-br from-orange-100 to-amber-50 group-hover:from-orange-500 group-hover:to-rose-500 flex items-center justify-center group-hover:scale-110 transition-all duration-300'>
-                                                <svg className="w-7 h-7 text-orange-600 group-hover:text-white transition-colors duration-300" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                                                </svg>
-                                            </div>
-                                            <h3 className='text-lg font-bold text-amber-900 mb-1.5'>Create Team</h3>
-                                            <p className='text-sm text-amber-600/80 leading-relaxed mb-4'>Start a new team and become the team leader.</p>
+                                <div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
+                                    {/* Create Team Card */}
+                                    <button
+                                        onClick={() => setView('createConfirm')}
+                                        disabled={!canManageTeamFormation}
+                                        className={`group relative p-7 bg-white rounded-2xl border-2 shadow-sm transition-all duration-300 text-left focus:outline-none focus:ring-2 focus:ring-orange-500/30 ${
+                                            canManageTeamFormation
+                                                ? 'border-orange-200/60 hover:border-orange-400 hover:shadow-xl hover:shadow-orange-100/50 hover:-translate-y-1 cursor-pointer'
+                                                : 'border-orange-100 opacity-60 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        <div className='w-14 h-14 mb-5 rounded-xl bg-gradient-to-br from-orange-100 to-amber-50 group-hover:from-orange-500 group-hover:to-rose-500 flex items-center justify-center group-hover:scale-110 transition-all duration-300'>
+                                            <svg className="w-7 h-7 text-orange-600 group-hover:text-white transition-colors duration-300" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className='text-lg font-bold text-amber-900 mb-1.5'>Create Team</h3>
+                                        <p className='text-sm text-amber-600/80 leading-relaxed mb-4'>
+                                            {canManageTeamFormation
+                                                ? 'Start a new team and become the team leader.'
+                                                : 'This option is disabled while the event is not active.'}
+                                        </p>
 
-                                            {/* Feature bullets */}
-                                            <ul className='space-y-2 mb-5'>
-                                                {['Become the team leader', 'Get a unique Team Code', 'Invite your teammates'].map((item, i) => (
-                                                    <li key={i} className='flex items-center gap-2 text-xs text-amber-700/80'>
-                                                        <svg className="w-3.5 h-3.5 text-orange-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                                                        </svg>
-                                                        {item}
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                        {/* Feature bullets */}
+                                        <ul className='space-y-2 mb-5'>
+                                            {['Become the team leader', 'Get a unique Team Code', 'Invite your teammates'].map((item, i) => (
+                                                <li key={i} className='flex items-center gap-2 text-xs text-amber-700/80'>
+                                                    <svg className="w-3.5 h-3.5 text-orange-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                                                    </svg>
+                                                    {item}
+                                                </li>
+                                            ))}
+                                        </ul>
 
-                                            <div className='flex items-center text-sm font-medium text-orange-500 group-hover:text-orange-600 transition-colors'>
-                                                Get started
-                                                <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
-                                                </svg>
-                                            </div>
-                                        </button>
-
-                                        {/* OR divider for mobile */}
-                                        <div className='flex md:hidden items-center gap-3'>
-                                            <div className='flex-1 h-px bg-gradient-to-r from-transparent via-orange-200 to-transparent'></div>
-                                            <span className='text-xs font-semibold text-amber-400 uppercase tracking-wider'>or</span>
-                                            <div className='flex-1 h-px bg-gradient-to-r from-transparent via-orange-200 to-transparent'></div>
+                                        <div className={`flex items-center text-sm font-medium transition-colors ${
+                                            canManageTeamFormation ? 'text-orange-500 group-hover:text-orange-600' : 'text-gray-400'
+                                        }`}>
+                                            {canManageTeamFormation ? 'Get started' : 'Closed'}
+                                            <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+                                            </svg>
                                         </div>
 
                                         {/* Join Team Card */}
@@ -463,44 +593,47 @@ const Student_teams = () => {
                                                 ))}
                                             </ul>
 
-                                            <div className='flex items-center text-sm font-medium text-emerald-500 group-hover:text-emerald-600 transition-colors'>
-                                                Enter code
-                                                <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
-                                                </svg>
-                                            </div>
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Create Confirmation View */}
-                            {view === 'createConfirm' && (
-                                <div className='w-full max-w-md animate-fadeIn'>
-                                    <div className='bg-white rounded-2xl border border-orange-200/60 shadow-lg shadow-orange-100/30 p-8 text-center'>
-                                        <div className='w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center'>
-                                            <svg className="w-8 h-8 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                                    {/* Join Team Card */}
+                                    <button
+                                        onClick={() => setView('joinInput')}
+                                        disabled={!canManageTeamFormation}
+                                        className={`group relative p-7 bg-white rounded-2xl border-2 shadow-sm transition-all duration-300 text-left focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${
+                                            canManageTeamFormation
+                                                ? 'border-emerald-200/60 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-100/50 hover:-translate-y-1 cursor-pointer'
+                                                : 'border-emerald-100 opacity-60 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        <div className='w-14 h-14 mb-5 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-50 group-hover:from-emerald-500 group-hover:to-teal-500 flex items-center justify-center group-hover:scale-110 transition-all duration-300'>
+                                            <svg className="w-7 h-7 text-emerald-600 group-hover:text-white transition-colors duration-300" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                             </svg>
                                         </div>
-                                        <h2 className='text-xl font-bold text-amber-900 mb-2'>Create a New Team?</h2>
-                                        <p className='text-sm text-amber-600/80 mb-8 leading-relaxed'>
-                                            You'll become the team leader. A unique Team Code will be generated that you can share with your teammates.
+                                        <h3 className='text-lg font-bold text-emerald-900 mb-1.5'>Join Team</h3>
+                                        <p className='text-sm text-emerald-600/80 leading-relaxed mb-4'>
+                                            {canManageTeamFormation
+                                                ? 'Have a Team Code? Join an existing team.'
+                                                : 'This option is disabled while the event is not active.'}
                                         </p>
 
-                                        {/* Info callout */}
-                                        <div className='mb-8 p-4 bg-amber-50/80 rounded-xl border border-amber-200/50 text-left'>
-                                            <p className='text-xs font-semibold text-amber-800 mb-2'>As team leader, you can:</p>
-                                            <ul className='space-y-1.5'>
-                                                {['Share Team Code to invite members', 'Finalize the team when ready', 'Transfer leadership to others'].map((item, i) => (
-                                                    <li key={i} className='flex items-start gap-2 text-xs text-amber-700'>
-                                                        <svg className="w-3.5 h-3.5 mt-0.5 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                                                        </svg>
-                                                        {item}
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                        {/* Feature bullets */}
+                                        <ul className='space-y-2 mb-5'>
+                                            {['Enter a shared Team Code', 'Collaborate with your team', 'Apply for projects together'].map((item, i) => (
+                                                <li key={i} className='flex items-center gap-2 text-xs text-emerald-700/80'>
+                                                    <svg className="w-3.5 h-3.5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                                                    </svg>
+                                                    {item}
+                                                </li>
+                                            ))}
+                                        </ul>
+
+                                        <div className={`flex items-center text-sm font-medium transition-colors ${
+                                            canManageTeamFormation ? 'text-emerald-500 group-hover:text-emerald-600' : 'text-gray-400'
+                                        }`}>
+                                            {canManageTeamFormation ? 'Enter code' : 'Closed'}
+                                            <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+                                            </svg>
                                         </div>
 
                                         <div className='flex gap-3'>
@@ -568,13 +701,9 @@ const Student_teams = () => {
                                         </div>
 
                                         <button
-                                            onClick={handleJoinTeam}
-                                            disabled={!joinTeamId.trim() || loading}
-                                            className={`w-full py-3.5 font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 ${
-                                                joinTeamId.trim()
-                                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30'
-                                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
-                                            }`}
+                                            onClick={handleCreateTeam}
+                                            disabled={loading || !canManageTeamFormation}
+                                            className='flex-1 px-5 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-rose-600 shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30 transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2'
                                         >
                                             {loading && (
                                                 <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -597,10 +726,54 @@ const Student_teams = () => {
                                             </svg>
                                         </div>
 
-                                        <h2 className='text-xl font-bold text-amber-900 mb-1 text-center'>Before You Leave</h2>
-                                        <p className='text-sm text-amber-600/80 mb-8 text-center'>
-                                            Your team has members. Follow these steps to leave safely.
-                                        </p>
+                                    <div className='mb-6'>
+                                        <label className='block text-xs font-semibold text-amber-700 mb-2 uppercase tracking-wider'>Team Code</label>
+                                        <input
+                                            type="text"
+                                            value={joinTeamId}
+                                            onChange={(e) => setJoinTeamId(e.target.value)}
+                                            placeholder="e.g., TEAM001"
+                                            className='w-full px-5 py-4 bg-amber-50/50 border-2 border-orange-200/80 rounded-xl text-amber-900 placeholder-amber-300 focus:outline-none focus:ring-2 focus:ring-emerald-300/50 focus:border-emerald-400 transition-all duration-200 text-center font-mono text-xl tracking-widest'
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && joinTeamId.trim() && canManageTeamFormation) handleJoinTeam();
+                                            }}
+                                        />
+                                    </div>
+
+                                    <button
+                                        onClick={handleJoinTeam}
+                                        disabled={!joinTeamId.trim() || loading || !canManageTeamFormation}
+                                        className={`w-full py-3.5 font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 ${
+                                            joinTeamId.trim() && canManageTeamFormation
+                                                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30'
+                                                : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
+                                        }`}
+                                    >
+                                        {loading && (
+                                            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                <path d="M12 2v4m0 12v4m-8-10h4m12 0h4m-3.5-6.5l-2.8 2.8m-7.4 7.4l-2.8 2.8m0-13l2.8 2.8m7.4 7.4l2.8 2.8" strokeLinecap="round" />
+                                            </svg>
+                                        )}
+                                        Join Team
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Leave Steps View */}
+                        {view === 'leaveSteps' && (
+                            <div className='w-full max-w-md animate-fadeIn'>
+                                <div className='bg-white rounded-2xl border border-orange-200/60 shadow-lg shadow-orange-100/30 p-8'>
+                                    <div className='w-14 h-14 mx-auto mb-5 rounded-2xl bg-amber-100 flex items-center justify-center'>
+                                        <svg className="w-7 h-7 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                                        </svg>
+                                    </div>
+
+                                    <h2 className='text-xl font-bold text-amber-900 mb-1 text-center'>Before You Leave</h2>
+                                    <p className='text-sm text-amber-600/80 mb-8 text-center'>
+                                        Your team has members. Follow these steps to leave safely.
+                                    </p>
 
                                         {/* Steps */}
                                         <div className='space-y-3 mb-8'>
@@ -661,11 +834,9 @@ const Student_teams = () => {
                                 <div className='w-full max-w-lg animate-fadeIn'>
                                     <div className='bg-white rounded-2xl border border-orange-200/60 shadow-lg shadow-orange-100/30 p-8'>
                                         <button
-                                            onClick={() => {
-                                                setSelectedNewLeaderId('');
-                                                setView('teamCreated');
-                                            }}
-                                            className='mb-6 flex items-center gap-1.5 text-sm text-amber-600 hover:text-orange-600 transition-colors cursor-pointer group'
+                                            onClick={() => { setIsLeavingTeam(true); setSelectedNewLeaderId(''); setView('transferLeadership'); }}
+                                            disabled={!canManageTeamFormation}
+                                            className='flex-1 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-medium rounded-xl hover:from-orange-600 hover:to-rose-600 shadow-lg shadow-orange-500/25 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed'
                                         >
                                             <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="currentColor">
                                                 <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
@@ -728,28 +899,27 @@ const Student_teams = () => {
                                             </div>
                                         </div>
 
-                                        <div className='flex flex-col sm:flex-row gap-3'>
-                                            <button
-                                                onClick={handleTransferLeadership}
-                                                disabled={!isTransferringLeadership || !selectedNewLeaderId}
-                                                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                                                    !isTransferringLeadership || !selectedNewLeaderId
-                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                        : 'bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:from-orange-600 hover:to-rose-600 shadow-lg shadow-orange-500/25 cursor-pointer'
-                                                }`}
-                                            >
-                                                {isTransferringLeadership && isLeavingTeam ? 'Transfer & Leave Team' : 'Transfer Leadership'}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedNewLeaderId('');
-                                                    setView('teamCreated');
-                                                }}
-                                                className='flex-1 py-3 rounded-xl text-sm font-medium border border-orange-200 text-amber-700 hover:bg-orange-50 cursor-pointer transition-all duration-200'
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
+                                    <div className='flex flex-col sm:flex-row gap-3'>
+                                        <button
+                                            onClick={handleTransferLeadership}
+                                            disabled={!canManageTeamFormation || !isTransferringLeadership || !selectedNewLeaderId}
+                                            className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                                                !canManageTeamFormation || !isTransferringLeadership || !selectedNewLeaderId
+                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                    : 'bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:from-orange-600 hover:to-rose-600 shadow-lg shadow-orange-500/25 cursor-pointer'
+                                            }`}
+                                        >
+                                            {isTransferringLeadership && isLeavingTeam ? 'Transfer & Leave Team' : 'Transfer Leadership'}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedNewLeaderId('');
+                                                setView('teamCreated');
+                                            }}
+                                            className='flex-1 py-3 rounded-xl text-sm font-medium border border-orange-200 text-amber-700 hover:bg-orange-50 cursor-pointer transition-all duration-200'
+                                        >
+                                            Cancel
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -959,6 +1129,52 @@ const Student_teams = () => {
                                                     </button>
                                                 )}
                                             </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className='mt-7 pt-6 border-t border-orange-100 flex flex-col sm:flex-row gap-3'>
+                                            {!isFinalized && (
+                                                <button
+                                                    onClick={handleBack}
+                                                    disabled={!canManageTeamFormation}
+                                                    className='flex-1 py-3 bg-white border border-red-200 text-red-600 font-medium rounded-xl hover:bg-red-50 hover:border-red-300 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed'
+                                                >
+                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+                                                    </svg>
+                                                    Leave Team
+                                                </button>
+                                            )}
+                                            {view === 'teamCreated' && !isFinalized && currentTeam.members.length > 1 && (
+                                                <button
+                                                    onClick={() => { setSelectedNewLeaderId(''); setView('transferLeadership'); }}
+                                                    disabled={!canManageTeamFormation}
+                                                    className='flex-1 py-3 bg-white border border-orange-300 text-orange-600 font-medium rounded-xl hover:bg-orange-50 hover:border-orange-400 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed'
+                                                >
+                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                                                    </svg>
+                                                    Transfer Leadership
+                                                </button>
+                                            )}
+                                            {view === 'teamCreated' && !isFinalized && (
+                                                <button
+                                                    onClick={handleFinalizeTeam}
+                                                    disabled={loading || !canManageTeamFormation}
+                                                    className='flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:from-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed'
+                                                >
+                                                    {loading ? (
+                                                        <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                            <path d="M12 2v4m0 12v4m-8-10h4m12 0h4m-3.5-6.5l-2.8 2.8m-7.4 7.4l-2.8 2.8m0-13l2.8 2.8m7.4 7.4l2.8 2.8" strokeLinecap="round" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                                                        </svg>
+                                                    )}
+                                                    Finalize Team
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
