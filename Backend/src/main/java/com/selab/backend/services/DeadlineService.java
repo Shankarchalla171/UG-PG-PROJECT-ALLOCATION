@@ -8,6 +8,7 @@ import com.selab.backend.mappers.DeadLineMapper;
 import com.selab.backend.models.*;
 import com.selab.backend.repositories.DeadLineRepository;
 import com.selab.backend.repositories.DeptCoordinatorRepository;
+import com.selab.backend.repositories.StudentRepository;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class DeadlineService {
     private final DeadLineRepository deadLineRepository;
     private final DeptCoordinatorRepository deptCoordinatorRepository;
     private final DeadLineMapper deadLineMapper;
+    private final StudentRepository studentRepository;
 
     public List<Event> create(@Valid CreateDeadLineRequest request, User user) {
         if(!user.getRole().equals(Role.DEPTCORDINATOR)){
@@ -99,5 +101,13 @@ public class DeadlineService {
         deadLineMapper.updateDeadLine(request,currentDeadLine);
         currentDeadLine.setLastModified(LocalDate.now());
         return deadLineRepository.save(currentDeadLine);
+    }
+
+    public DeadLineDto getDetails(Phase title, User user) {
+        Student student=studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("student not found with email : "+user.getEmail()));
+        String batch=student.getRollNumber().substring(0,3);
+        DeptCoordinator coordinator=deptCoordinatorRepository.findByBatch(batch).orElseThrow(() -> new RuntimeException("coordinator not set, event dates not announced"));
+        Event event=deadLineRepository.findByDeptCoordinatorAndTitle(coordinator,title).orElseThrow(()-> new ResourceNotFoundException("the event details for not begin announced by the coordinator"));
+        return deadLineMapper.toDto(event);
     }
 }
