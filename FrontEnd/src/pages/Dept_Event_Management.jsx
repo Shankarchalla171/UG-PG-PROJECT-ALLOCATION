@@ -25,11 +25,39 @@ const formatPhaseLabel = (phase = '') =>
     .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
     .join(' ');
 
+const getReminderRecipients = (phase = '') => {
+  switch (normalizePhase(phase)) {
+    case 'TEAM_FORMATION':
+      return { label: 'Students', value: 'students' };
+    case 'PROJECT_CREATION':
+      return { label: 'Professors', value: 'professors' };
+    case 'PROJECT_ALLOCATION':
+      return { label: 'Students and Professors', value: 'both' };
+    default:
+      return { label: 'Relevant recipients', value: 'all' };
+  }
+};
+
 const DeptEventManagement = () => {
   const { token } = useContext(AuthContext);
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState({ show: false, type: '', message: '' });
+
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast({ show: false, type: '', message: '' });
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
+  const showToast = (type, message) => {
+    setToast({ show: true, type, message });
+  };
 
   const fetchEvents = async () => {
     const url = `${API_BASE_URL}/api/events`;
@@ -45,7 +73,8 @@ const DeptEventManagement = () => {
 
       if (!response.ok) {
         const message = await response.text();
-        alert(`Error fetching events: ${message}`);
+        showToast('error', `Error fetching events: ${message}`);
+        return;
       }
 
       const data = await response.json();
@@ -93,9 +122,9 @@ const DeptEventManagement = () => {
   const [reminderEventId, setReminderEventId] = useState(null);
   const [reminderForm, setReminderForm] = useState({
     subject: "",
-    body: "",
-    batch: ""
+    body: ""
   });
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
 
   // Calculate stats
   const stats = {
@@ -165,7 +194,9 @@ const DeptEventManagement = () => {
 
       if (!response.ok) {
         const message = await response.text();
-        alert(`Error adding event: ${message}`);
+        console.log('Error response from server:', message);
+        showToast('error', `Error adding event: ${message}`);
+        return;
       }
 
       const data = await response.json();
@@ -186,15 +217,17 @@ const DeptEventManagement = () => {
         endDate: ""
       });
       setShowAddForm(false);
+      showToast('success', 'Event added successfully!');
 
     } catch (error) {
       console.log('Error adding event:', error.message);
+      showToast('error', error.message || 'Error adding event. Please try again later.');
     }
   }
 
   const handleAddEvent = () => {
     if (!newEvent.title || !newEvent.endDate) {
-      alert('Please fill in all required fields (Phase and End Date)');
+      showToast('error', 'Please fill in all required fields (Phase and End Date)');
       return;
     }
     addEvent();
@@ -244,7 +277,7 @@ const DeptEventManagement = () => {
       console.log(`Response status for editing event ${id}:`, response.status);
       if (!response.ok) {
         const message = await response.text();
-        alert(`Error saving edits: ${message}`);
+        showToast('error', `Error saving edits: ${message}`);
         return;
       }
 
@@ -253,15 +286,17 @@ const DeptEventManagement = () => {
       setEvents(events.map(event =>
         event.id === id ? normalizeEvent(updatedEvent) : event
       ));
+      showToast('success', 'Event updated successfully!');
 
     } catch (error) {
       console.log(`Error saving edits for event ${id}:`, error.message);
+      showToast('error', error.message || 'Error saving edits. Please try again later.');
     }
   }
 
   const handleSaveEdit = (id) => {
     if (!editForm.title || !editForm.endDate) {
-      alert('Please fill in all required fields (Phase and End Date)');
+      showToast('error', 'Please fill in all required fields (Phase and End Date)');
       return;
     }
     saveEdit(id);
@@ -287,12 +322,14 @@ const DeptEventManagement = () => {
       console.log(response.status);
       if (!response.ok) {
         const message = await response.text();
-        alert(`Error deleting event: ${message}`);
+        showToast('error', `Error deleting event: ${message}`);
+        return;
       }
       fetchEvents();
+      showToast('success', 'Event deleted successfully!');
     } catch (error) {
       console.error('Error deleting event:', error);
-      alert('Error deleting event. Please try again later.');
+      showToast('error', 'Error deleting event. Please try again later.');
     }
   }
 
@@ -304,34 +341,43 @@ const DeptEventManagement = () => {
 
   const openReminderModal = (id) => {
     const event = events.find(e => e.id === id);
+    if (!event) {
+      return;
+    }
+
     setReminderEventId(id);
     setReminderForm({
       subject: `Reminder: ${event.title}`,
       body: `This is a reminder for the ${event.status} event : "${event.title}".\n\nEvent Details:\n- Start Date: ${formatDate(event.startDate)}\n- End Date: ${formatDate(event.endDate)}\n\n${event.description || ''}`,
-      batch: ""
     });
     setShowReminderModal(true);
   };
 
   const closeReminderModal = () => {
+    setIsSendingReminder(false);
     setShowReminderModal(false);
     setReminderEventId(null);
-    setReminderForm({ subject: "", body: "", batch: "" });
+    setReminderForm({ subject: "", body: "" });
   };
 
   const handleSendReminder = async () => {
-    if (!reminderForm.batch) {
-      alert('Please enter the batch (e.g., b23)');
-      return;
-    }
     if (!reminderForm.subject || !reminderForm.body) {
-      alert('Please fill in subject and body');
+      showToast('error', 'Please fill in subject and body');
       return;
     }
+
+    const currentEvent = events.find((event) => event.id === reminderEventId);
+    if (!currentEvent) {
+      showToast('error', 'Unable to determine the selected event. Please try again.');
+      return;
+    }
+
+    const recipients = getReminderRecipients(currentEvent.title);
 
     const url = `${API_BASE_URL}/api/events/${reminderEventId}/reminder`;
 
     try {
+      setIsSendingReminder(true);
       console.log(`Sending reminder for event ${reminderEventId}`, reminderForm);
       const response = await fetch(url, {
         method: 'POST',
@@ -342,23 +388,27 @@ const DeptEventManagement = () => {
         body: JSON.stringify({
           subject: reminderForm.subject,
           body: reminderForm.body,
-          batch: reminderForm.batch
         })
       });
 
       if (!response.ok) {
         const message = await response.text();
-        alert(`Error sending reminder: ${message}`);
+        showToast('error', `Error sending reminder: ${message}`);
         return;
       }
 
-      alert(`Reminder email sent successfully to batch ${reminderForm.batch}!`);
+      showToast('success', `Reminder email sent successfully to ${recipients.label}!`);
       closeReminderModal();
     } catch (error) {
       console.error('Error sending reminder:', error);
-      alert('Error sending reminder. Please try again later.');
+      showToast('error', 'Error sending reminder. Please try again later.');
+    } finally {
+      setIsSendingReminder(false);
     }
   };
+
+  const reminderEvent = events.find((event) => event.id === reminderEventId);
+  const reminderRecipients = getReminderRecipients(reminderEvent?.title);
 
   const formatDate = (dateString) => {
     const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
@@ -375,6 +425,42 @@ const DeptEventManagement = () => {
 
   return (
     <>
+      {/* Toast Notification */}
+      <div
+        className={`fixed top-20 right-6 z-60 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl border transition-all duration-500 ${
+          toast.show
+            ? 'translate-x-0 opacity-100'
+            : 'translate-x-full opacity-0 pointer-events-none'
+        } ${
+          toast.type === 'success'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800 shadow-emerald-100'
+            : 'bg-red-50 border-red-200 text-red-800 shadow-red-100'
+        }`}
+      >
+        <div
+          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+            toast.type === 'success' ? 'bg-emerald-100' : 'bg-red-100'
+          }`}
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+            {toast.type === 'success' ? (
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+            ) : (
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+            )}
+          </svg>
+        </div>
+        <span className="font-medium text-sm">{toast.message}</span>
+        <button
+          onClick={() => setToast({ show: false, type: '', message: '' })}
+          className="ml-2 p-1 rounded-full hover:bg-black/5 transition-colors cursor-pointer"
+        >
+          <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+          </svg>
+        </button>
+      </div>
+
       <style>{`
         @keyframes fadeInUp {
           from {
@@ -938,7 +1024,7 @@ const DeptEventManagement = () => {
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
-            onClick={closeReminderModal}
+            onClick={isSendingReminder ? undefined : closeReminderModal}
           />
 
           {/* Modal */}
@@ -958,6 +1044,7 @@ const DeptEventManagement = () => {
               </div>
               <button
                 onClick={closeReminderModal}
+                disabled={isSendingReminder}
                 className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -968,19 +1055,16 @@ const DeptEventManagement = () => {
 
             {/* Body */}
             <div className="p-6 space-y-4">
-              {/* Batch */}
-              <div>
-                <label className="block text-sm font-medium text-amber-700 mb-1.5">
-                  Batch <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={reminderForm.batch}
-                  onChange={(e) => setReminderForm({ ...reminderForm, batch: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                  placeholder="e.g., b23, b22"
-                />
-                <p className="text-xs text-amber-500 mt-1">Enter the batch code to send reminder to</p>
+              <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Recipients</p>
+                <p className="mt-1 text-sm text-blue-800">
+                  This email will be sent to <span className="font-semibold">{reminderRecipients.label}</span>
+                </p>
+                {reminderEvent && (
+                  <p className="mt-1 text-xs text-blue-600/80">
+                    Based on the {formatPhaseLabel(reminderEvent.title)} phase
+                  </p>
+                )}
               </div>
 
               {/* Subject */}
@@ -1016,19 +1100,45 @@ const DeptEventManagement = () => {
             <div className="flex items-center justify-end gap-3 p-6 border-t border-orange-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-b-2xl">
               <button
                 onClick={closeReminderModal}
-                className="px-5 py-2.5 text-amber-700 font-medium rounded-xl border border-orange-200 hover:bg-amber-50 transition-all duration-200"
+                disabled={isSendingReminder}
+                className="px-5 py-2.5 text-amber-700 font-medium rounded-xl border border-orange-200 hover:bg-amber-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
-              <button
-                onClick={handleSendReminder}
-                className="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-all duration-200 flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                Send Reminder
-              </button>
+              <div className="flex flex-col items-stretch gap-2" style={{ minWidth: '210px' }}>
+                {isSendingReminder && (
+                  <div className="w-full">
+                    <div className="flex items-center justify-between text-xs text-blue-700 mb-1">
+                      <span>Sending emails...</span>
+                      <span>Processing</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-blue-100">
+                      <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 animate-pulse" />
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={handleSendReminder}
+                  disabled={isSendingReminder}
+                  className="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isSendingReminder ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      Sending Emails...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      Send Reminder
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
