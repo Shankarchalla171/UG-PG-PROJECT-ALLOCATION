@@ -300,17 +300,24 @@ const ProfessorStudentRequest = () => {
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
   const [reviewSaved, setReviewSaved] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [loadingResume, setLoadingResume] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
 
-  // ← NEW: lazy team fetch state
+  // lazy team fetch state
   const [teamDetails, setTeamDetails] = useState(null);
   const [loadingTeam, setLoadingTeam] = useState(false);
-  const teamCache = useRef({}); // keyed by teamId string
+  const teamCache = useRef({});
+
+  // Single loading state: "initial" | "filter" | false
+  // "initial" = very first load (show stats+filter skeletons too)
+  // "filter"  = subsequent filter/page changes (keep stats+filter visible)
+  // false     = done loading
+  const [loadingState, setLoadingState] = useState("initial");
+  const hasFetchedOnce = useRef(false);
+  const skeletonCount = useRef(5);
 
   const params = new URLSearchParams(window.location.search);
   const projectIdFromURL = params.get("projectId") ? String(params.get("projectId")) : null;
@@ -319,7 +326,7 @@ const ProfessorStudentRequest = () => {
   const API_URL = import.meta.env.VITE_API_URL;
 
   const fetchApplications = async () => {
-    setLoading(true);
+    setLoadingState(hasFetchedOnce.current ? "filter" : "initial");
     try {
       const res = await fetch(
         `${API_URL}/api/professor/applications?page=${page}&status=${filter}&projectId=${projectFilter === "all" ? "" : projectFilter}`,
@@ -328,10 +335,13 @@ const ProfessorStudentRequest = () => {
       const data = await res.json();
       setRequests(data.content || []);
       setTotalPages(data.totalPages || 0);
+      const count = (data.content || []).length;
+      skeletonCount.current = count > 0 ? Math.min(count, 5) : 3;
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      hasFetchedOnce.current = true;
+      setLoadingState(false);
     }
   };
 
@@ -420,10 +430,16 @@ const ProfessorStudentRequest = () => {
   const handleAccept = async (id) => {
     setActionLoading("accept");
     try {
-      await fetch(`${API_URL}/api/professor/applications/${id}/accept`, {
+      const res = await fetch(`${API_URL}/api/professor/applications/${id}/accept`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if(!res.ok){
+        const text = await res.text();
+        alert(text);
+        return;
+      }
       await fetchApplications();
       setSelectedRequest((prev) => prev ? { ...prev, status: "CONFIRMED" } : null);
     } finally {
@@ -551,6 +567,28 @@ const ProfessorStudentRequest = () => {
     return () => { if (previewData?.url) URL.revokeObjectURL(previewData.url); };
   }, [previewData]);
 
+  const ApplicationCardSkeleton = () => (
+    <div className="bg-white rounded-xl border border-orange-200/60 border-l-4 border-orange-200 shadow-sm p-4 animate-pulse">
+      
+      {/* Row */}
+      <div className="flex items-center justify-between">
+        
+        {/* Left */}
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-40 bg-gray-200 rounded"></div>
+          <div className="h-3 w-56 bg-gray-100 rounded"></div>
+        </div>
+
+        {/* Right meta */}
+        <div className="hidden lg:flex items-center gap-6">
+          <div className="h-10 w-20 bg-gray-200 rounded"></div>
+          <div className="h-10 w-16 bg-gray-200 rounded"></div>
+          <div className="h-10 w-24 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <Navbar />
@@ -573,90 +611,114 @@ const ProfessorStudentRequest = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-              {[
-                { label: "Total",    value: stats.total,    bg: "bg-orange-100", color: "text-orange-600", icon: "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" },
-                { label: "Pending",  value: stats.pending,  bg: "bg-yellow-100", color: "text-yellow-600", icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" },
-                { label: "Accepted", value: stats.accepted, bg: "bg-green-100",  color: "text-green-600",  icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" },
-                { label: "Rejected", value: stats.rejected, bg: "bg-red-100",    color: "text-red-600",    icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" },
-              ].map(({ label, value, bg, color, icon }) => (
-                <div key={label} className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-3 lg:p-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 lg:w-10 lg:h-10 ${bg} rounded-lg flex items-center justify-center`}>
-                      <svg className={`w-4 h-4 lg:w-5 lg:h-5 ${color}`} viewBox="0 0 24 24" fill="currentColor">
-                        <path d={icon}/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-xs text-amber-500">{label}</p>
-                      <p className="text-lg lg:text-xl font-bold text-amber-900">{value}</p>
+            {loadingState === "initial" ? (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                {[1,2,3,4].map((i) => (
+                  <div key={i} className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-4 animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
+                      <div className="space-y-2">
+                        <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                        <div className="h-5 w-10 bg-gray-300 rounded"></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                {[
+                  { label: "Total",    value: stats.total,    bg: "bg-orange-100", color: "text-orange-600", icon: "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" },
+                  { label: "Pending",  value: stats.pending,  bg: "bg-yellow-100", color: "text-yellow-600", icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" },
+                  { label: "Accepted", value: stats.accepted, bg: "bg-green-100",  color: "text-green-600",  icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" },
+                  { label: "Rejected", value: stats.rejected, bg: "bg-red-100",    color: "text-red-600",    icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" },
+                ].map(({ label, value, bg, color, icon }) => (
+                  <div key={label} className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-3 lg:p-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 lg:w-10 lg:h-10 ${bg} rounded-lg flex items-center justify-center`}>
+                        <svg className={`w-4 h-4 lg:w-5 lg:h-5 ${color}`} viewBox="0 0 24 24" fill="currentColor">
+                          <path d={icon}/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-xs text-amber-500">{label}</p>
+                        <p className="text-lg lg:text-xl font-bold text-amber-900">{value}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Filter Bar */}
-            <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-4 mb-6">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
-                  </svg>
-                  <span className="text-xs font-medium text-amber-600">Filter:</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-amber-600">Project:</span>
-                  <select
-                    value={projectFilter}
-                    onChange={(e) => { setProjectFilter(e.target.value); setPage(0); setSelectedRequest(null); setTeamDetails(null); }}
-                    className="px-3 py-1.5 rounded-lg text-xs border border-orange-200 bg-white text-amber-700"
-                  >
-                    <option value="all">All Projects</option>
-                    {projects.map((p) => (
-                      <option key={p.projectId} value={String(p.projectId)}>{p.title}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { key: "all",           label: "All" },
-                    { key: "PENDING",       label: "Pending" },
-                    { key: "CONFIRMED",     label: "Accepted" },
-                    { key: "REJECTED",      label: "Rejected" },
-                    { key: "TEAM_CONFIRMED",label: "Team Confirmed" },
-                    { key: "TEAM_REJECTED", label: "Team Declined" },
-                  ].map((f) => (
-                    <button
-                      key={f.key}
-                      onClick={() => { setFilter(f.key); setPage(0); setSelectedRequest(null); setTeamDetails(null); }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                        filter === f.key
-                          ? "bg-orange-500 text-white"
-                          : "bg-amber-50/50 text-amber-700 border border-orange-200 hover:bg-orange-100"
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
+            {loadingState === "initial" ? (
+              <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-4 mb-6 animate-pulse">
+                <div className="flex gap-3">
+                  <div className="h-6 w-20 bg-gray-200 rounded"></div>
+                  <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                  <div className="h-6 w-24 bg-gray-200 rounded"></div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* existing filter bar */
+              <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-4 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+                    </svg>
+                    <span className="text-xs font-medium text-amber-600">Filter:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-amber-600">Project:</span>
+                    <select
+                      value={projectFilter}
+                      onChange={(e) => { setProjectFilter(e.target.value); setPage(0); setSelectedRequest(null); setTeamDetails(null); }}
+                      className="px-3 py-1.5 rounded-lg text-xs border border-orange-200 bg-white text-amber-700"
+                    >
+                      <option value="all">All Projects</option>
+                      {projects.map((p) => (
+                        <option key={p.projectId} value={String(p.projectId)}>{p.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: "all",           label: "All" },
+                      { key: "PENDING",       label: "Pending" },
+                      { key: "CONFIRMED",     label: "Accepted" },
+                      { key: "REJECTED",      label: "Rejected" },
+                      { key: "TEAM_CONFIRMED",label: "Team Confirmed" },
+                      { key: "TEAM_REJECTED", label: "Team Declined" },
+                    ].map((f) => (
+                      <button
+                        key={f.key}
+                        onClick={() => { setFilter(f.key); setPage(0); setSelectedRequest(null); setTeamDetails(null); }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          filter === f.key
+                            ? "bg-orange-500 text-white"
+                            : "bg-amber-50/50 text-amber-700 border border-orange-200 hover:bg-orange-100"
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
-            {/* Loading */}
-            {loading && (
-              <div className="flex flex-col items-center justify-center py-16">
-                <svg className="animate-spin w-12 h-12 mb-4 text-amber-500" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                </svg>
-                <p className="text-lg font-medium text-amber-700">Loading applications...</p>
-                <p className="text-sm text-amber-500 mt-1">Please wait</p>
+            {/* Loading skeletons for card list */}
+            {loadingState !== false && (
+              <div className="flex flex-col gap-3">
+                {Array.from({ length: skeletonCount.current }).map((_, i) => (
+                  <ApplicationCardSkeleton key={i} />
+                ))}
               </div>
             )}
 
             {/* Empty */}
-            {!loading && requests.length === 0 && (
+            {loadingState === false && requests.length === 0 && (
               <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-12 text-center">
                 <svg className="w-16 h-16 mx-auto mb-4 text-amber-200" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
@@ -669,7 +731,7 @@ const ProfessorStudentRequest = () => {
             )}
 
             {/* ── Horizontal Card List ── */}
-            {!loading && requests.length > 0 && (
+            {loadingState === false && requests.length > 0 && (
               <div className="flex flex-col gap-3">
                 {requests.map((req) => (
                   <ApplicationCard
@@ -687,7 +749,7 @@ const ProfessorStudentRequest = () => {
             )}
 
             {/* Pagination */}
-            {!loading && totalPages > 1 && (
+            {loadingState === false && totalPages > 1 && (
               <div className="flex items-center gap-2 flex-wrap justify-center mt-8">
                 <button onClick={handlePrev} disabled={page === 0} className="px-3 py-1 border rounded disabled:opacity-50">Prev</button>
                 {getPageNumbers().map((item, index) =>
