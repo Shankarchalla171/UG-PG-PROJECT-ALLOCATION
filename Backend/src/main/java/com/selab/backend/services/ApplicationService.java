@@ -152,6 +152,16 @@ public class ApplicationService {
                 projectApplicationsRepository.findById(applicationId)
                         .orElseThrow(() -> new RuntimeException("Application not found"));
 
+        Project project = application.getProject();
+        Team team = application.getTeam();
+
+        int teamSize = team.getTeamMembers().size();
+        int remainingSlots = project.getSlots();
+
+        if (teamSize > remainingSlots) {
+            throw new RuntimeException("Not enough slots remaining for this team");
+        }
+
         application.setStatus(ApplicationStatus.CONFIRMED);
 
         projectApplicationsRepository.save(application);
