@@ -9,3 +9,4 @@ Backend/uploads/
 # Dockerfile*
 .idea/
 # docker-compose*
+uploads/

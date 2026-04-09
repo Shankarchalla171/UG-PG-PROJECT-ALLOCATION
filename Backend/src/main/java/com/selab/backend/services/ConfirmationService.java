@@ -1,5 +1,8 @@
 package com.selab.backend.services;
 
+import com.selab.backend.Dto.ProfessorFinalAllocationDto;
+import com.selab.backend.Dto.StudentDto;
+import com.selab.backend.Dto.TeamDto;
 import com.selab.backend.Dto.ViewConfirmationsDto;
 import com.selab.backend.exceptions.AccessDeniedException;
 import com.selab.backend.exceptions.ResourceNotFoundException;
@@ -21,6 +24,8 @@ public class ConfirmationService {
     private final ProjectApplicationsRepository applicationRepository;
     private final StudentRepository studentRepository;
     private final ProjectRepository projectRepository;
+    private final TeamRepository teamRepository;
+    private final ProfessorRepository professorRepository;
 
     // ============ HELPER METHODS ============
 
@@ -318,5 +323,102 @@ public class ConfirmationService {
         // 6. Update status to TEAM_REJECTED
         application.setStatus(ApplicationStatus.TEAM_REJECTED);
         applicationRepository.save(application);
+    }
+
+    /**
+     * Get all TEAM_CONFIRMED applications for a professor's projects
+     * Used for the "Final Team Allocations" page
+     *
+     * @param currentUser The logged-in professor user
+     * @return List of ProfessorFinalAllocationDto with all confirmed allocations
+     */
+    public List<ProfessorFinalAllocationDto> getTeamConfirmedAllocationsForProfessor(User currentUser) {
+        // 1. Verify user is a professor
+        if (currentUser.getRole() != Role.PROFF) {
+            throw new RuntimeException("Only professors can access team allocations");
+        }
+
+        // 2. Get professor from user
+        Professor professor = professorRepository.findByUser(currentUser)
+                .orElseThrow(() -> new ResourceNotFoundException("Professor profile not found for user: " + currentUser.getUsername()));
+
+        Long professorId = professor.getProfessorId();
+
+        // 3. Get all TEAM_CONFIRMED applications for this professor's projects
+        List<ProjectApplications> applications = applicationRepository
+                .findByProfessorIdAndStatus(professorId, ApplicationStatus.TEAM_CONFIRMED);
+
+        // 4. Calculate statistics
+        long totalTeams = applications.size();
+        long totalStudents = applications.stream()
+                .mapToLong(app -> getTeamSize(app.getTeam().getTeamId()))
+                .sum();
+        long activeProjects = applications.stream()
+                .map(app -> app.getProject().getProjectId())
+                .distinct()
+                .count();
+
+        // 5. Convert to DTOs
+        return applications.stream()
+                .map(app -> convertToProfessorFinalAllocationDto(app, totalTeams, totalStudents, activeProjects))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Convert a ProjectApplications entity to ProfessorFinalAllocationDto
+     */
+    private ProfessorFinalAllocationDto convertToProfessorFinalAllocationDto(
+            ProjectApplications application,
+            long totalTeams,
+            long totalStudents,
+            long activeProjects) {
+
+        Project project = application.getProject();
+        Professor professor = project.getProfessor();
+        Team team = application.getTeam();
+
+        // Convert team members to StudentDto
+        List<StudentDto> studentDtos = team.getTeamMembers().stream()
+                .map(this::convertStudentToDto)
+                .collect(Collectors.toList());
+
+        // Create TeamDto using your existing builder pattern
+        TeamDto teamDto = TeamDto.builder()
+                .teamId(team.getTeamId())
+                .members(studentDtos)
+                .isFinalized(team.getIsFinalized() != null ? team.getIsFinalized() : false)
+                .build();
+
+        // Build and return the DTO
+        return ProfessorFinalAllocationDto.builder()
+                .applicationId(application.getAppliedProjectsId())
+                .projectId(project.getProjectId())
+                .projectTitle(project.getTitle())
+                .projectDescription(project.getDescription())
+                .duration(project.getDuration())
+                .confirmedDate(application.getConfirmedDate())
+                .professorName(professor.getName())
+                .professorEmail(professor.getEmail())
+                .team(teamDto)
+                .totalTeams((int) totalTeams)
+                .totalStudents((int) totalStudents)
+                .activeProjects((int) activeProjects)
+                .build();
+    }
+
+    /**
+     * Convert Student entity to StudentDto
+     */
+    private StudentDto convertStudentToDto(Student student) {
+        StudentDto dto = new StudentDto();
+        dto.setStudentId(student.getStudentId());
+        dto.setName(student.getName());
+        dto.setCollegeEmailId(student.getCollegeEmailId());
+        dto.setDepartmentName(student.getDepartmentName());
+        dto.setRollNumber(student.getRollNumber());
+        dto.setResumePath(student.getResumePath());
+        dto.setProfilePhotoLink(student.getProfilePhotoLink());
+        dto.setTeamRole(student.getTeamRole() != null ? student.getTeamRole().name() : null);
+        return dto;
     }
 }
