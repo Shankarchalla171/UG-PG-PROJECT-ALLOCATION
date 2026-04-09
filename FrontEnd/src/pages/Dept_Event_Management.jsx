@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { AuthContext } from '../context/AuthContext';
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -27,10 +29,12 @@ const DeptEventManagement = () => {
   const { token } = useContext(AuthContext);
 
   const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchEvents = async () => {
     const url = `${API_BASE_URL}/api/events`;
     try {
+      setLoading(true);
       console.log(`Fetching events from ${url} with token: ${token}`);
       const response = await fetch(url, {
         method: 'GET',
@@ -51,6 +55,8 @@ const DeptEventManagement = () => {
       }
     } catch (error) {
       console.log('Error fetching events:', error.message);
+    } finally {
+      setLoading(false);
     }
   }
   useEffect(() => {
@@ -438,209 +444,280 @@ const DeptEventManagement = () => {
           <div className="flex-1 p-6 ml-0 md:ml-0 mt-16">
             <div className="max-w-7xl mx-auto">
               {/* Header */}
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-amber-800">Event Management</h1>
-                <p className="text-amber-600/70 mt-2">Manage project events and milestones across all phases</p>
-              </div>
+              {loading ? (
+                <div className="mb-8">
+                  <Skeleton height={36} width={280} />
+                  <Skeleton height={20} width={360} className="mt-3" />
+                </div>
+              ) : (
+                <div className="mb-8">
+                  <h1 className="text-3xl font-bold text-amber-800">Event Management</h1>
+                  <p className="text-amber-600/70 mt-2">Manage project events and milestones across all phases</p>
+                </div>
+              )}
 
               {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 animate-fade-in-up" style={{ animationDelay: '0ms' }}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-amber-600/70">Total Events</p>
-                      <h3 className="text-2xl font-bold text-amber-800 mt-1">{stats.totalEvents}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-100 to-rose-100 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+              {!loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 animate-fade-in-up" style={{ animationDelay: '0ms' }}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-amber-600/70">Total Events</p>
+                        <h3 className="text-2xl font-bold text-amber-800 mt-1">{stats.totalEvents}</h3>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-100 to-rose-100 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-amber-600/70">Upcoming</p>
-                      <h3 className="text-2xl font-bold text-amber-800 mt-1">{stats.upcomingEvents}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                  <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-amber-600/70">Upcoming</p>
+                        <h3 className="text-2xl font-bold text-amber-800 mt-1">{stats.upcomingEvents}</h3>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-amber-600/70">Active</p>
-                      <h3 className="text-2xl font-bold text-amber-800 mt-1">{stats.activeEvents}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                  <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-amber-600/70">Active</p>
+                        <h3 className="text-2xl font-bold text-amber-800 mt-1">{stats.activeEvents}</h3>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-amber-600/70">Passed</p>
-                      <h3 className="text-2xl font-bold text-amber-800 mt-1">{stats.passedEvents}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                  <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-amber-600/70">Passed</p>
+                        <h3 className="text-2xl font-bold text-amber-800 mt-1">{stats.passedEvents}</h3>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  {Array.from({ length: 4 }).map((_, idx) => (
+                    <div key={idx} className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm">
+                      <Skeleton height={18} width={140} className="mb-4" />
+                      <Skeleton height={32} width={90} />
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Action Bar */}
               <div className="mb-8">
-                <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm">
-                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex flex-wrap gap-4">
-                      <button
-                        onClick={() => setFilter('all')}
-                        className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${filter === 'all' ? 'bg-amber-600 text-white' : 'bg-white text-amber-700 border border-orange-200 hover:bg-amber-50'}`}
-                      >
-                        All Events
-                      </button>
-                      <button
-                        onClick={() => setFilter('upcoming')}
-                        className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${filter === 'upcoming' ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 border border-blue-200 hover:bg-blue-50'}`}
-                      >
-                        Upcoming
-                      </button>
-                      <button
-                        onClick={() => setFilter('active')}
-                        className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${filter === 'active' ? 'bg-green-600 text-white' : 'bg-white text-green-700 border border-green-200 hover:bg-green-50'}`}
-                      >
-                        Active
-                      </button>
-                      <button
-                        onClick={() => setFilter('passed')}
-                        className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${filter === 'passed' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border border-rose-200 hover:bg-rose-50'}`}
-                      >
-                        Passed
-                      </button>
+                {loading ? (
+                  <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                      <div className="flex flex-wrap gap-4">
+                        {Array.from({ length: 4 }).map((_, idx) => (
+                          <Skeleton key={idx} height={40} width={120} />
+                        ))}
+                      </div>
+                      <Skeleton height={48} width={180} />
                     </div>
-
-                    <button
-                      onClick={() => setShowAddForm(!showAddForm)}
-                      className={`px-6 py-3 font-medium rounded-xl transition-all duration-300 flex items-center gap-2 ${showAddForm
-                          ? 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
-                          : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-orange-500/25'
-                        }`}
-                    >
-                      <svg
-                        className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      {showAddForm ? 'Cancel' : 'Add New Event'}
-                    </button>
                   </div>
-
-                  {/* Add Event Form */}
-                  {showAddForm && (
-                    <div className="mt-6 p-6 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 animate-slide-down">
-                      <h3 className="text-lg font-bold text-amber-800 mb-4">Add New Event</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-amber-600/70 mb-2">
-                            Phase *
-                          </label>
-                          <select
-                            value={newEvent.title}
-                            onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                            className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                          >
-                            <option value="">Select Phase</option>
-                            <option value="TEAM_FORMATION">Team Formation</option>
-                            <option value="PROJECT_CREATION">Project Creation</option>
-                            <option value="PROJECT_ALLOCATION">Project Allocation</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-amber-600/70 mb-2">
-                            Start Date
-                          </label>
-                          <input
-                            type="date"
-                            value={newEvent.startDate}
-                            min={getTodayDate()}
-                            onChange={(e) => setNewEvent({ ...newEvent, startDate: e.target.value })}
-                            className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-amber-600/70 mb-2">
-                            End Date *
-                          </label>
-                          <input
-                            type="date"
-                            value={newEvent.endDate}
-                            min={getTodayDate()}
-                            onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
-                            className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                          />
-                        </div>
-
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-amber-600/70 mb-2">
-                            Description
-                          </label>
-                          <textarea
-                            value={newEvent.description}
-                            onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                            className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
-                            rows="3"
-                            placeholder="Enter event description"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3 mt-6">
+                ) : (
+                  <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                      <div className="flex flex-wrap gap-4">
                         <button
-                          onClick={handleAddEvent}
-                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-medium rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300"
+                          onClick={() => setFilter('all')}
+                          className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${filter === 'all' ? 'bg-amber-600 text-white' : 'bg-white text-amber-700 border border-orange-200 hover:bg-amber-50'}`}
                         >
-                          Add Event
+                          All Events
                         </button>
                         <button
-                          onClick={() => setShowAddForm(false)}
-                          className="px-6 py-3 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 font-medium rounded-xl border border-orange-200 hover:from-amber-100 hover:to-orange-100 transition-all duration-300"
+                          onClick={() => setFilter('upcoming')}
+                          className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${filter === 'upcoming' ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 border border-blue-200 hover:bg-blue-50'}`}
                         >
-                          Cancel
+                          Upcoming
+                        </button>
+                        <button
+                          onClick={() => setFilter('active')}
+                          className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${filter === 'active' ? 'bg-green-600 text-white' : 'bg-white text-green-700 border border-green-200 hover:bg-green-50'}`}
+                        >
+                          Active
+                        </button>
+                        <button
+                          onClick={() => setFilter('passed')}
+                          className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${filter === 'passed' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border border-rose-200 hover:bg-rose-50'}`}
+                        >
+                          Passed
                         </button>
                       </div>
+
+                      <button
+                        onClick={() => setShowAddForm(!showAddForm)}
+                        className={`px-6 py-3 font-medium rounded-xl transition-all duration-300 flex items-center gap-2 ${showAddForm
+                            ? 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                            : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-orange-500/25'
+                          }`}
+                      >
+                        <svg
+                          className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        {showAddForm ? 'Cancel' : 'Add New Event'}
+                      </button>
                     </div>
-                  )}
-                </div>
+
+                    {/* Add Event Form */}
+                    {showAddForm && (
+                      <div className="mt-6 p-6 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 animate-slide-down">
+                        <h3 className="text-lg font-bold text-amber-800 mb-4">Add New Event</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-amber-600/70 mb-2">
+                              Phase *
+                            </label>
+                            <select
+                              value={newEvent.title}
+                              onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                              className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
+                            >
+                              <option value="">Select Phase</option>
+                              <option value="TEAM_FORMATION">Team Formation</option>
+                              <option value="PROJECT_CREATION">Project Creation</option>
+                              <option value="PROJECT_ALLOCATION">Project Allocation</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-amber-600/70 mb-2">
+                              Start Date
+                            </label>
+                            <input
+                              type="date"
+                              value={newEvent.startDate}
+                              min={getTodayDate()}
+                              onChange={(e) => setNewEvent({ ...newEvent, startDate: e.target.value })}
+                              className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-amber-600/70 mb-2">
+                              End Date *
+                            </label>
+                            <input
+                              type="date"
+                              value={newEvent.endDate}
+                              min={getTodayDate()}
+                              onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
+                              className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-amber-600/70 mb-2">
+                              Description
+                            </label>
+                            <textarea
+                              value={newEvent.description}
+                              onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                              className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none text-amber-800"
+                              rows="3"
+                              placeholder="Enter event description"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                          <button
+                            onClick={handleAddEvent}
+                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-medium rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300"
+                          >
+                            Add Event
+                          </button>
+                          <button
+                            onClick={() => setShowAddForm(false)}
+                            className="px-6 py-3 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 font-medium rounded-xl border border-orange-200 hover:from-amber-100 hover:to-orange-100 transition-all duration-300"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Events List */}
               <div className="space-y-4">
-                {filteredEvents.map((event, index) => (
-                  <div
-                    key={event.id}
-                    className="bg-white rounded-2xl border border-orange-200/60 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-orange-300 hover:-translate-y-1 animate-fade-in-up"
-                    style={{ animationDelay: `${index * 80}ms` }}
-                  >
-                    {editingId === event.id ? (
+                {loading ? (
+                  Array.from({ length: 3 }).map((index) => (
+                    <div
+                      key={index}
+                      className="bg-white rounded-2xl border border-orange-200/60 shadow-sm overflow-hidden transition-all duration-300 animate-fade-in-up"
+                    >
+                      <div className="p-5">
+                        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                          <div className="flex items-center gap-3 shrink-0">
+                            <div className="w-12 h-12 rounded-xl bg-slate-100" />
+                            <div className="space-y-2">
+                              <Skeleton height={18} width={90} />
+                              <Skeleton height={14} width={70} />
+                            </div>
+                          </div>
+
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <Skeleton height={20} width="30%" />
+                            <Skeleton height={16} width="20%" />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 shrink-0">
+                            <div className="p-3 rounded-2xl bg-slate-100 w-44 h-24" />
+                            <div className="p-3 rounded-2xl bg-slate-100 w-44 h-24" />
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100" />
+                            <div className="w-10 h-10 rounded-xl bg-slate-100" />
+                            <div className="w-10 h-10 rounded-xl bg-slate-100" />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end mt-4">
+                          <Skeleton height={12} width="25%" />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  filteredEvents.map((event, index) => (
+                    <div
+                      key={event.id}
+                      className="bg-white rounded-2xl border border-orange-200/60 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-orange-300 hover:-translate-y-1 animate-fade-in-up"
+                      style={{ animationDelay: `${index * 80}ms` }}
+                    >
+                      {editingId === event.id ? (
                       /* Edit Mode */
                       <div className="p-6">
                         <h3 className="text-lg font-semibold text-amber-800 mb-4">Edit Event</h3>
@@ -822,11 +899,11 @@ const DeptEventManagement = () => {
                       </div>
                     )}
                   </div>
-                ))}
+                )))}
               </div>
 
               {/* Empty State */}
-              {filteredEvents.length === 0 && (
+              {filteredEvents.length === 0 && !loading && (
                 <div className="bg-white rounded-2xl border border-orange-200/60 shadow-sm p-12 text-center">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
                     <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

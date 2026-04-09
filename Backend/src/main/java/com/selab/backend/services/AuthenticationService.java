@@ -4,11 +4,11 @@ import com.selab.backend.auth.AuthenticationRequest;
 import com.selab.backend.auth.AuthenticationResponse;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.auth.RegisterRequest;
-import com.selab.backend.exceptions.InvalidOtpException;
-import com.selab.backend.exceptions.UserNotFoundException;
+import com.selab.backend.exceptions.*;
 import com.selab.backend.models.*;
 import com.selab.backend.repositories.OtpRepo;
 import com.selab.backend.repositories.StudentRepository;
+import com.selab.backend.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,7 +16,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.selab.backend.repositories.UserRepository;
 
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -25,8 +24,8 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-public class AuthenticationService
-{
+public class AuthenticationService {
+
     private final UserRepository userRepository;
     private final StudentRepository studentRepository;
     private final PasswordEncoder passwordEncoder;
@@ -37,56 +36,39 @@ public class AuthenticationService
 
     @Transactional
     public AuthenticationResponse register(RegisterRequest registerRequest) {
-        try {
-            // Check if user already exists
-            if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
-                return AuthenticationResponse.builder()
-                        .token(null)
-                        .role(null)
-                        .message("Username already exists")
-                        .build();
-            }
-            if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
-                return AuthenticationResponse.builder()
-                        .token(null)
-                        .role(null)
-                        .message("Email already exists")
-                        .build();
-            }
-
-            var user = new User(
-                    registerRequest.getUsername(),
-                    registerRequest.getEmail(),
-                    passwordEncoder.encode(registerRequest.getPassword()),
-                    Role.UNVERIFIED
-            );
-
-            userRepository.save(user);
-
-            // Generate verification token
-            var verificationToken = generateVerificationToken(user);
-
-            // Send verification email
-            emailService.sendVerificationEmail(
-                    user.getEmail(),
-                    user.getUsername(),
-                    verificationToken
-            );
-
-            return AuthenticationResponse.builder()
-                    .token(null)
-                    .role(null)
-                    .teamRole(null)
-                    .message("Registration successful! Please verify your email to activate your account.")
-                    .build();
-
-        } catch (Exception e) {
-            return AuthenticationResponse.builder()
-                    .token(null)
-                    .role(null)
-                    .message("Registration failed: " + e.getMessage())
-                    .build();
+        // Check if user already exists
+        if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
+            throw new UsernameAlreadyExistsException("Username already exists");
         }
+        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
+            throw new EmailAlreadyExistsException("Email already exists");
+        }
+
+        var user = new User(
+                registerRequest.getUsername(),
+                registerRequest.getEmail(),
+                passwordEncoder.encode(registerRequest.getPassword()),
+                Role.UNVERIFIED
+        );
+
+        userRepository.save(user);
+
+        // Generate verification token
+        var verificationToken = generateVerificationToken(user);
+
+        // Send verification email
+        emailService.sendVerificationEmail(
+                user.getEmail(),
+                user.getUsername(),
+                verificationToken
+        );
+
+        return AuthenticationResponse.builder()
+                .token(null)
+                .role(null)
+                .teamRole(null)
+                .message("Registration successful! Please verify your email to activate your account.")
+                .build();
     }
 
     private String generateVerificationToken(User user) {
@@ -96,142 +78,87 @@ public class AuthenticationService
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        try {
-            // Authenticate the user
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getUsername(),
-                            request.getPassword()
-                    )
-            );
+        // This will throw BadCredentialsException if authentication fails
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getUsername(),
+                        request.getPassword()
+                )
+        );
 
-            // Find the user
-            var user = userRepository.findByUsername(request.getUsername())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+        // Find the user
+        var user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-            // Check if user has verified their email
-            if (user.getRole() == Role.UNVERIFIED) {
-                return AuthenticationResponse.builder()
-                        .token(null)
-                        .role(null)
-                        .teamRole(null)
-                        .message("Please verify your email before logging in")
-                        .build();
-            }
-
-            // Generate JWT token
-            var jwtToken = jwtService.generateToken(user);
-
-            // Return successful response with role
-            UUID teamId=null;
-            String teamRole=null;
-            if(user.getRole()==Role.STUDENT){
-                Student student=studentRepository.findByUser(user).orElseThrow(()-> new RuntimeException("student not found"));
-//                TeamMembers member=teamMembersRepository.findByMember(student).orElseThrow(()-
-                if(student.getTeamRole() != null) {
-                    teamId = student.getTeam().getTeamId();
-                    teamRole = student.getTeamRole().toString();
-                }
-            }
-            return AuthenticationResponse.builder()
-                    .token(jwtToken)
-                    .role(user.getRole().toString()) // This will return STUDENT, FACULTY, etc.
-                    .teamRole(teamRole)
-                    .message("Login successful")
-                    .build();
-
-        } catch (BadCredentialsException e) {
-            return AuthenticationResponse.builder()
-                    .token(null)
-                    .role(null)
-                    .message("Invalid username or password")
-                    .build();
-        } catch (RuntimeException e) {
-            if (e.getMessage().equals("User not found")) {
-                return AuthenticationResponse.builder()
-                        .token(null)
-                        .role(null)
-                        .message("User not found")
-                        .build();
-            }
-            return AuthenticationResponse.builder()
-                    .token(null)
-                    .role(null)
-                    .message("Authentication failed: " + e.getMessage())
-                    .build();
-        } catch (Exception e) {
-            return AuthenticationResponse.builder()
-                    .token(null)
-                    .role(null)
-                    .message("An unexpected error occurred")
-                    .build();
+        // Check if user has verified their email
+        if (user.getRole() == Role.UNVERIFIED) {
+            throw new AuthenticationFailedException("Please verify your email before logging in");
         }
+
+        // Generate JWT token
+        var jwtToken = jwtService.generateToken(user);
+
+        // Get team info if student
+        UUID teamId = null;
+        String teamRole = null;
+        if (user.getRole() == Role.STUDENT) {
+            Student student = studentRepository.findByUser(user)
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+            if (student.getTeamRole() != null) {
+                teamId = student.getTeam().getTeamId();
+                teamRole = student.getTeamRole().toString();
+            }
+        }
+
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .role(user.getRole().toString())
+                .teamRole(teamRole)
+                .message("Login successful")
+                .build();
     }
 
     public AuthenticationResponse verifyEmail(String token) {
-        try {
-            // Extract username from token
-            String username = jwtService.extractUsername(token);
-
-            // Find user
-            var user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            // Check if token is valid
-            if (!jwtService.isTokenValid(token, user)) {
-                return AuthenticationResponse.builder()
-                        .token(null)
-                        .role(null)
-                        .message("Invalid or expired verification token")
-                        .build();
-            }
-
-            // Update user role to STUDENT
-            user.setRole(Role.USER);
-            userRepository.save(user);
-
-            // Generate login token
-            var jwtToken = jwtService.generateToken(user);
-            user.setRole(Role.USER);
-            userRepository.save(user);
-            return AuthenticationResponse.builder()
-                    .token(jwtToken)
-                    .role(user.getRole().toString())
-                    .message("Email verified successfully! You can now use your account.")
-                    .build();
-
-        } catch (RuntimeException e) {
-            return AuthenticationResponse.builder()
-                    .token(null)
-                    .role(null)
-                    .message("Email verification failed: " + e.getMessage())
-                    .build();
-        } catch (Exception e) {
-            return AuthenticationResponse.builder()
-                    .token(null)
-                    .role(null)
-                    .message("An unexpected error occurred during verification")
-                    .build();
+        // Extract username from token
+        String username = jwtService.extractUsername(token);
+        if (username == null) {
+            throw new AuthenticationFailedException("Invalid verification token");
         }
+
+        // Find user
+        var user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        // Check if token is valid
+        if (!jwtService.isTokenValid(token, user)) {
+            throw new AuthenticationFailedException("Invalid or expired verification token");
+        }
+
+        // Update user role to USER
+        user.setRole(Role.USER);
+        userRepository.save(user);
+
+        // Generate login token
+        var jwtToken = jwtService.generateToken(user);
+
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .role(user.getRole().toString())
+                .message("Email verified successfully! You can now use your account.")
+                .build();
     }
 
     @Transactional
     public String sendOtp(String email) {
-        if(!userRepository.existsByEmail(email)) {
+        if (!userRepository.existsByEmail(email)) {
             throw new UserNotFoundException("There's no user with this email address. Try signing up.");
         }
-        if(otpRepo.existsByEmail(email)) otpRepo.delete(otpRepo.findByEmail(email));
-//        boolean otpExists=false;
-//        if(otpRepo.existsByEmail(email)) {
-//            OTPStore otpStore=otpRepo.findByEmail(email);
-//            if(otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())) {
-//                emailService.sendOtpEmail(email, userRepository.findByEmail(email).get().getUsername(), otpStore.getOtp());
-//                otpExists=true;
-//            }
-//            else {
-//                otpRepo.delete(otpStore);
-//            }
-//        }
+
+        // Delete any existing OTP for this email
+        if (otpRepo.existsByEmail(email)) {
+            otpRepo.delete(otpRepo.findByEmail(email));
+        }
+
         SecureRandom random = new SecureRandom();
         int otp = random.nextInt(100000, 1000000);
         OTPStore otpStore = new OTPStore();
@@ -239,74 +166,54 @@ public class AuthenticationService
         otpStore.setEmail(email);
         otpStore.setTime(Instant.now());
         otpRepo.save(otpStore);
-        emailService.sendOtpEmail(email, userRepository.findByEmail(email).get().getUsername(), otp);
+
+        User user = userRepository.findByEmail(email).get();
+        emailService.sendOtpEmail(email, user.getUsername(), otp);
 
         return "Kindly check your mail for the OTP.";
     }
 
     @Transactional
     public Map<String, String> validateOtp(String email, Integer otp) {
-        OTPStore otpStore=otpRepo.findByEmail(email);
+        OTPStore otpStore = otpRepo.findByEmail(email);
 
-        /* Tried to implement multiple otp scenario.
-         Falling back to single otp scenario due to latency issues with bcrypt encoder
-         */
-//        Set<OTPStore> validOtpStores=otpStoreSet
-//                .stream().
-//                filter(
-//                        otpStore->
-//                                otpStore
-//                                        .getTime()
-//                                        .plus(15, ChronoUnit.MINUTES)
-//                                        .isAfter(Instant.now()))
-//                .collect(Collectors.toSet());
-//
-//        Set<OTPStore> invalidOtpStores=otpStoreSet
-//                .stream()
-//                .filter(
-//                        otpStore->
-//                                otpStore.getTime().plus(15, ChronoUnit.MINUTES).isBefore(Instant.now())
-//                )
-//                .collect(Collectors.toSet());
-//        otpRepo.deleteAll(invalidOtpStores);
-//        Set<String> validOtps=validOtpStores
-//                .stream()
-//                .map(otpStore->otpStore.getOtp())
-//                .collect(Collectors.toSet());
-//        String encodedOtp=passwordEncoder.encode(String.valueOf(otp));
-        if(otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())&&
+        if (otpStore == null) {
+            throw new InvalidOtpException("No OTP requested for this email");
+        }
+
+        if (otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now()) &&
                 passwordEncoder.matches(String.valueOf(otp), otpStore.getOtp())) {
-            User u=userRepository.findByEmail(email).get();
-            String token=jwtService.generateToken(u);
+
+            User u = userRepository.findByEmail(email).get();
+            String token = jwtService.generateToken(u);
             otpRepo.delete(otpStore);
-            Map<String, String> map=new HashMap<>();
+
+            Map<String, String> map = new HashMap<>();
             map.put("token", token);
             map.put("Status", "Verification success");
             return map;
         }
-        if(!otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())) {
+
+        if (!otpStore.getTime().plus(15, ChronoUnit.MINUTES).isAfter(Instant.now())) {
             otpRepo.delete(otpStore);
         }
-        throw new InvalidOtpException("This otp is either invalid or expired. please request a new otp");
+        throw new InvalidOtpException("This OTP is either invalid or expired. Please request a new OTP.");
     }
 
     @Transactional
     public String resetPassword(String token, String newPassword) {
-        // Validate token
         String username = jwtService.extractUsername(token);
         if (username == null) {
-            throw new RuntimeException("Invalid token");
+            throw new AuthenticationFailedException("Invalid token");
         }
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // Check if token is valid and has the correct purpose
         if (!jwtService.isTokenValid(token, user)) {
-            throw new RuntimeException("Invalid or expired token");
+            throw new AuthenticationFailedException("Invalid or expired token");
         }
 
-        // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 

@@ -75,7 +75,7 @@ const ProfessorViewProjects = () => {
         if (!window.confirm('Are you sure you want to delete this project?')) return;
 
         try {
-            const response = await fetch(`/api/projects/${id}`, {
+            const response = await fetch(`http://localhost:8080/api/projects/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -514,7 +514,7 @@ const ProfessorViewProjects = () => {
                                                                 step="1"
                                                             />
                                                         ) : (
-                                                            <p className="text-sm font-medium text-amber-800">{project.duration} weeks</p>
+                                                            <p className="text-sm font-medium text-amber-800">{project.duration} semesters</p>
                                                         )}
                                                     </div>
                                                 </div>
