@@ -5,10 +5,12 @@ import com.selab.backend.Dto.DeadLineDto;
 import com.selab.backend.Dto.RemainderEmail;
 import com.selab.backend.mappers.DeadLineMapper;
 import com.selab.backend.models.Event;
+import com.selab.backend.models.Phase;
 import com.selab.backend.models.User;
 import com.selab.backend.services.DeadlineService;
 import com.selab.backend.services.NotificationService;
 import jakarta.validation.Valid;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,8 +56,12 @@ public class DeadLineController {
 
     @PostMapping("/{id}/reminder")
     public ResponseEntity<?> sendEventRemainder(@Valid @RequestBody RemainderEmail content, @AuthenticationPrincipal User user,@PathVariable Long id){
-        System.out.println(content);
         notificationService.sendRemainder(content,user,id);
         return ResponseEntity.ok().body("Remainders sent successfully");
+    }
+
+    @GetMapping("/{title}")
+    public ResponseEntity<DeadLineDto> getDeadLineDeatils(@PathVariable Phase title, @AuthenticationPrincipal User user){
+        return new ResponseEntity<>(deadlineService.getDetails(title,user), HttpStatus.OK);
     }
 }
