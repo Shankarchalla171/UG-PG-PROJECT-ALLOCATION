@@ -136,6 +136,41 @@ public class ProjectService {
             String slots
     ) {
 
+        if(student.getTeamRole() == null){
+            Page<Project> projects;
+            projects = projectRepository.findAll(pageable);
+            int teamSize = 0;
+            return projects.map(project -> {
+
+                        ProjectListingDto dto = new ProjectListingDto();
+
+                        dto.setId(project.getProjectId());
+                        dto.setProjectTitle(project.getTitle());
+                        dto.setDescription(project.getDescription());
+                        dto.setFacultyName(project.getProfessor().getName());
+                        if (project.getDomain() != null && !project.getDomain().isEmpty()) {
+                            dto.setDomains(
+                                    Arrays.stream(project.getDomain().split(","))
+                                            .map(String::trim)
+                                            .filter(s -> !s.isEmpty())
+                                            .toList()
+                            );
+                        } else {
+                            dto.setDomains(new ArrayList<>());
+                        }
+                        dto.setDuration(project.getDuration());
+                        dto.setPreRequisites(project.getPreRequisites());
+                        dto.setAvailableSlots(project.getSlots());
+                        dto.setTeamSize(teamSize);
+
+                        // Default values
+                        dto.setAppliedOn(null);
+                        dto.setTeamConfirmed(false);
+
+                        return dto;
+            });
+        }
+
         Specification<Project> spec = buildSpecification(
                 student.getTeam(),
                 student.getDepartmentName(),
