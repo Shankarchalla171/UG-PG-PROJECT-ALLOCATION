@@ -815,7 +815,7 @@ const ProjectListing = () => {
                     </span>
                   </div>
 
-                  {activeProject.teamSize && activeProject.availableSlots < activeProject.teamSize && (
+                  {activeProject.teamSize > 0 && activeProject.availableSlots < activeProject.teamSize && (
                     <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
                       <svg className="w-4 h-4 mt-0.5 text-red-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 
