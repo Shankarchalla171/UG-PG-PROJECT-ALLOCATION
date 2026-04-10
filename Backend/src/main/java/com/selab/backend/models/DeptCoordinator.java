@@ -20,6 +20,9 @@ public class DeptCoordinator {
     @Column(nullable = false)
     private String deptName;
 
+    @Column(nullable = false)
+    private String batch;
+
     @OneToOne
     @JoinColumn(name="user_id", unique = true)
     @OnDelete(action = OnDeleteAction.CASCADE)
