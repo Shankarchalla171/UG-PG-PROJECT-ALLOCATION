@@ -29,4 +29,7 @@ public interface ProfessorRepository extends JpaRepository<Professor,Long> {
             @Param("project") Project project,
             @Param("allowed") Long allowed
     );
+
+    @Query("select p.email from Professor p ")
+    List<String> getAllEmails();
 }

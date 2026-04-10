@@ -22,4 +22,6 @@ public interface DeadLineRepository extends JpaRepository<Event,Long> {
     LocalDate findDeadLineStartDate(@Param("coordinator") DeptCoordinator coordinator, @Param("phaseType") Phase phaseType);
 
     Optional<Event> findById(Long id);
+
+    Optional<Event> findByDeptCoordinatorAndTitle(DeptCoordinator deptCoordinator, Phase title);
 }

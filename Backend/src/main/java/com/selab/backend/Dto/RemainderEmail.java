@@ -9,6 +9,4 @@ public class RemainderEmail {
     private String subject;
     @NotBlank(message = "body cant be empty or blank")
     private String body;
-    @NotBlank(message = "batch cant be empty or blank")
-    private String batch;
 }
