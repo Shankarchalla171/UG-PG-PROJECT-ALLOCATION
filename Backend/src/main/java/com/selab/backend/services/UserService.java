@@ -114,18 +114,32 @@ public class UserService implements UserDetailsService {
         return userRepository.save(user);
     }
 
-    public void makeCoordinator(Long userId, String deptName) {
+    public void makeCoordinator(Long userId, String deptName, String batch) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (user.getRole().name().equals("ADMIN")) {
+        if (user.getRole() == Role.ADMIN) {
             throw new RuntimeException("Cannot modify admin");
+        }
+
+        // 🔴 NEW: Only professors can be made coordinators
+        if (user.getRole() != Role.PROFF) {
+            throw new RuntimeException("Only professors can be made into department coordinators");
         }
 
         // 🔴 Prevent duplicate coordinator entries
         if (deptCoordinatorRepository.findByUserId(userId).isPresent()) {
             throw new RuntimeException("User is already a coordinator");
+        }
+
+        // 🔴 Enforce ONE coordinator per dept per batch
+        if (deptCoordinatorRepository
+                .findByDeptNameAndBatch(deptName, batch)
+                .isPresent()) {
+            throw new RuntimeException(
+                    "Coordinator already exists for " + deptName + " in batch " + batch
+            );
         }
 
         // 1. Update role
@@ -136,6 +150,7 @@ public class UserService implements UserDetailsService {
         DeptCoordinator coordinator = new DeptCoordinator();
         coordinator.setUser(user);  // JPA handles user_id
         coordinator.setDeptName(deptName);
+        coordinator.setBatch(batch);
 
         deptCoordinatorRepository.save(coordinator);
     }
