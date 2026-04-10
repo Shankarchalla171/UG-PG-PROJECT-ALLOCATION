@@ -46,7 +46,9 @@ public class AdminController {
 
     // ✅ Make department coordinator
     @PostMapping("/users/{id}/make-coordinator")
-    public void makeCoordinator(@PathVariable Long id, @RequestBody AdminMakeCoordinatorRequest request) {
-        userService.makeCoordinator(id, request.getDeptName());
+    public ResponseEntity<?> makeCoordinator(@RequestBody AdminMakeCoordinatorRequest request) {
+        userService.makeCoordinator(request.getUserId(), request.getDeptName(), request.getBatch());
+        return ResponseEntity.ok("Coordinator assigned successfully");
+
     }
 }
