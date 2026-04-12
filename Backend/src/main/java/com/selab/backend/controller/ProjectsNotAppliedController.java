@@ -30,7 +30,8 @@ public class ProjectsNotAppliedController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String domain,
             @RequestParam(required = false) String faculty,
-            @RequestParam(required = false) String slots
+            @RequestParam(required = false) String slots,
+            @RequestParam(required = false) String applicationStatus
     ) {
         Student student = studentRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
@@ -38,7 +39,7 @@ public class ProjectsNotAppliedController {
         Pageable pageable = PageRequest.of(page, size);
 
         return projectService.getProjectListings(
-                student, pageable, search, domain, faculty, slots
+                student, pageable, search, domain, faculty, slots,applicationStatus
         );
     }
 }

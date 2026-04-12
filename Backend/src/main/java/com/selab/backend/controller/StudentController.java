@@ -10,6 +10,9 @@ import com.selab.backend.services.StudentService;
 import com.selab.backend.repositories.StudentRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -62,6 +65,28 @@ public class StudentController {
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
         return studentService.getTeamDetails(student);
+    }
+
+    @GetMapping("/projects")
+    public Page<ProjectListingDto> getProjects(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String domain,
+            @RequestParam(required = false) String faculty,
+            @RequestParam(required = false) String slots,
+            @RequestParam(required = false) String applicationStatus
+    ) {
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return projectService.getProjectListings(
+                student, pageable, search, domain, faculty, slots,applicationStatus
+        );
     }
 
     @GetMapping("/projects/filters")
