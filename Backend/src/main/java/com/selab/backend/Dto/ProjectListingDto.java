@@ -18,5 +18,6 @@ public class ProjectListingDto {
     private int availableSlots;
     private LocalDate appliedOn;
     private boolean teamConfirmed;
+    private boolean applied;
     private int teamSize;
 }
