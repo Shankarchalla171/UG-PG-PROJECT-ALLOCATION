@@ -59,7 +59,7 @@ const ApplicationCard = ({
     setSaving(true);
     try {
       await fetch(
-        `${API_URL}/api/professor/applications/${req.applicationId}/review`,
+        `${API_URL}/api/professors/applications/${req.applicationId}/review`,
         {
           method: "PUT",
           headers: { "Content-Type": "text/plain", Authorization: `Bearer ${token}` },
@@ -215,13 +215,23 @@ const ApplicationCard = ({
             <div className="space-y-2">
               <textarea
                 value={localReview}
-                onChange={(e) => setLocalReview(e.target.value)}
+                onChange={(e) => setLocalReview(e.target.value.slice(0, 500))}
                 onClick={(e) => e.stopPropagation()}
                 placeholder="Add your review or feedback for this team..."
                 className="w-full p-2.5 rounded-lg border border-orange-300 bg-amber-50 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm text-amber-800 resize-none transition-all"
                 rows={3}
+                maxLength={500}
                 autoFocus
               />
+              <div className="flex justify-end">
+                <span className={`text-xs font-medium tabular-nums ${
+                  localReview.length >= 500 ? "text-red-500" :
+                  localReview.length >= 450 ? "text-orange-500" :
+                  "text-amber-400"
+                }`}>
+                  {localReview.length}/500 Characters
+                </span>
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleSaveReview}
@@ -240,7 +250,8 @@ const ApplicationCard = ({
             </div>
           ) : (
             <div
-              className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2.5 border border-orange-100 leading-relaxed min-h-[40px] cursor-text"
+              className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2.5 border border-orange-100 leading-relaxed min-h-[40px] cursor-text overflow-y-auto break-words"
+              style={{ maxHeight: "6.5rem" }}
               onClick={(e) => { e.stopPropagation(); setEditingReview(true); }}
               title="Click to edit review"
             >
@@ -329,7 +340,7 @@ const ProfessorStudentRequest = () => {
     setLoadingState(hasFetchedOnce.current ? "filter" : "initial");
     try {
       const res = await fetch(
-        `${API_URL}/api/professor/applications?page=${page}&status=${filter}&projectId=${projectFilter === "all" ? "" : projectFilter}`,
+        `${API_URL}/api/professors/applications?page=${page}&status=${filter}&projectId=${projectFilter === "all" ? "" : projectFilter}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -430,7 +441,7 @@ const ProfessorStudentRequest = () => {
   const handleAccept = async (id) => {
     setActionLoading("accept");
     try {
-      const res = await fetch(`${API_URL}/api/professor/applications/${id}/accept`, {
+      const res = await fetch(`${API_URL}/api/professors/applications/${id}/accept`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -450,7 +461,7 @@ const ProfessorStudentRequest = () => {
   const handleReject = async (id) => {
     setActionLoading("reject");
     try {
-      await fetch(`${API_URL}/api/professor/applications/${id}/reject`, {
+      await fetch(`${API_URL}/api/professors/applications/${id}/reject`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -464,7 +475,7 @@ const ProfessorStudentRequest = () => {
   const handleReviewSubmit = async () => {
     if (!reviewText.trim()) return;
     await fetch(
-      `${API_URL}/api/professor/applications/${selectedRequest.applicationId}/review`,
+      `${API_URL}/api/professors/applications/${selectedRequest.applicationId}/review`,
       {
         method: "PUT",
         headers: { "Content-Type": "text/plain", Authorization: `Bearer ${token}` },
@@ -815,7 +826,10 @@ const ProfessorStudentRequest = () => {
 
                   <div className="mb-4">
                     <p className="text-xs font-medium text-amber-600 mb-1.5 uppercase tracking-wide">Application Message</p>
-                    <p className="text-sm text-amber-800 leading-relaxed bg-amber-50 p-3 rounded-lg border border-orange-100">
+                    <p
+                      className="text-sm text-amber-800 leading-relaxed bg-amber-50 p-3 rounded-lg border border-orange-100 overflow-y-auto break-words"
+                      style={{ maxHeight: "6.5rem" }}
+                    >
                       {selectedRequest.message || "No message provided"}
                     </p>
                   </div>
@@ -854,12 +868,22 @@ const ProfessorStudentRequest = () => {
                         )}
                         <textarea
                           value={reviewText}
-                          onChange={(e) => setReviewText(e.target.value)}
+                          onChange={(e) => setReviewText(e.target.value.slice(0, 500))}
                           placeholder="Add your review or feedback..."
                           className="w-full p-3 rounded-lg border border-orange-300 bg-amber-50 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm text-amber-800 resize-none"
                           rows={3}
+                          maxLength={500}
                           autoFocus
                         />
+                        <div className="flex justify-end">
+                          <span className={`text-xs font-medium tabular-nums ${
+                            reviewText.length >= 500 ? "text-red-500" :
+                            reviewText.length >= 450 ? "text-orange-500" :
+                            "text-amber-400"
+                          }`}>
+                            {reviewText.length}/500 Characters
+                          </span>
+                        </div>
                         <div className="flex gap-2">
                           <button
                             onClick={async () => {
@@ -884,7 +908,8 @@ const ProfessorStudentRequest = () => {
                       </div>
                     ) : (
                       <div
-                        className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2.5 border border-orange-100 leading-relaxed min-h-[40px] cursor-text"
+                        className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2.5 border border-orange-100 leading-relaxed min-h-[40px] cursor-text overflow-y-auto break-words"
+                        style={{ maxHeight: "6.5rem" }}
                         onClick={() => setEditingPanelReview(true)}
                         title="Click to edit review"
                       >

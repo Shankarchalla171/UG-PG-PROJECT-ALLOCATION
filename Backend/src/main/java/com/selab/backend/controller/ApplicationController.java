@@ -31,14 +31,11 @@ public class ApplicationController {
         Student student = studentRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        if (!student.getTeamRole().equals(TeamRole.TEAMlEAD)) {
-            throw new RuntimeException("Only team leader can apply");
-        }
-
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new RuntimeException("Project not found"));
 
         applicationService.applyToProject(
+                student,
                 project,
                 student.getTeam(),
                 request.getMessage()
