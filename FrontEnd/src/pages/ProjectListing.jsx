@@ -44,6 +44,8 @@ const ProjectListing = () => {
 
   // ── Filters ─────────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const searchDebounceRef = React.useRef(null);
   const [selectedDomain, setSelectedDomain] = useState('');
   const [selectedFaculty, setSelectedFaculty] = useState('');
   const [slotFilter, setSlotFilter] = useState('all');
@@ -329,6 +331,15 @@ const ProjectListing = () => {
 
   // ─── Resets ──────────────────────────────────────────────────────────────────
   useEffect(() => { setPage(0); }, [searchQuery, selectedDomain, selectedFaculty, slotFilter, applicationStatusFilter]);
+
+  // Debounce search input — fires API call 500ms after the user stops typing
+  useEffect(() => {
+    clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 500);
+    return () => clearTimeout(searchDebounceRef.current);
+  }, [searchInput]);
   useEffect(() => { setProjectlist([]); setPage(0); }, [token]);
 
   useEffect(() => {
@@ -350,6 +361,7 @@ const ProjectListing = () => {
 
   const clearFilters = () => {
     setSearchQuery('');
+    setSearchInput('');
     setSelectedDomain('');
     setSelectedFaculty('');
     setSlotFilter('all');
@@ -505,8 +517,8 @@ const ProjectListing = () => {
                           <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
                         </svg>
                         <input
-                          type="text" placeholder="Search projects..." value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
+                          type="text" placeholder="Search projects..." value={searchInput}
+                          onChange={(e) => setSearchInput(e.target.value)}
                           className='w-full pl-9 pr-4 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 placeholder-amber-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all'
                         />
                       </div>
