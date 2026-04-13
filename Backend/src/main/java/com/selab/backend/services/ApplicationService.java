@@ -5,11 +5,14 @@ import com.selab.backend.exceptions.ResourceNotFoundException;
 import com.selab.backend.mappers.ProjectMapper;
 import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.*;
+import com.selab.backend.repositories.DeadLineRepository;
 import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.ProjectApplicationsRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,14 +30,37 @@ public class ApplicationService {
     private final DeptCoordinatorRepository deptCoordinatorRepository;
     private final ProjectMapper projectMapper;
 //    private final StudentMapper studentMapper;
+    private final DeadLineRepository deadLineRepository;
 
-    public void applyToProject(Project project, Team team, String message) {
+    public void applyToProject(Student student,Project project, Team team, String message) {
+
+        String batch=student.getRollNumber().substring(0,3);
+        DeptCoordinator coordinator=deptCoordinatorRepository.findByBatch(batch).orElseThrow(() -> new RuntimeException("Project Allocation not active"));
+        Event event=deadLineRepository.findByDeptCoordinatorAndTitle(coordinator, Phase.PROJECT_ALLOCATION).orElseThrow(()-> new ResourceNotFoundException("Project Allocation is not active"));
+
+        LocalDate startDate = event.getStartDate();
+        LocalDate endDate = event.getEndDate();
+        LocalDate today = LocalDate.now();
+
+        if( !((startDate == null || !today.isBefore(startDate)) && !today.isAfter(endDate))) {
+            throw new RuntimeException("Project Allocation is not active");
+        }
+
+        boolean alreadyConfirmed = projectApplicationsRepository.existsByTeamAndStatus(team, ApplicationStatus.TEAM_CONFIRMED);
+
+        if (alreadyConfirmed) {
+            throw new RuntimeException("Team has already confirmed a project");
+        }
 
         Optional<ProjectApplications> existing =
                 projectApplicationsRepository.findByTeamAndProject(team, project);
 
         if (existing.isPresent()) {
             throw new RuntimeException("Team already applied to this project");
+        }
+
+        if (!student.getTeamRole().equals(TeamRole.TEAMlEAD)) {
+            throw new RuntimeException("Only team leader can apply");
         }
 
         if(team.getTeamMembers().size() > project.getSlots()){
