@@ -114,21 +114,15 @@ public class ProjectService {
 
             // SLOTS
             if (slots != null && !slots.equals("all")) {
-                if (slots.equals("available")) {
-                    predicates.add(cb.greaterThan(root.get("slots"), 0));
-                } else if (slots.equals("full")) {
-                    predicates.add(cb.equal(root.get("slots"), 0));
-                } else {
-                    // Handle numeric values (1,2,3)
-                    try {
-                        int slotValue = Integer.parseInt(slots);
-                        predicates.add(cb.equal(root.get("slots"), slotValue));
-                    } catch (NumberFormatException e) {
-                        // ignore invalid values
-                    }
+                // Handle numeric values (1,2,3)
+                try {
+                    int slotValue = Integer.parseInt(slots);
+                    predicates.add(cb.equal(root.get("slots"), slotValue));
+                } catch (NumberFormatException e) {
+                    // ignore invalid values
                 }
             }
-
+            predicates.add(cb.greaterThan(root.get("slots"), 0));
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
@@ -146,7 +140,10 @@ public class ProjectService {
 
         if(student.getTeamRole() == null){
             Page<Project> projects;
-            projects = projectRepository.findAll(pageable);
+            projects = projectRepository.findAll(
+                    (root, query, cb) -> cb.greaterThan(root.get("slots"), 0),
+                    pageable
+            );
             int teamSize = 0;
             return projects.map(project -> {
 

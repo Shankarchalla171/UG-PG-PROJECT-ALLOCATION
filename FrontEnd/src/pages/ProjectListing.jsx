@@ -571,9 +571,7 @@ const ProjectListing = () => {
                       <label className='block text-xs font-medium text-amber-700 mb-1.5'>Availability</label>
                       <select value={slotFilter} onChange={(e) => setSlotFilter(e.target.value)}
                         className='w-full px-3 py-2 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all cursor-pointer'>
-                        <option value="all">All Projects</option>
-                        <option value="available">Vacant (&gt;0)</option>
-                        <option value="full">Full (0)</option>
+                        <option value="all">Vacant (&gt;0)</option>
                         <option value="1">1 Slot</option>
                         <option value="2">2 Slots</option>
                         <option value="3">3 Slots</option>
