@@ -168,8 +168,16 @@ const SubmitApplication = () => {
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Failed to submit application');
+                const contentType = response.headers.get('content-type') || '';
+                let reason = 'Failed to submit application. Please try again.';
+                if (contentType.includes('application/json')) {
+                    const errorData = await response.json().catch(() => ({}));
+                    reason = errorData.message || errorData.error || reason;
+                } else {
+                    const text = await response.text().catch(() => '');
+                    if (text) reason = text;
+                }
+                throw new Error(reason);
             }
 
             // setToast({ show: true, type: 'success', message: 'Application submitted successfully!' });
@@ -429,12 +437,17 @@ const SubmitApplication = () => {
 
                                     <textarea
                                         value={message}
-                                        onChange={(e) => setMessage(e.target.value)}
+                                        onChange={(e) => setMessage(e.target.value.slice(0, 500))}
                                         placeholder="Share any additional information, your motivation, or questions for the faculty..."
                                         rows={4}
+                                        maxLength={500}
                                         className='w-full px-4 py-3 bg-amber-50/50 border border-orange-200 rounded-lg text-sm text-amber-900 placeholder-amber-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 transition-all resize-none'
                                     />
-                                    <p className='text-xs text-amber-500 mt-2'>{message.length}/500 characters</p>
+                                    <p className={`text-xs mt-2 text-right font-medium tabular-nums ${
+                                        message.length >= 500 ? 'text-red-500' :
+                                        message.length >= 450 ? 'text-orange-500' :
+                                        'text-amber-400'
+                                    }`}>{message.length}/500</p>
                                 </div>
                             </div>
 

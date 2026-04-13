@@ -31,7 +31,7 @@ public class ProjectApplications {
     @Column(name = "applied_on")
     private LocalDateTime appliedOn;
 
-    @Column(name = "professorReview")
+    @Column(name = "professorReview", length = 500)
     private String professorReview;
 
     @Column(name = "confirmed_date")

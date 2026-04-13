@@ -45,7 +45,8 @@ public class ProjectService {
             String search,
             String domain,
             String faculty,
-            String slots
+            String slots,
+            String applicationStatus
     ) {
         return (root, query, cb) -> {
 
@@ -62,13 +63,19 @@ public class ProjectService {
             }
 
             // Exclude already applied projects
-            Subquery<Long> subquery = query.subquery(Long.class);
-            Root<ProjectApplications> pa = subquery.from(ProjectApplications.class);
+            if (team != null) {
+                Subquery<Long> subquery = query.subquery(Long.class);
+                Root<ProjectApplications> pa = subquery.from(ProjectApplications.class);
 
-            subquery.select(pa.get("project").get("projectId"))
-                    .where(cb.equal(pa.get("team"), team));
+                subquery.select(pa.get("project").get("projectId"))
+                        .where(cb.equal(pa.get("team"), team));
 
-            predicates.add(cb.not(root.get("projectId").in(subquery)));
+                if ("NOT_APPLIED".equalsIgnoreCase(applicationStatus)) {
+                    predicates.add(cb.not(root.get("projectId").in(subquery)));
+                } else if ("APPLIED".equalsIgnoreCase(applicationStatus)) {
+                    predicates.add(root.get("projectId").in(subquery));
+                }
+            }
 
             // MULTI-WORD SEARCH
             if (search != null && !search.isEmpty()) {
@@ -107,21 +114,15 @@ public class ProjectService {
 
             // SLOTS
             if (slots != null && !slots.equals("all")) {
-                if (slots.equals("available")) {
-                    predicates.add(cb.greaterThan(root.get("slots"), 0));
-                } else if (slots.equals("full")) {
-                    predicates.add(cb.equal(root.get("slots"), 0));
-                } else {
-                    // Handle numeric values (1,2,3)
-                    try {
-                        int slotValue = Integer.parseInt(slots);
-                        predicates.add(cb.equal(root.get("slots"), slotValue));
-                    } catch (NumberFormatException e) {
-                        // ignore invalid values
-                    }
+                // Handle numeric values (1,2,3)
+                try {
+                    int slotValue = Integer.parseInt(slots);
+                    predicates.add(cb.equal(root.get("slots"), slotValue));
+                } catch (NumberFormatException e) {
+                    // ignore invalid values
                 }
             }
-
+            predicates.add(cb.greaterThan(root.get("slots"), 0));
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
@@ -133,12 +134,16 @@ public class ProjectService {
             String search,
             String domain,
             String faculty,
-            String slots
+            String slots,
+            String applicationStatus
     ) {
 
         if(student.getTeamRole() == null){
             Page<Project> projects;
-            projects = projectRepository.findAll(pageable);
+            projects = projectRepository.findAll(
+                    (root, query, cb) -> cb.greaterThan(root.get("slots"), 0),
+                    pageable
+            );
             int teamSize = 0;
             return projects.map(project -> {
 
@@ -165,6 +170,7 @@ public class ProjectService {
 
                         // Default values
                         dto.setAppliedOn(null);
+                        dto.setApplied(false);
                         dto.setTeamConfirmed(false);
 
                         return dto;
@@ -177,7 +183,8 @@ public class ProjectService {
                 search,
                 domain,
                 faculty,
-                slots
+                slots,
+                applicationStatus
         );
 
         Page<Project> projects = projectRepository.findAll(spec, pageable);
@@ -208,6 +215,7 @@ public class ProjectService {
             dto.setPreRequisites(project.getPreRequisites());
             dto.setAvailableSlots(project.getSlots());
             dto.setTeamConfirmed(isConfirmed);
+            dto.setApplied(projectApplicationsRepository.existsByProjectAndTeam(project,student.getTeam()));
             dto.setTeamSize(teamSize);
 
             return dto;
@@ -385,8 +393,8 @@ public class ProjectService {
 
         Team team = student.getTeam();
 
-        List<String> rawDomains = projectRepository.findDistinctDomainsForAvailableProjects(department, team);
-        List<String> faculty = projectRepository.findDistinctFacultyForAvailableProjects(department, team);
+        List<String> rawDomains = projectRepository.findDistinctDomains(department);
+        List<String> faculty = projectRepository.findDistinctFaculty(department);
 
         // Split comma-separated domains
         Set<String> domainSet = new HashSet<>();
