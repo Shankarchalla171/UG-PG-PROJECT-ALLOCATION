@@ -5,6 +5,7 @@ import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.Student;
 import com.selab.backend.models.User;
+import com.selab.backend.services.ApplicationService;
 import com.selab.backend.services.ProjectService;
 import com.selab.backend.services.StudentService;
 import com.selab.backend.repositories.StudentRepository;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,6 +30,7 @@ public class StudentController {
     private final StudentMapper studentMapper;
     private final StudentRepository studentRepository;
     private final ProjectService projectService;
+    private final ApplicationService applicationService;
 
     @PostMapping("/profile")
     public ResponseEntity<Role> createStudent(@ModelAttribute @Valid StudentProfileRequest studentCreateProfileRequest, @AuthenticationPrincipal User user) {
@@ -103,5 +106,20 @@ public class StudentController {
     @GetMapping("/dashboard")
     public ResponseEntity<StudentDashboardDto> getDashboard(@AuthenticationPrincipal User user){
         return new ResponseEntity<>(studentService.getDashboard(user),HttpStatus.OK);
+    }
+
+    @GetMapping("/applications")
+    public Page<StudentApplicationDto> getApplications(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size
+    ){
+
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("appliedOn").descending());
+
+        return applicationService.getApplications(student, pageable);
     }
 }
