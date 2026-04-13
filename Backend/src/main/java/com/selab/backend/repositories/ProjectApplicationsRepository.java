@@ -23,6 +23,7 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     Page<ProjectApplications> findByProject_Professor(Professor professor, Pageable pageable);
     boolean existsByTeamAndProject_Professor(Team team, Professor professor);
     boolean existsByProjectAndTeam(Project project, Team team);
+    boolean existsByTeamAndStatus(Team team, ApplicationStatus status);
     Page<ProjectApplications> findByProject_ProfessorAndStatus(
             Professor professor,
             ApplicationStatus status,
