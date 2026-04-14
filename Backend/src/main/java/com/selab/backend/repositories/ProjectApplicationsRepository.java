@@ -46,8 +46,7 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     SELECT pa FROM ProjectApplications pa
     JOIN FETCH pa.project
     JOIN FETCH pa.team
-    WHERE pa.project.deptCoordinator = :coordinator
-    AND pa.status = :status
+    WHERE pa.status = :status
 """)
     List<ProjectApplications>  getAllFinal(@Param("coordinator") DeptCoordinator coordinator,@Param("status")ApplicationStatus status);
 

@@ -14,6 +14,7 @@ import java.util.Optional;
 public interface ProfessorRepository extends JpaRepository<Professor,Long> {
     Optional<Professor> findByUser(User user);
     Optional<Professor> findByUserId(Long userID);
+    List<Professor> findByDepartmentName(String departmentName);
 
     Optional<Professor> findByProfessorId(Long professorId);
     List<Professor> findAllByStudentsTakenLessThanEqual(Long allowed);

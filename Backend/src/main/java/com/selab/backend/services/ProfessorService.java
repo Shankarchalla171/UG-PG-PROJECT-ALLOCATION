@@ -61,6 +61,7 @@ public class ProfessorService {
                     .profilePhotoPath(relativePath)
                     .experience(profileRequest.getExperience())
                     .user(user)
+                    .studentsTaken(0L)
                     .build();
             return professorRepository.save(professor);
 
@@ -112,8 +113,11 @@ public class ProfessorService {
             Project project=projectRepository.findByProjectId(projectId).orElseThrow(()-> new ResourceNotFoundException("Project with ProjectID  : "+projectId+" not found"));
 
             Long maxIntakeAllowed=coordinator.getMaxIntake();
-
             long allowed=maxIntakeAllowed-(project.getSlots()/2);
+        System.out.println("Max intake allowed = " + maxIntakeAllowed);
+        System.out.println("Project slots = " + project.getSlots());
+        System.out.println("Allowed = " + allowed);
+        System.out.println("Project ID = " + project.getProjectId());
             return  professorRepository
                     .findAllAvailableForProject(project,allowed)
                     .stream()
