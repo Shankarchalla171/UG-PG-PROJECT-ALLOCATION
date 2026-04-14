@@ -73,29 +73,38 @@ const AdminDashboard = () => {
   // State management
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [activeTab, setActiveTab] = useState("users"); // "users", "create", "coordinator"
 
   // Create User Form State
   const [createUserForm, setCreateUserForm] = useState({
-    userName: "",
     email: "",
     password: "",
     role: "USER",
     deptName: "",
   });
 
+  // Toast State
+  const [toast, setToast] = useState({
+    show: false,
+    type: "",
+    message: "",
+  });
+
+  const [deleteModal, setDeleteModal] = useState({
+    show: false,
+    userId: null,
+  });
+
   // Make Coordinator Form State
   const [coordinatorForm, setCoordinatorForm] = useState({
     userId: "",
     deptName: "",
+    batch: "",
   });
 
   // Fetch all users
   const fetchUsers = async () => {
     setLoading(true);
-    setError("");
 
     try {
       const response = await fetch(`${API_URL}/api/admin/users`, {
@@ -111,9 +120,13 @@ const AdminDashboard = () => {
       }
 
       const data = await response.json();
-      setUsers(data);
+      setUsers(data.data);
     } catch (err) {
-      setError(err.message || "Error fetching users");
+      setToast({
+        show: true,
+        type: "error",
+        message: err.message || "Error fetching users",
+      });
     } finally {
       setLoading(false);
     }
@@ -126,20 +139,34 @@ const AdminDashboard = () => {
     }
   }, [role]);
 
+  // auto hide toast after 5 seconds
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
   // Handle create user
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setToast({
+      show: false,
+      type: "",
+      message: "",
+    });
     setLoading(true);
 
     try {
       // Validate form
-      if (
-        !createUserForm.userName ||
-        !createUserForm.email ||
-        !createUserForm.password
-      ) {
+      if (!createUserForm.email || !createUserForm.password) {
         throw new Error("Please fill in all required fields");
       }
 
@@ -150,7 +177,6 @@ const AdminDashboard = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userName: createUserForm.userName,
           email: createUserForm.email,
           password: createUserForm.password,
           role: createUserForm.role,
@@ -159,27 +185,20 @@ const AdminDashboard = () => {
       });
 
       if (!response.ok) {
-        let errorMessage = "Failed to create user";
-
-        const text = await response.text(); // ✅ read ONCE
-
-        try {
-          const data = JSON.parse(text); // try parsing manually
-          errorMessage = data.message || errorMessage;
-        } catch {
-          errorMessage = text; // plain text fallback
-        }
-
-        throw new Error(errorMessage);
+        const errorData = await response.json();
+        throw new Error(errorData?.error?.message || "Failed to create user");
       }
 
       const newUser = await response.json();
-      setUsers([...users, newUser]);
-      setSuccess("User created successfully!");
+      setUsers([...users, newUser.data]);
+      setToast({
+        show: true,
+        type: "success",
+        message: "User created successfully!",
+      });
 
       // Reset form
       setCreateUserForm({
-        userName: "",
         email: "",
         password: "",
         role: "USER",
@@ -189,10 +208,18 @@ const AdminDashboard = () => {
       // Switch to users tab to see the new user
       setTimeout(() => {
         setActiveTab("users");
-        setSuccess("");
+        setToast({
+          show: true,
+          type: "success",
+          message: "User created successfully!",
+        });
       }, 2000);
     } catch (err) {
-      setError(err.message || "Error creating user");
+      setToast({
+        show: true,
+        type: "error",
+        message: err.message || "Error creating user",
+      });
     } finally {
       setLoading(false);
     }
@@ -201,13 +228,22 @@ const AdminDashboard = () => {
   // Handle make coordinator
   const handleMakeCoordinator = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setToast({
+      show: false,
+      type: "",
+      message: "",
+    });
     setLoading(true);
 
     try {
-      if (!coordinatorForm.userId || !coordinatorForm.deptName) {
-        throw new Error("Please select a user and enter department name");
+      if (
+        !coordinatorForm.userId ||
+        !coordinatorForm.deptName ||
+        !coordinatorForm.batch
+      ) {
+        throw new Error(
+          "Please fill in all required fields",
+        );
       }
 
       const response = await fetch(
@@ -219,17 +255,25 @@ const AdminDashboard = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            userId: coordinatorForm.userId,
             deptName: coordinatorForm.deptName,
+            batch: coordinatorForm.batch,
           }),
         },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to make coordinator");
+        throw new Error(
+          errorData?.error?.message || "Failed to make coordinator",
+        );
       }
 
-      setSuccess("User promoted to coordinator successfully!");
+      setToast({
+        show: true,
+        type: "success",
+        message: "User promoted to coordinator successfully!",
+      });
 
       // Refresh users list
       await fetchUsers();
@@ -238,15 +282,19 @@ const AdminDashboard = () => {
       setCoordinatorForm({
         userId: "",
         deptName: "",
+        batch: "",
       });
 
       // Switch to users tab
       setTimeout(() => {
         setActiveTab("users");
-        setSuccess("");
       }, 2000);
     } catch (err) {
-      setError(err.message || "Error making coordinator");
+      setToast({
+        show: true,
+        type: "error",
+        message: err.message || "Error making coordinator",
+      });
     } finally {
       setLoading(false);
     }
@@ -254,31 +302,41 @@ const AdminDashboard = () => {
 
   // Handle delete user
   const handleDeleteUser = async (userId) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      setLoading(true);
-      setError("");
+    setLoading(true);
+    setToast({
+      show: false,
+      type: "",
+      message: "",
+    });
 
-      try {
-        const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
+    try {
+      const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to delete user");
-        }
-
-        setUsers(users.filter((u) => u.id !== userId));
-        setSuccess("User deleted successfully!");
-        setTimeout(() => setSuccess(""), 2000);
-      } catch (err) {
-        setError(err.message || "Error deleting user");
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error?.message || "Failed to delete user");
       }
+
+      setUsers(users.filter((u) => u.id !== userId));
+      setToast({
+        show: true,
+        type: "success",
+        message: "User deleted successfully!",
+      });
+    } catch (err) {
+      setToast({
+        show: true,
+        type: "error",
+        message: err.message || "Error deleting user",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -288,6 +346,33 @@ const AdminDashboard = () => {
       <main className="flex min-h-screen bg-gradient-to-br from-amber-50/50 to-orange-50/30">
         <Sidebar />
         <div className="flex-1 p-6">
+          <div
+            className={`fixed top-20 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl border transition-all duration-500 ${
+              toast.show
+                ? "translate-x-0 opacity-100"
+                : "translate-x-full opacity-0 pointer-events-none"
+            } ${
+              toast.type === "success"
+                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                : "bg-red-50 border-red-200 text-red-800"
+            }`}
+          >
+            <span className="font-medium text-sm">{toast.message}</span>
+
+            <button
+              onClick={() =>
+                setToast({
+                  show: false,
+                  type: "",
+                  message: "",
+                })
+              }
+              className="ml-2 p-1 rounded-full hover:bg-black/5"
+            >
+              ✕
+            </button>
+          </div>
+
           {/* Welcome Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-amber-900 mb-2">
@@ -297,21 +382,6 @@ const AdminDashboard = () => {
               Manage users, create accounts, and assign roles.
             </p>
           </div>
-
-          {/* Alert Messages */}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-3">
-              <span className="text-xl">⚠️</span>
-              <p>{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg flex items-start gap-3">
-              <span className="text-xl">✓</span>
-              <p>{success}</p>
-            </div>
-          )}
 
           {/* Tabs Navigation */}
           <div className="flex gap-4 mb-6 border-b border-orange-200">
@@ -361,9 +431,6 @@ const AdminDashboard = () => {
                       <thead>
                         <tr className="bg-orange-50 border-b border-orange-200">
                           <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
-                            <Skeleton width={80} />
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
                             <Skeleton width={60} />
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
@@ -383,9 +450,6 @@ const AdminDashboard = () => {
                             key={index}
                             className="border-b border-orange-100 hover:bg-orange-50/30 transition"
                           >
-                            <td className="px-6 py-4">
-                              <Skeleton width={100} />
-                            </td>
                             <td className="px-6 py-4">
                               <Skeleton width={150} />
                             </td>
@@ -410,9 +474,6 @@ const AdminDashboard = () => {
                     <thead>
                       <tr className="bg-orange-50 border-b border-orange-200">
                         <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
-                          Username
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
                           Email
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
@@ -430,7 +491,7 @@ const AdminDashboard = () => {
                       {users.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={5}
+                            colSpan={4}
                             className="px-6 py-8 text-center text-amber-600"
                           >
                             No users found
@@ -442,9 +503,6 @@ const AdminDashboard = () => {
                             key={user.id}
                             className="border-b border-orange-100 hover:bg-orange-50/30 transition"
                           >
-                            <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                              {user.userName || "-"}
-                            </td>
                             <td className="px-6 py-4 text-sm text-gray-600">
                               {user.email}
                             </td>
@@ -472,7 +530,12 @@ const AdminDashboard = () => {
                             </td>
                             <td className="px-6 py-4 text-sm">
                               <button
-                                onClick={() => handleDeleteUser(user.id)}
+                                onClick={() =>
+                                  setDeleteModal({
+                                    show: true,
+                                    userId: user.id,
+                                  })
+                                }
                                 disabled={loading}
                                 className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition disabled:opacity-50 text-xs font-semibold"
                               >
@@ -533,25 +596,6 @@ const AdminDashboard = () => {
                   <form onSubmit={handleCreateUser} className="space-y-5">
                     <div>
                       <label className="block text-sm font-semibold text-amber-900 mb-2">
-                        Username *
-                      </label>
-                      <input
-                        type="text"
-                        value={createUserForm.userName}
-                        onChange={(e) =>
-                          setCreateUserForm({
-                            ...createUserForm,
-                            userName: e.target.value,
-                          })
-                        }
-                        placeholder="Enter username"
-                        className="w-full px-4 py-2 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        disabled={loading}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-amber-900 mb-2">
                         Email *
                       </label>
                       <input
@@ -599,7 +643,10 @@ const AdminDashboard = () => {
                         ]}
                         value={
                           createUserForm.role
-                            ? { value: createUserForm.role, label: createUserForm.role }
+                            ? {
+                                value: createUserForm.role,
+                                label: createUserForm.role,
+                              }
                             : null
                         }
                         onChange={(option) =>
@@ -608,35 +655,6 @@ const AdminDashboard = () => {
                             role: option ? option.value : "USER",
                           })
                         }
-                        styles={customSelectStyles}
-                        isDisabled={loading}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-amber-900 mb-2">
-                        Department Name (Optional)
-                      </label>
-                      <Select
-                        options={DEPARTMENTS.map((d) => ({
-                          value: d,
-                          label: d,
-                        }))}
-                        value={
-                          createUserForm.deptName
-                            ? {
-                                value: createUserForm.deptName,
-                                label: createUserForm.deptName,
-                              }
-                            : null
-                        }
-                        onChange={(option) =>
-                          setCreateUserForm({
-                            ...createUserForm,
-                            deptName: option ? option.value : "",
-                          })
-                        }
-                        isClearable
                         styles={customSelectStyles}
                         isDisabled={loading}
                       />
@@ -654,7 +672,6 @@ const AdminDashboard = () => {
                         type="button"
                         onClick={() =>
                           setCreateUserForm({
-                            userName: "",
                             email: "",
                             password: "",
                             role: "USER",
@@ -708,16 +725,20 @@ const AdminDashboard = () => {
                         Select User *
                       </label>
                       <Select
-                        options={users.map((user) => ({
-                          value: user.id,
-                          label: `${user.userName} (${user.email}) - ${user.role}`,
-                        }))}
+                        options={users
+                          .filter((user) => user.role === "PROFF")
+                          .map((user) => ({
+                            value: user.id,
+                            label: `(${user.email}) - ${user.role}`,
+                          }))}
                         value={
                           coordinatorForm.userId
                             ? {
                                 value: coordinatorForm.userId,
-                                label: users.find((u) => u.id === coordinatorForm.userId)
-                                  ? `${users.find((u) => u.id === coordinatorForm.userId).userName} (${users.find((u) => u.id === coordinatorForm.userId).email}) - ${users.find((u) => u.id === coordinatorForm.userId).role}`
+                                label: users.find(
+                                  (u) => u.id === coordinatorForm.userId,
+                                )
+                                  ? `${users.find((u) => u.id === coordinatorForm.userId).email} - ${users.find((u) => u.id === coordinatorForm.userId).role}`
                                   : "",
                               }
                             : null
@@ -761,6 +782,25 @@ const AdminDashboard = () => {
                       />
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-semibold text-amber-900 mb-2">
+                        Batch *
+                      </label>
+                      <input
+                        type="text"
+                        value={coordinatorForm.batch}
+                        onChange={(e) =>
+                          setCoordinatorForm({
+                            ...coordinatorForm,
+                            batch: e.target.value.toUpperCase(),
+                          })
+                        }
+                        placeholder="Enter batch (e.g. B23)"
+                        className="w-full px-4 py-2 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        disabled={loading}
+                      />
+                    </div>
+
                     <div className="flex gap-4 pt-4">
                       <button
                         type="submit"
@@ -775,6 +815,7 @@ const AdminDashboard = () => {
                           setCoordinatorForm({
                             userId: "",
                             deptName: "",
+                            batch: "",
                           })
                         }
                         disabled={loading}
@@ -789,6 +830,49 @@ const AdminDashboard = () => {
             </div>
           )}
         </div>
+
+        {deleteModal.show && (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md">
+              <h3 className="text-lg font-bold text-amber-900 mb-2">
+                Delete User?
+              </h3>
+
+              <p className="text-sm text-gray-600 mb-6">
+                Are you sure you want to remove this user? This action cannot be
+                undone.
+              </p>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() =>
+                    setDeleteModal({
+                      show: false,
+                      userId: null,
+                    })
+                  }
+                  className="px-4 py-2 rounded-lg border"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleDeleteUser(deleteModal.userId);
+
+                    setDeleteModal({
+                      show: false,
+                      userId: null,
+                    });
+                  }}
+                  className="px-4 py-2 rounded-lg bg-red-500 text-white"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </>
   );

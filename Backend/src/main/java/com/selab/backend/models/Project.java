@@ -29,13 +29,14 @@ public class Project {
     @JoinColumn(name="coGuideId")
     private Professor coGuide;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="deptCoordinatorId",nullable = false)
-    private DeptCoordinator deptCoordinator;
-
+    @Column(name = "title")
     private String title;
+
+    @Column(name = "description")
     private String description;
-    private int slots;
+
+    @Column(name = "slots")
+    private Integer slots;
 
     @Column(name = "domain")
     private String domain;
@@ -43,6 +44,10 @@ public class Project {
     @Column(name = "duration")
     private String duration;
     private String preRequisites;
+
+    @Column(name = "allocated_slots", nullable = false)
+    @Builder.Default
+    private Integer allocatedSlots = 0;
 
 
     @OneToMany(mappedBy = "project")
