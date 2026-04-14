@@ -178,8 +178,10 @@ const YourApplications = () => {
                                     >
                                         <option value="all">All Status</option>
                                         <option value="PENDING">Pending</option>
-                                        <option value="CONFIRMED">Approved</option>
+                                        <option value="CONFIRMED">Accepted</option>
                                         <option value="REJECTED">Rejected</option>
+                                        <option value="TEAM_CONFIRMED">Allocated</option>
+                                        <option value="TEAM_REJECTED">Declined</option>
                                     </select>
                                 </div>
                             </div>

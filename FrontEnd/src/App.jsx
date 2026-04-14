@@ -35,7 +35,7 @@ function App() {
         <Route path='/student_view_projects' element={<ProjectListing/>}/>
         <Route path='/student_applications' element={<YourApplications/>}/>
         <Route path='/student_teams' element={<Student_teams/>}/>
-        <Route path='/student_confirmations_recieved' element={<Student_confirmations/>}/>
+        <Route path='/student_confirmations_received' element={<Student_confirmations/>}/>
         <Route path='/professor_final_allocation' element={<ProfessorFinalAllocation/>}/>  
         <Route path='/professor_student_request' element={<Professor_student_request/>}/> 
         <Route path='/dept_view_allocations' element={<Dept_view_allocatoins/>}/> 
