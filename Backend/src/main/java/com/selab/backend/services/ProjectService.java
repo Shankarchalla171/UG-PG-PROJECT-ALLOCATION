@@ -7,7 +7,6 @@ import com.selab.backend.exceptions.ResourceNotFoundException;
 import com.selab.backend.mappers.ProfessorMapper;
 import com.selab.backend.mappers.ProjectMapper;
 import com.selab.backend.models.*;
-import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.ProfessorRepository;
 import com.selab.backend.repositories.ProjectApplicationsRepository;
 import com.selab.backend.repositories.ProjectRepository;
@@ -36,7 +35,6 @@ public class ProjectService {
     private final ProfessorRepository professorRepository;
     private final ProfessorMapper professorMapper;
     private final ProjectMapper projectMapper;
-    private  final DeptCoordinatorRepository deptCoordinatorRepository;
     private final ProjectApplicationsRepository projectApplicationsRepository;
 
     private Specification<Project> buildSpecification(
@@ -227,14 +225,6 @@ public class ProjectService {
         Professor professor = professorRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Professor not found"));
 
-
-        String deptName = professor.getDepartmentName();
-
-        DeptCoordinator coordinator = deptCoordinatorRepository
-                .findByDeptName(deptName)
-                .orElseThrow(() -> new RuntimeException("Coordinator not found for department"));
-
-
         Project project = Project.builder()
                 .title(projectRequestDto.getTitle())
                 .description(projectRequestDto.getDescription())
@@ -243,7 +233,6 @@ public class ProjectService {
                 .preRequisites(projectRequestDto.getPrerequisites())
                 .professor(professor)
                 .domain(projectRequestDto.getDomain())
-                .deptCoordinator(coordinator)
                 .build();
 
         Project savedProject = projectRepository.save(project);
