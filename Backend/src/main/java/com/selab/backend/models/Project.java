@@ -50,7 +50,7 @@ public class Project {
     private Integer allocatedSlots = 0;
 
 
-    @OneToMany(mappedBy = "project")
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectApplications> applications;
 
 }
