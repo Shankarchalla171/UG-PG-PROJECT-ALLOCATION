@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import {Routes, Route} from 'react-router-dom';
 import ProfessorCreateProject from './pages/Professor_create_project';
 import Professor_dashboard from './pages/Professor_dashboard';
@@ -11,12 +12,14 @@ import YourApplications from './pages/YourApplications';
 import ProfessorFinalAllocation from './pages/Professor_final_allocation';
 import Professor_student_request from './pages/Professor_student_request';
 import Dept_view_allocatoins from './pages/Dept_view_allocatoins';
-import Dept_enforce_deadlines from './pages/Dept_enforce_deadlines';
+import Dept_enforce_deadlines from './pages/Dept_Event_Management';
 import Student_teams from './pages/Student_teams';
 import Student_confirmations from './pages/Student_confirmations';
 import ProfilePage from './pages/ProfilePage';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
+import CoordinatorDashboard from './pages/CoordinatorDashboard';
+import Professor_Collaboration from './pages/Professor_Collaboration';
 
 function App() {
     return (
@@ -25,21 +28,23 @@ function App() {
       <Routes>
         <Route path='/' element={<LoginPage/>}/>
         <Route path='/dashboard' element={<Dashboard/>}/>
+        <Route path='/admin_dashboard' element={<AdminDashboard/>}/>
         <Route path='/professor_create_project' element={<ProfessorCreateProject/>}/>
         <Route path='/professor_projects' element={<ProfessorViewProjects/>}/>
         <Route path='/applicationform/:id' element={<SubmitApplication/>}/>
         <Route path='/student_view_projects' element={<ProjectListing/>}/>
         <Route path='/student_applications' element={<YourApplications/>}/>
         <Route path='/student_teams' element={<Student_teams/>}/>
-        <Route path='/student_confirmations_recieved' element={<Student_confirmations/>}/>
+        <Route path='/student_confirmations_received' element={<Student_confirmations/>}/>
         <Route path='/professor_final_allocation' element={<ProfessorFinalAllocation/>}/>  
         <Route path='/professor_student_request' element={<Professor_student_request/>}/> 
         <Route path='/dept_view_allocations' element={<Dept_view_allocatoins/>}/> 
         <Route path='/dept_enforce_deadlines' element={<Dept_enforce_deadlines/>}/>
+        <Route path='/dept_dashboard' element={<CoordinatorDashboard/>}/>
         <Route path='/profile' element={<ProfilePage/>}/>
         <Route path='/verify-email' element={<VerifyEmail/>}/>
         <Route path='/forgot-password' element={<ForgotPassword/>}/>
-      
+        <Route path='/professor_collaboration' element={<Professor_Collaboration/>}/>
       </Routes>
     </>
   )

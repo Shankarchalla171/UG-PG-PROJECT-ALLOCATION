@@ -5,6 +5,7 @@ import StudentDashboard from "./StudentDashboard";
 import CoordinatorDashboard from "./CoordinatorDashboard";
 import Professor_dashboard from "./Professor_dashboard";
 import CreateProfile from "./CreateProfile";
+import AdminDashboard from "./AdminDashboard";
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -17,7 +18,7 @@ const Dashboard = () => {
     // Render based on role
     if (role === "STUDENT") {
         return <StudentDashboard />;
-    } else if (role === "deptCoordinator") {
+    } else if (role === "DEPTCORDINATOR") {
         return <CoordinatorDashboard />;
     } else if (role === "PROFF") {
         // Faculty will be redirected, but show nothing while redirecting
@@ -25,7 +26,11 @@ const Dashboard = () => {
     }else if(role === "USER"){
         return <CreateProfile/>
     }
+    else if(role === "ADMIN"){
+        return <AdminDashboard/>
+    }
 
+    else{
     // Default fallback for unknown roles
     return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-amber-50/50 to-orange-50/30">
@@ -34,6 +39,10 @@ const Dashboard = () => {
             </div>
         </div>
     );
+    
+    }
+
+
 };
 
 export default Dashboard;

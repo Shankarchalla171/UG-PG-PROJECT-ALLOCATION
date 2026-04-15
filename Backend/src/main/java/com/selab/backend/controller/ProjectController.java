@@ -107,6 +107,4 @@ public class ProjectController {
         projectService.deleteProject(id, currentUser);
         return ResponseEntity.noContent().build();  // 204 No Content
     }
-
 }
-

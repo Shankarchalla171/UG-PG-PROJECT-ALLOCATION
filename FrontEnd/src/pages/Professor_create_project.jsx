@@ -17,6 +17,7 @@ const ProfessorCreateProject = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,7 +34,7 @@ const ProfessorCreateProject = () => {
     setSuccess(false);
 
     try {
-      const response = await fetch("api/projects", {
+      const response = await fetch(`${API_URL}/api/projects`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -201,23 +202,22 @@ const ProfessorCreateProject = () => {
 
               {/* Duration Field */}
               <div className="mb-8">
-                <label
-                  htmlFor="duration"
-                  className="block text-amber-800 font-medium mb-2"
-                >
-                  Project Duration (in weeks)
+                <label htmlFor="duration" className="block text-amber-800 font-medium mb-2">
+                  Project Duration (in semesters)
                 </label>
-                <input
-                  type="number"
+                <select
                   id="duration"
                   name="duration"
                   value={formData.duration}
                   onChange={handleChange}
-                  min="1"
                   disabled={loading}
-                  className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 placeholder-amber-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  placeholder="e.g., 12"
-                />
+                  className="w-full px-4 py-3 rounded-xl border border-orange-200/60 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all duration-300 bg-white text-amber-800 disabled:bg-gray-100 disabled:cursor-not-allowed appearance-none cursor-pointer"
+                >
+                  <option value="" disabled>Select duration</option>
+                  <option value="1">1 Semester</option>
+                  <option value="2">2 Semesters</option>
+                  <option value="3">3 Semesters</option>
+                </select>
               </div>
 
               {/* Form Actions */}

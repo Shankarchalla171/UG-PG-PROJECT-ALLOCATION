@@ -3,6 +3,8 @@ package com.selab.backend.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.List;
 
@@ -18,12 +20,14 @@ public class DeptCoordinator {
     @Column(nullable = false)
     private String deptName;
 
+    @Column(nullable = false)
+    private String batch;
+
     @OneToOne
-    @JoinColumn(name="user_id")
+    @JoinColumn(name="user_id", unique = true)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
-    @OneToMany(mappedBy = "deptCoordinator", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
-    private List<Project> projects;
-
-
+    private Long maxIntake;
+    private Long maxTeamSize;
 }

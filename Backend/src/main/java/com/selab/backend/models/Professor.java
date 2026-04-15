@@ -40,10 +40,17 @@ public class Professor {
     @Column(nullable = false)
     private String profilePhotoPath;
 
+    @Column(nullable = false)
+    private Integer experience;
+
     @OneToOne
     @JoinColumn(name="user_id")
     private User user;
 
     @OneToMany(mappedBy = "professor" , cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private List<Project> projects;
+    private Long studentsTaken;
+
+    @OneToMany(mappedBy = "professor", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ProfessorBatchQuota> batchQuotas;
 }

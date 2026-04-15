@@ -1,30 +1,36 @@
 package com.selab.backend.controller;
 
-import com.selab.backend.Dto.StudentProfileRequest;
-import com.selab.backend.Dto.StudentDto;
-import com.selab.backend.Dto.UpdateProfileRequest;
-import com.selab.backend.auth.JwtService;
+import com.selab.backend.Dto.*;
 import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.Student;
 import com.selab.backend.models.User;
+import com.selab.backend.services.ApplicationService;
+import com.selab.backend.services.ProjectService;
 import com.selab.backend.services.StudentService;
+import com.selab.backend.repositories.StudentRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/students")
 @RequiredArgsConstructor
 public class StudentController {
     private final StudentService studentService;
-    private final JwtService jwtService;
     private final StudentMapper studentMapper;
+    private final StudentRepository studentRepository;
+    private final ProjectService projectService;
+    private final ApplicationService applicationService;
 
     @PostMapping("/profile")
     public ResponseEntity<Role> createStudent(@ModelAttribute @Valid StudentProfileRequest studentCreateProfileRequest, @AuthenticationPrincipal User user) {
@@ -50,8 +56,70 @@ public class StudentController {
     }
 
     @PatchMapping
-    public ResponseEntity<StudentDto> updateStudent(@ModelAttribute  UpdateProfileRequest request, @AuthenticationPrincipal User user){
+    public ResponseEntity<StudentDto> updateStudent(@ModelAttribute@Valid  UpdateProfileRequest request, @AuthenticationPrincipal User user){
         Student updatedStudent=studentService.update(request,user);
         return new ResponseEntity<>(studentMapper.toDto(updatedStudent),HttpStatus.OK);
+    }
+
+    @GetMapping("/team-details")
+    public TeamDto getTeamDetails(@AuthenticationPrincipal User user){
+
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        return studentService.getTeamDetails(student);
+    }
+
+    @GetMapping("/projects")
+    public Page<ProjectListingDto> getProjects(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String domain,
+            @RequestParam(required = false) String faculty,
+            @RequestParam(required = false) String slots,
+            @RequestParam(required = false) String applicationStatus
+    ) {
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return projectService.getProjectListings(
+                student, pageable, search, domain, faculty, slots,applicationStatus
+        );
+    }
+
+    @GetMapping("/projects/filters")
+    public ResponseEntity<Map<String, List<String>>> getProjectFilters(
+            @AuthenticationPrincipal User user
+    ) {
+
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        return ResponseEntity.ok(projectService.getProjectFilters(student));
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<StudentDashboardDto> getDashboard(@AuthenticationPrincipal User user){
+        return new ResponseEntity<>(studentService.getDashboard(user),HttpStatus.OK);
+    }
+
+    @GetMapping("/applications")
+    public Page<StudentApplicationDto> getApplications(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size
+    ){
+
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("appliedOn").descending());
+
+        return applicationService.getApplications(student, pageable);
     }
 }

@@ -4,87 +4,144 @@ import { AuthContext } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 
-// Import dummy data
-import faculty from "../../public/dummyData/faculty";       // professor's own data
-import allProjects from "../../public/dummyData/projects"; // all projects from all faculty
-import allApplications from "../../public/dummyData/studentApplications"; // all student applications
-
 const ProfessorDashboard = () => {
-  const {token} = useContext(AuthContext);
+  const { token } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [professorData, setProfessorData] = useState(null);
-  const [myProjects, setMyProjects] = useState([]);
-  const [myApplications, setMyApplications] = useState([]);
-  const [stats, setStats] = useState({
-    totalProjects: 0,
-    totalApplications: 0,
-    pendingReviews: 0,
-    approvedApplications: 0,
-    rejectedApplications: 0,
-  });
+  const [dashboardData, setDashboardData] = useState(null);
+  const [recentApplications, setRecentApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL;
 
-   const fecthProfData =async () =>{
-        const  url ="api/professors/profile";
-
-        try{
-            const response = await fetch(url,{
-                method:"GET",
-                headers:{  
-                     "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if(!response.ok){
-              const message= await response.text();
-              throw new Error(message);
-            }
-
-            const data= await response.json();
-            console.log("Fetched professor data:", data);
-            return data;
-        }catch(error){
-            // console.error("Error fetching professor data:", error);
-            console.error("Error fetching professor data:", error.message);
+  const fetchDashboardData = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/professors/dashboard`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
         }
-   }
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message);
+      }
+
+      const data = await response.json();
+      console.log("Fetched professor dashboard data:", data);
+      setDashboardData(data);
+    } catch (error) {
+      console.error("Error fetching professor dashboard data:", error.message);
+    }
+  };
+
+  const fetchRecentApplications = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/professor/applications?page=0&size=3`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message);
+      }
+
+      const data = await response.json();
+      console.log("Fetched recent applications:", data);
+      setRecentApplications(data?.content || data || []);
+    } catch (error) {
+      console.error("Error fetching recent applications:", error.message);
+    }
+  };
+
   useEffect(() => {
-    // Load professor data
-    fecthProfData().then((data) => setProfessorData(data));
-    // Filter projects where facultyName matches the professor's name
-    const projectsOfProf = allProjects.filter(
-      (p) => p.facultyName === faculty.name
-    );
-    setMyProjects(projectsOfProf);
+    if (token) {
+      Promise.all([fetchDashboardData(), fetchRecentApplications()])
+        .finally(() => setLoading(false));
+    }
+  }, [token]);
 
-    // Filter applications where the project's facultyName matches the professor's name
-    const appsOfProf = allApplications.filter(
-      (app) => app.project.facultyName === faculty.name
-    );
-    setMyApplications(appsOfProf);
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
-    // Calculate statistics
-    const totalApps = appsOfProf.length;
-    const pending = appsOfProf.filter((app) => app.status === "PENDING").length;
-    const approved = appsOfProf.filter((app) => app.status === "APPROVED").length;
-    const rejected = appsOfProf.filter((app) => app.status === "REJECTED").length;
+  const getStatusStyle = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'CONFIRMED':
+      case 'APPROVED':
+        return 'bg-green-100 text-green-700';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
 
-    setStats({
-      totalProjects: projectsOfProf.length,
-      totalApplications: totalApps,
-      pendingReviews: pending,
-      approvedApplications: approved,
-      rejectedApplications: rejected,
-    });
-  }, []);
-
-  if (!professorData) {
+  if (loading || !dashboardData) {
     return (
       <>
         <Navbar />
         <main className="flex min-h-screen bg-gradient-to-br from-amber-50/50 to-orange-50/30">
           <Sidebar />
-          <div className="flex-1 p-6">
-            <p className="text-amber-600">Loading professor dashboard...</p>
+
+          <div className="flex-1 p-6 space-y-6 animate-pulse">
+
+            {/* Header */}
+            <div>
+              <div className="h-8 w-64 bg-gray-200 rounded mb-2"></div>
+              <div className="h-4 w-96 bg-gray-100 rounded"></div>
+            </div>
+
+            {/* Profile Card */}
+            <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+                <div className="space-y-2 flex-1">
+                  <div className="h-5 w-40 bg-gray-200 rounded"></div>
+                  <div className="h-4 w-32 bg-gray-100 rounded"></div>
+                  <div className="h-4 w-48 bg-gray-100 rounded"></div>
+                </div>
+                <div className="h-10 w-28 bg-gray-200 rounded-lg"></div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <div className="h-3 w-20 bg-gray-200 rounded"></div>
+                      <div className="h-6 w-10 bg-gray-300 rounded"></div>
+                    </div>
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1,2,3].map(i => (
+                <div key={i} className="h-24 bg-gray-200 rounded-xl"></div>
+              ))}
+            </div>
+
+            {/* Notice */}
+            <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-6 flex gap-4">
+              <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
+              <div className="space-y-2 flex-1">
+                <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                <div className="h-3 w-full bg-gray-100 rounded"></div>
+              </div>
+            </div>
+
           </div>
         </main>
       </>
@@ -100,7 +157,7 @@ const ProfessorDashboard = () => {
           {/* Welcome Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-amber-900 mb-2">
-              Welcome back, {professorData.name.split(" ")[0]} Abhiram Rao
+              Welcome back, {dashboardData.name?.split(" ")[0]}!
             </h1>
             <p className="text-amber-600">
               Manage your projects, review applications, and track student progress.
@@ -112,15 +169,18 @@ const ProfessorDashboard = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <img
-                  src={`http://localhost:8080/${professorData.profilePhotoPath}`}
-                  alt={professorData.name}
+                  src={`${API_URL}/${dashboardData.profilePhotoPath}`}
+                  alt={dashboardData.name}
                   className="w-16 h-16 rounded-full border-2 border-orange-200 object-cover"
+                  onError={(e) => {
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(dashboardData.name)}&background=f97316&color=fff`;
+                  }}
                 />
                 <div>
                   <p className="text-sm text-amber-500 font-medium">Logged in as</p>
-                  <h2 className="text-xl font-bold text-amber-900">{professorData.name}</h2>
-                  <p className="text-sm text-amber-600">{professorData.department}</p>
-                  <p className="text-sm text-amber-500">{professorData.email}</p>
+                  <h2 className="text-xl font-bold text-amber-900">{dashboardData.name}</h2>
+                  <p className="text-sm text-amber-600">{dashboardData.departmentName}</p>
+                  <p className="text-sm text-amber-500">{dashboardData.email}</p>
                 </div>
               </div>
               <button
@@ -138,7 +198,7 @@ const ProfessorDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-amber-500 font-medium">Total Projects</p>
-                  <p className="text-2xl font-bold text-amber-900 mt-1">{stats.totalProjects}</p>
+                  <p className="text-2xl font-bold text-amber-900 mt-1">{dashboardData.totalProjects || 0}</p>
                 </div>
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                   <svg className="w-6 h-6 text-orange-600" viewBox="0 0 24 24" fill="currentColor">
@@ -152,7 +212,7 @@ const ProfessorDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-amber-500 font-medium">Total Applications</p>
-                  <p className="text-2xl font-bold text-amber-900 mt-1">{stats.totalApplications}</p>
+                  <p className="text-2xl font-bold text-amber-900 mt-1">{dashboardData.totalApplication || 0}</p>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <svg className="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
@@ -166,7 +226,7 @@ const ProfessorDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-amber-500 font-medium">Pending Reviews</p>
-                  <p className="text-2xl font-bold text-amber-900 mt-1">{stats.pendingReviews}</p>
+                  <p className="text-2xl font-bold text-amber-900 mt-1">{dashboardData.pending || 0}</p>
                 </div>
                 <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                   <svg className="w-6 h-6 text-yellow-600" viewBox="0 0 24 24" fill="currentColor">
@@ -180,7 +240,7 @@ const ProfessorDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-amber-500 font-medium">Approved</p>
-                  <p className="text-2xl font-bold text-amber-900 mt-1">{stats.approvedApplications}</p>
+                  <p className="text-2xl font-bold text-amber-900 mt-1">{dashboardData.approved || 0}</p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <svg className="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="currentColor">
@@ -194,7 +254,7 @@ const ProfessorDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-amber-500 font-medium">Rejected</p>
-                  <p className="text-2xl font-bold text-amber-900 mt-1">{stats.rejectedApplications}</p>
+                  <p className="text-2xl font-bold text-amber-900 mt-1">{dashboardData.rejected || 0}</p>
                 </div>
                 <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
                   <svg className="w-6 h-6 text-red-600" viewBox="0 0 24 24" fill="currentColor">
@@ -259,54 +319,42 @@ const ProfessorDashboard = () => {
             </button>
           </div>
 
-          {/* Recent Applications Preview */}
+          {/* Recent Applications */}
           <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-amber-900 flex items-center gap-2">
                 <svg className="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h2v2h-2v-2zm0-6h2v6h-2v-6zm0-4h2v2h-2V7z" />
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
                 </svg>
-                Recent Applications to Your Projects
+                Recent Applications
               </h3>
               <button
-                onClick={() => navigate("/professor/requests")}
+                onClick={() => navigate("/professor_student_request")}
                 className="text-sm text-orange-600 hover:text-orange-700 font-medium"
               >
                 View All →
               </button>
             </div>
 
-            {myApplications.length > 0 ? (
+            {recentApplications.length > 0 ? (
               <div className="space-y-3">
-                {myApplications.slice(0, 3).map((app) => (
+                {recentApplications.map((app) => (
                   <div
                     key={app.applicationId}
                     className="flex items-start justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-orange-100/50 hover:border-orange-200 transition-colors"
                   >
                     <div className="flex-1">
-                      <p className="font-semibold text-amber-900">{app.project.projectTitle}</p>
-                      <p className="text-sm text-amber-600">
-                        Student: {/* We don't have student name in this dummy data, but we could add later */}
-                        {/* For now, we can omit or show application ID */}
-                        Application #{app.applicationId}
-                      </p>
+                      <p className="font-semibold text-amber-900">{app.teamName} • {app.teamSize} member{app.teamSize !== 1 ? 's' : ''}</p>
+                      <p className="text-sm text-amber-600">{app.projectTitle}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span
-                          className={`text-xs font-medium px-3 py-1 rounded-full ${
-                            app.status === "PENDING"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : app.status === "APPROVED"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
+                        <span className={`text-xs font-medium px-3 py-1 rounded-full ${getStatusStyle(app.status)}`}>
                           {app.status}
                         </span>
-                        <span className="text-xs text-amber-500">Applied on {app.appliedOn}</span>
+                        <span className="text-xs text-amber-500">Applied on {formatDate(app.appliedOn)}</span>
                       </div>
                     </div>
                     <button
-                      onClick={() => navigate(`/professor/requests/${app.applicationId}`)}
+                      onClick={() => navigate("/professor_student_request")}
                       className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-sm font-medium hover:bg-orange-200 transition-colors"
                     >
                       Review
@@ -316,6 +364,9 @@ const ProfessorDashboard = () => {
               </div>
             ) : (
               <div className="text-center py-8">
+                <svg className="w-12 h-12 mx-auto mb-3 text-amber-200" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                </svg>
                 <p className="text-amber-600">No applications yet. Once students apply, they'll appear here.</p>
               </div>
             )}
@@ -332,7 +383,7 @@ const ProfessorDashboard = () => {
               <div>
                 <h4 className="font-semibold text-amber-900 mb-1">Application Review Deadline</h4>
                 <p className="text-sm text-amber-700">
-                  Please ensure all applications are reviewed by <strong>March 20, 2026</strong>. Final selections must be submitted through the portal.
+                  Please ensure all applications are reviewed promptly. Final selections must be submitted through the portal.
                 </p>
               </div>
             </div>

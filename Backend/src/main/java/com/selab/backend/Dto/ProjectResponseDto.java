@@ -2,7 +2,6 @@ package com.selab.backend.Dto;
 
 import lombok.*;
 
-import java.util.List;
 
 @Getter
 @AllArgsConstructor

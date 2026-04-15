@@ -1,309 +1,334 @@
-import React, { useState, useEffect, useContext } from 'react';
-import Sidebar from '../components/Sidebar.jsx';
-import Navbar from '../components/Navbar.jsx';
-import profilePlaceholder from '../assets/profile_photo_placeholder.jpg';
+import React, { useState, useEffect, useContext } from "react";
+import Sidebar from "../components/Sidebar.jsx";
+import Navbar from "../components/Navbar.jsx";
+import profilePlaceholder from "../assets/profile_photo_placeholder.jpg";
 
 // Import dummy data
-import studentData from '../../public/dummyData/student.js';
-import facultyData from '../../public/dummyData/faculty.js';
-import { AuthContext } from '../context/AuthContext.jsx';
+import studentData from "../../public/dummyData/student.js";
+import facultyData from "../../public/dummyData/faculty.js";
+import { AuthContext } from "../context/AuthContext.jsx";
 
 const ProfilePage = () => {
-    const [profile, setProfile] = useState({});
-    const [isEditing, setIsEditing] = useState(false);
-    const [draftProfile, setDraftProfile] = useState({});
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [showResume, setShowResume] = useState(false);
-    const { role, token } = useContext(AuthContext);
+  const [profile, setProfile] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftProfile, setDraftProfile] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showResume, setShowResume] = useState(false);
+  const { role, token } = useContext(AuthContext);
+  const API_URL = import.meta.env.VITE_API_URL;
 
-    useEffect(() => {
-        const fetchProfileData = async () => {
-            try {
-                console.log('Role from localStorage:', role);
-                console.log('Token from localStorage:', token ? 'Present' : 'Missing');
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        console.log("Role from localStorage:", role);
+        console.log("Token from localStorage:", token ? "Present" : "Missing");
 
-                // Set dummy data as fallback based on role
-                let dummyData;
-                if (role?.toLowerCase() === 'student') {
-                    dummyData = studentData;
-                } else if (role?.toLowerCase() === 'PROFF') {
-                    dummyData = facultyData;
-                } else {
-                    dummyData = studentData; // Default fallback
-                }
-
-                console.log('Setting dummy data:', dummyData);
-                setProfile({ ...dummyData });
-
-                // Check if we have token
-                if (!token) {
-                    console.log('No token available, using dummy data only');
-                    setLoading(false);
-                    return;
-                }
-
-                // Build endpoint path
-                let pathRole;
-                if (role?.toLowerCase() === 'student') {
-                    pathRole = 'students';
-                } else if (role === 'PROFF') {
-                    pathRole = 'professors';
-                } else {
-                    console.error('Unknown role:', role);
-                    setLoading(false);
-                    return;
-                }
-
-                const url = `/api/${pathRole}/profile`;
-                console.log('Fetching from URL:', url);
-                console.log('Using token:', token.substring(0, 20) + '...');
-
-                // Make API call
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                console.log('Response status:', response.status);
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch profile: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log('API response data:', data);
-                setProfile(data);
-                setError(null);
-
-            } catch (err) {
-                console.error('Profile fetch error:', err);
-                setError(err.message);
-                // Keep using dummy data (already set)
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProfileData();
-    }, []); // Empty dependency array - runs once on mount
-
-    const handleSave = async () => {
-        setLoading(true);
-        const formData = new FormData();
-
-        Object.entries(draftProfile).forEach(([key, val]) => {
-            if (val !== null && val != profile[key])
-                formData.append(key, val);
-        });
-        console.log('FormData entries:');
-        for (let pair of formData.entries()) {
-            console.log(pair[0] + ': ' + pair[1]);
-        }
-
-        let pathRole;
-        if (role?.toLowerCase() === 'student') {
-            pathRole = 'students';
-        } else if (role === 'PROFF') {
-            pathRole = 'professors';
+        // Set dummy data as fallback based on role
+        let dummyData;
+        if (role?.toLowerCase() === "student") {
+          dummyData = studentData;
+        } else if (role?.toLowerCase() === "PROFF") {
+          dummyData = facultyData;
         } else {
-            console.error('Unknown role:', role);
-            setLoading(false);
-            return;
+          dummyData = studentData; // Default fallback
         }
 
+        console.log("Setting dummy data:", dummyData);
+        setProfile({ ...dummyData });
 
-
-        const url = `/api/${pathRole}`;
-
-        try {
-            console.log('Sending PATCH request to:', url);
-            const response = await fetch(url, {
-                method: 'PATCH',
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                },
-                body: formData
-            })
-
-            if (!response.ok) {
-                const message = await response.text();
-                throw new Error(`Failed to update profile: ${message}`);
-            }
-            const updatedProfile = await response.json();
-            console.log(updatedProfile);
-            setProfile(updatedProfile);
-            setIsEditing(false);
-            setError(null);
-        } catch (err) {
-            setError(err.message);
+        // Check if we have token
+        if (!token) {
+          console.log("No token available, using dummy data only");
+          setLoading(false);
+          return;
         }
-        finally {
-            setLoading(false);
-        }
-    }
-    // whenever edit starts, clone current profile and close resume preview
-    useEffect(() => {
-        if (isEditing) {
-            setDraftProfile({ ...profile });
-            setShowResume(false);
-        }
-    }, [isEditing, profile]);
 
-    // Field configuration
-    const fieldConfig = {
-        name: {
-            label: 'Full Name',
-            icon: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-        },
-        rollNumber: {
-            label: 'Roll Number',
-            icon: <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z" />
-        },
-        collegeEmailId: {
-            label: 'College Email',
-            icon: <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-        },
-        email: {
-            label: 'Email Address',
-            icon: <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-        },
-        departmentName: {
-            label: 'Department',
-            icon: <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" />
-        },
-        domain: {
-            label: 'Area of Expertise',
-            icon: <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z" />
-        },
-        googleScholarLink: {
-            label: 'Google Scholar Link',
-            icon: <path d="M5.242 13.769L0 9.5 12 0l12 9.5-5.242 4.269C17.548 11.249 14.978 9.5 12 9.5c-2.977 0-5.548 1.748-6.758 4.269zM12 10a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" />
-        },
-        experience: {
-            label: 'Years of Experience',
-            icon: <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z" />
+        // Build endpoint path
+        let pathRole;
+        if (role?.toLowerCase() === "student") {
+          pathRole = "students";
+        } else if (role === "PROFF") {
+          pathRole = "professors";
+        } else {
+          console.error("Unknown role:", role);
+          setLoading(false);
+          return;
         }
+
+        const url = `${API_URL}/api/${pathRole}/profile`;
+        console.log("Fetching from URL:", url);
+        console.log("Using token:", token.substring(0, 20) + "...");
+
+        // Make API call
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        console.log("Response status:", response.status);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch profile: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("API response data:", data);
+        setProfile(data);
+        setError(null);
+      } catch (err) {
+        console.error("Profile fetch error:", err);
+        setError(err.message);
+        // Keep using dummy data (already set)
+      } finally {
+        setLoading(false);
+      }
     };
 
-    // Get fields to display based on role from localStorage
-    const getDisplayFields = () => {
-        // const role = localStorage.getItem('role') || 'student';
-        if (role?.toLowerCase() === 'student') {
-            return ['name', 'rollNumber', 'collegeEmailId', 'departmentName'];
-        }
-        return ['name', 'email', 'departmentName', 'domain', 'googleScholarLink', 'experience'];
+    fetchProfileData();
+  }, []); // Empty dependency array - runs once on mount
+
+  const handleSave = async () => {
+    setLoading(true);
+    const formData = new FormData();
+
+    Object.entries(draftProfile).forEach(([key, val]) => {
+      if (val !== null && val != profile[key]) formData.append(key, val);
+    });
+    console.log("FormData entries:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ": " + pair[1]);
     }
 
-    const renderFieldValue = (field) => {
-        const value = (isEditing ? draftProfile[field] : profile[field]) || '-';
-
-        if (field === 'gScholarLink' && value !== '-') {
-            return (
-                <a
-                    href={value}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className='text-orange-600 hover:text-orange-700 hover:underline break-all'
-                >
-                    {value}
-                </a>
-            );
-        }
-
-        if (field === 'experience') {
-            return `${value} Years`;
-        }
-
-        return value;
-    };
-
-    // Loading state
-    if (loading) {
-        return (
-            <>
-                <Navbar />
-                <div className='flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100'>
-                    <Sidebar />
-                    <main className='flex-1 flex items-center justify-center'>
-                        <div className='text-center'>
-                            <div className='w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4'></div>
-                            <p className='text-amber-700'>Loading profile...</p>
-                        </div>
-                    </main>
-                </div>
-            </>
-        );
+    let pathRole;
+    if (role?.toLowerCase() === "student") {
+      pathRole = "students";
+    } else if (role === "PROFF") {
+      pathRole = "professors";
+    } else {
+      console.error("Unknown role:", role);
+      setLoading(false);
+      return;
     }
 
-    // Error state
-    if (error) {
-        return (
-            <>
-                <Navbar />
-                <div className='flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100'>
-                    <Sidebar />
-                    <main className='flex-1 flex items-center justify-center'>
-                        <div className='text-center bg-white p-8 rounded-2xl shadow-xl'>
-                            <p className='text-red-500 mb-4'>Error: {error}</p>
-                            <button
-                                onClick={() => window.location.reload()}
-                                className='px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600'
-                            >
-                                Try Again
-                            </button>
-                        </div>
-                    </main>
-                </div>
-            </>
-        );
+    const url = `${API_URL}/api/${pathRole}`;
+
+    try {
+      console.log("Sending PATCH request to:", url);
+      const response = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(`Failed to update profile: ${message}`);
+      }
+      const updatedProfile = await response.json();
+      console.log(updatedProfile);
+      setProfile(updatedProfile);
+      setIsEditing(false);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // whenever edit starts, clone current profile and close resume preview
+  useEffect(() => {
+    if (isEditing) {
+      setDraftProfile({ ...profile });
+      setShowResume(false);
+    }
+  }, [isEditing, profile]);
+
+  // Field configuration
+  const fieldConfig = {
+    name: {
+      label: "Full Name",
+      icon: (
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+      ),
+    },
+    rollNumber: {
+      label: "Roll Number",
+      icon: (
+        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z" />
+      ),
+    },
+    collegeEmailId: {
+      label: "College Email",
+      icon: (
+        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+      ),
+    },
+    email: {
+      label: "Email Address",
+      icon: (
+        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+      ),
+    },
+    departmentName: {
+      label: "Department",
+      icon: (
+        <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" />
+      ),
+    },
+    domain: {
+      label: "Area of Expertise",
+      icon: (
+        <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z" />
+      ),
+    },
+    googleScholarLink: {
+      label: "Google Scholar Link",
+      icon: (
+        <path d="M5.242 13.769L0 9.5 12 0l12 9.5-5.242 4.269C17.548 11.249 14.978 9.5 12 9.5c-2.977 0-5.548 1.748-6.758 4.269zM12 10a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" />
+      ),
+    },
+    experience: {
+      label: "Years of Experience",
+      icon: (
+        <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z" />
+      ),
+    },
+  };
+
+  // Get fields to display based on role from localStorage
+  const getDisplayFields = () => {
+    // const role = localStorage.getItem('role') || 'student';
+    if (role?.toLowerCase() === "student") {
+      return ["name", "rollNumber", "collegeEmailId", "departmentName"];
+    }
+    return [
+      "name",
+      "email",
+      "departmentName",
+      "domain",
+      "googleScholarLink",
+      "experience",
+    ];
+  };
+
+  const renderFieldValue = (field) => {
+    const value = (isEditing ? draftProfile[field] : profile[field]) || "-";
+
+    if (field === "googleScholarLink" && value !== "-") {
+      return (
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-orange-600 hover:text-orange-700 hover:underline break-all"
+        >
+          {value}
+        </a>
+      );
     }
 
-    // Get role with safe null handling
-    // let role = localStorage.getItem('role') || 'student';
-    // role = role.toLowerCase();
-    console.log('Current role:', role);
-    console.log(profile);
+    if (field === "experience") {
+      return value !== "-" ? `${value} Years` : "-";
+    }
 
+    return value;
+  };
+
+  // Loading state
+  if (loading) {
     return (
-        <>
-            <Navbar />
-            <div className='flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100'>
-                <Sidebar />
+      <>
+        <Navbar />
+        <div className="flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100">
+          <Sidebar />
+          <main className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-amber-700">Loading profile...</p>
+            </div>
+          </main>
+        </div>
+      </>
+    );
+  }
 
-                {/* Main Content */}
-                <main className='flex-1 w-full p-4'>
-                    <div className='p-4 sm:p-6 lg:p-8 w-full flex justify-center'>
-                        <div className='w-full'>
-                            {/* Page Header */}
-                            <div className='mb-8'>
-                                <div className='flex items-center gap-4 mb-2'>
-                                    <div className='w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-200'>
-                                        <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h1 className='text-2xl sm:text-3xl font-bold text-amber-900'>
-                                            My Profile
-                                        </h1>
-                                        <p className='text-amber-600 mt-0.5'>
-                                            {role?.toLowerCase() === 'student' ? 'Your student information' : 'Your faculty information'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+  // Error state
+  if (error) {
+    return (
+      <>
+        <Navbar />
+        <div className="flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100">
+          <Sidebar />
+          <main className="flex-1 flex items-center justify-center">
+            <div className="text-center bg-white p-8 rounded-2xl shadow-xl">
+              <p className="text-red-500 mb-4">Error: {error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+              >
+                Try Again
+              </button>
+            </div>
+          </main>
+        </div>
+      </>
+    );
+  }
 
-                            {/* Profile Card */}
-                            <div className='bg-white rounded-3xl shadow-xl shadow-orange-100/50 border border-orange-100/50 overflow-hidden'>
-                                {/* Profile Info Section */}
-                                <div className='relative p-6 sm:px-8 pb-8'>
-                                    {/* Profile Photo */}
-                                    <div className='flex flex-col sm:flex-row items-center sm:items-end gap-4 mb-6'>
-                                        <div className='relative w-28 h-28 sm:w-32 sm:h-32'>
-                                            <div className='w-full h-full p-2 rounded-2xl border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-orange-100 to-amber-100'>
+  // Get role with safe null handling
+  // let role = localStorage.getItem('role') || 'student';
+  // role = role.toLowerCase();
+  console.log("Current role:", role);
+  console.log(profile);
+
+  return (
+    <>
+      <Navbar />
+      <div className="flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100">
+        <Sidebar />
+
+        {/* Main Content */}
+        <main className="flex-1 w-full p-4">
+          <div className="p-4 sm:p-6 lg:p-8 w-full flex justify-center">
+            <div className="w-full">
+              {/* Page Header */}
+              <div className="mb-8">
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-200">
+                    <svg
+                      className="w-6 h-6 text-white"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-amber-900">
+                      My Profile
+                    </h1>
+                    <p className="text-amber-600 mt-0.5">
+                      {role?.toLowerCase() === "student"
+                        ? "Your student information"
+                        : "Your faculty information"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Card */}
+              <div className="bg-white rounded-3xl shadow-xl shadow-orange-100/50 border border-orange-100/50 overflow-hidden">
+                {/* Profile Info Section */}
+                <div className="relative p-6 sm:px-8 pb-8">
+                  {/* Profile Photo */}
+                  <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 mb-6">
+                    {/* {<div className='relative w-28 h-28 sm:w-32 sm:h-32'>
+                                            { <div className='w-full h-full p-2 rounded-2xl border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-orange-100 to-amber-100'>
                                                 <img
                                                     src={
                                                         draftProfile.profilePhoto
@@ -341,242 +366,378 @@ const ProfilePage = () => {
                                                     </label>
                                                 </>
                                             )}
-                                        </div>
+                                        </div>  } */}
 
-                                        {/* Name and Info */}
-                                        <div className='flex-1 text-center sm:text-left sm:pb-2'>
-                                            {/* edit controls */}
+                    <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0">
+                      {/* Avatar */}
+                      <div className="w-full h-full rounded-full overflow-hidden border-4 border-white shadow-lg bg-gray-100">
+                        <img
+                          src={
+                            draftProfile.profilePhoto
+                              ? URL.createObjectURL(draftProfile.profilePhoto)
+                              : profile.profilePhotoLink
+                                ? `http://localhost:8080/${profile.profilePhotoLink}`
+                                : profile.profilePhotoPath
+                                  ? `http://localhost:8080/${profile.profilePhotoPath}`
+                                  : profilePlaceholder
+                          }
+                          alt="Profile"
+                          className="w-full h-full object-cover object-center"
+                        />
+                      </div>
 
-                                            <h2 className='text-2xl sm:text-3xl font-bold text-amber-900'>
-                                                {profile.name || 'User Name'}
-                                            </h2>
-                                            <div className='flex flex-wrap items-center justify-center sm:justify-between gap-3 mt-2'>
-                                        
-                                                <div className='flex gap-1.5 mt-2'>
-                                                    {isEditing ? (
-                                                        <>
-                                                            <button
-                                                                onClick={() => {
-                                                                    handleSave();
-                                                                }}
-                                                                className='px-4 py-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-sm font-medium rounded-lg hover:from-orange-600 hover:to-rose-600 transition-all duration-300 shadow-sm shadow-orange-500/25 focus:outline-none focus:ring-2 focus:ring-orange-500/30'
-                                                            >
-                                                                Save
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setIsEditing(false)}
-                                                                className='px-4 py-2 border border-orange-300 text-amber-700 text-sm font-medium rounded-lg hover:bg-orange-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20'
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => setIsEditing(true)}
-                                                            className='px-4 py-2 border border-orange-300 text-amber-700 text-sm font-medium rounded-lg hover:bg-orange-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20'
-                                                        >
-                                                            Edit Profile
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                      {/* Edit Overlay */}
+                      {isEditing && (
+                        <>
+                          <input
+                            type="file"
+                            id="profilePhotoEdit"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files[0]) {
+                                setDraftProfile((prev) => ({
+                                  ...prev,
+                                  profilePhoto: e.target.files[0],
+                                }));
+                              }
+                            }}
+                          />
 
-                                    {/* Divider */}
-                                    <div className='h-px bg-gradient-to-r from-transparent via-orange-200 to-transparent mb-8'></div>
-
-                                    {/* Info Fields */}
-                                    <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-                                        {getDisplayFields().map((field) => (
-                                            <div
-                                                key={field}
-                                                className={`${field === 'areaOfExpertise' || field === 'gScholarLink' ? 'lg:col-span-2' : ''}`}
-                                            >
-                                                <div className='flex items-center gap-2.5 text-sm font-semibold text-amber-800 mb-2'>
-                                                    <span className='w-8 h-8 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex items-center justify-center text-orange-500'>
-                                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                            {fieldConfig[field].icon}
-                                                        </svg>
-                                                    </span>
-                                                    {fieldConfig[field].label}
-                                                </div>
-                                                <div className='px-4 py-3.5 bg-gradient-to-r from-amber-50/50 to-orange-50/50 border border-orange-100 rounded-xl text-amber-900'>
-                                                    {isEditing && field !== 'gScholarLink' && field !== 'experience' ? (
-                                                        <input
-                                                            type="text"
-                                                            value={draftProfile[field] || ''}
-                                                            onChange={(e) =>
-                                                                setDraftProfile((prev) => ({ ...prev, [field]: e.target.value }))
-                                                            }
-                                                            className="w-full bg-transparent focus:outline-none"
-                                                        />
-                                                    ) : (
-                                                        renderFieldValue(field)
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Resume Section — Students only */}
-                                    {role?.toLowerCase() === 'student' && (
-                                        <div className='mt-6'>
-
-
-                                            {isEditing ? (
-                                                <>
-                                                    <div className='flex items-center gap-2.5 text-sm font-semibold text-amber-800 mb-3'>
-                                                        <span className='w-8 h-8 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex items-center justify-center text-orange-500'>
-                                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-                                                            </svg>
-                                                        </span>
-                                                        Resume
-                                                    </div>
-                                                    <input
-                                                        type="file"
-                                                        id="resumeEdit"
-                                                        accept=".pdf,.doc,.docx"
-                                                        className="hidden"
-                                                        onChange={(e) => {
-                                                            if (e.target.files[0])
-                                                                setDraftProfile(prev => ({ ...prev, resume: e.target.files[0] }));
-                                                        }}
-                                                    />
-                                                    <label
-                                                        htmlFor="resumeEdit"
-                                                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-orange-200/60 hover:border-orange-400 bg-amber-50/50 cursor-pointer transition-all duration-300 group"
-                                                    >
-                                                        <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-amber-100 group-hover:from-orange-500 group-hover:to-rose-500 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300">
-                                                            <svg className="w-4 h-4 text-orange-500 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
-                                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-                                                            </svg>
-                                                        </div>
-                                                        <span className="text-amber-500 text-sm truncate">
-                                                            {draftProfile.resume ? draftProfile.resume.name : 'Upload new resume (PDF, DOC)'}
-                                                        </span>
-                                                    </label>
-                                                </>
-                                            ) : profile.resumePath ? (
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => setShowResume(v => !v)}
-                                                            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-orange-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 text-amber-700 hover:border-orange-300 hover:shadow-sm transition-all duration-300 group"
-                                                        >
-                                                            <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex items-center justify-center shrink-0">
-                                                                <svg className="w-4 h-4 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
-                                                                    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-                                                                </svg>
-                                                            </div>
-                                                            <span className="text-sm font-medium">{showResume ? 'Hide Resume' : 'View Resume'}</span>
-                                                            <svg
-                                                                className={`w-4 h-4 ml-1 transition-transform duration-300 ${showResume ? 'rotate-180' : ''}`}
-                                                                viewBox="0 0 24 24" fill="currentColor"
-                                                            >
-                                                                <path d="M7 10l5 5 5-5z" />
-                                                            </svg>
-                                                        </button>
-                                                        <a
-                                                            href={`http://localhost:8080/${profile.resumePath}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            title="Open in new tab"
-                                                            className="p-2.5 rounded-xl border border-orange-100 bg-amber-50/50 text-amber-500 hover:text-orange-600 hover:border-orange-300 transition-all duration-300"
-                                                        >
-                                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                                <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
-                                                            </svg>
-                                                        </a>
-                                                    </div>
-                                                    {showResume && (
-                                                        <div className="mt-3 rounded-xl border border-orange-200/60 overflow-hidden shadow-sm">
-                                                            <iframe
-                                                                src={`http://localhost:8080/${profile.resumePath}`}
-                                                                className="w-full h-[680px]"
-                                                                title="Resume"
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <div className='px-4 py-3.5 bg-gradient-to-r from-amber-50/50 to-orange-50/50 border border-orange-100 rounded-xl text-amber-400 text-sm'>
-                                                    No resume uploaded
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Quick Links Card for Faculty */}
-                                    {role === 'faculty' && profile.gScholarLink && (
-                                        <div className='mt-6 bg-white rounded-2xl shadow-lg shadow-orange-100/30 border border-orange-100/50 p-6'>
-                                            <h3 className='text-lg font-bold text-amber-900 flex items-center gap-3 mb-4'>
-                                                <div className='w-10 h-10 bg-gradient-to-br from-orange-100 to-amber-100 rounded-xl flex items-center justify-center'>
-                                                    <svg className="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" />
-                                                    </svg>
-                                                </div>
-                                                Quick Links
-                                            </h3>
-                                            <a
-                                                href={profile.gScholarLink}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className='inline-flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200/50 rounded-xl text-orange-600 hover:text-orange-700 hover:border-orange-300 hover:shadow-md transition-all group'
-                                            >
-                                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M5.242 13.769L0 9.5 12 0l12 9.5-5.242 4.269C17.548 11.249 14.978 9.5 12 9.5c-2.977 0-5.548 1.748-6.758 4.269zM12 10a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" />
-                                                </svg>
-                                                <span className='font-medium'>View Google Scholar Profile</span>
-                                                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
-                                                </svg>
-                                            </a>
-                                        </div>
-                                    )}
-
-                                    {/* Stats Cards for Faculty */}
-                                    {role === 'faculty' && (
-                                        <div className='mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                                            <div className='bg-white rounded-2xl shadow-lg shadow-orange-100/30 border border-orange-100/50 p-6'>
-                                                <div className='flex items-center gap-4'>
-                                                    <div className='w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200'>
-                                                        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z" />
-                                                        </svg>
-                                                    </div>
-                                                    <div>
-                                                        <p className='text-sm text-amber-600 font-medium'>Experience</p>
-                                                        <p className='text-2xl font-bold text-amber-900'>{profile.experience || 0} Years</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className='bg-white rounded-2xl shadow-lg shadow-orange-100/30 border border-orange-100/50 p-6'>
-                                                <div className='flex items-center gap-4'>
-                                                    <div className='w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200'>
-                                                        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z" />
-                                                        </svg>
-                                                    </div>
-                                                    <div>
-                                                        <p className='text-sm text-amber-600 font-medium'>Expertise Areas</p>
-                                                        <p className='text-lg font-bold text-amber-900 line-clamp-1'>
-                                                            {profile.areaOfExpertise?.split(',').length || 0} Fields
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                          <label
+                            htmlFor="profilePhotoEdit"
+                            className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 cursor-pointer opacity-0 hover:opacity-100 transition"
+                          >
+                            <svg
+                              className="w-6 h-6 text-white"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M12 15.2A3.2 3.2 0 0 1 8.8 12 3.2 3.2 0 0 1 12 8.8 3.2 3.2 0 0 1 15.2 12 3.2 3.2 0 0 1 12 15.2M12 7a5 5 0 0 0-5 5 5 5 0 0 0 5 5 5 5 0 0 0 5-5 5 5 0 0 0-5-5M2 4l1.5-1.5h4L9 4h11a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4z" />
+                            </svg>
+                          </label>
+                        </>
+                      )}
                     </div>
-                </main>
+
+                    {/* Name and Info */}
+                    <div className="flex-1 text-center sm:text-left sm:pb-2">
+                      {/* edit controls */}
+
+                      <h2 className="text-2xl sm:text-3xl font-bold text-amber-900">
+                        {profile.name || "User Name"}
+                      </h2>
+                      <div className="flex flex-wrap items-center justify-center sm:justify-between gap-3 mt-2">
+                        <div className="flex gap-1.5 mt-2">
+                          {isEditing ? (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleSave();
+                                }}
+                                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-sm font-medium rounded-lg hover:from-orange-600 hover:to-rose-600 transition-all duration-300 shadow-sm shadow-orange-500/25 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setIsEditing(false)}
+                                className="px-4 py-2 border border-orange-300 text-amber-700 text-sm font-medium rounded-lg hover:bg-orange-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => setIsEditing(true)}
+                              className="px-4 py-2 border border-orange-300 text-amber-700 text-sm font-medium rounded-lg hover:bg-orange-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                            >
+                              Edit Profile
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-px bg-gradient-to-r from-transparent via-orange-200 to-transparent mb-8"></div>
+
+                  {/* Info Fields */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {getDisplayFields().map((field) => (
+                      <div
+                        key={field}
+                        className={`${field === "areaOfExpertise" ? "lg:col-span-2" : ""}`}
+                      >
+                        <div className="flex items-center gap-2.5 text-sm font-semibold text-amber-800 mb-2">
+                          <span className="w-8 h-8 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex items-center justify-center text-orange-500">
+                            <svg
+                              className="w-4 h-4"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              {fieldConfig[field].icon}
+                            </svg>
+                          </span>
+                          {fieldConfig[field].label}
+                        </div>
+                        <div className="px-4 py-3.5 bg-gradient-to-r from-amber-50/50 to-orange-50/50 border border-orange-100 rounded-xl text-amber-900">
+                          {isEditing ? (
+                            field === "experience" ? (
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={draftProfile[field] || ""}
+                                onChange={(e) =>
+                                  setDraftProfile((prev) => ({
+                                    ...prev,
+                                    [field]: e.target.value,
+                                  }))
+                                }
+                                className="w-full bg-transparent focus:outline-none"
+                              />
+                            ) : field === "googleScholarLink" ? (
+                              <input
+                                type="url"
+                                value={draftProfile[field] || ""}
+                                onChange={(e) =>
+                                  setDraftProfile((prev) => ({
+                                    ...prev,
+                                    [field]: e.target.value,
+                                  }))
+                                }
+                                className="w-full bg-transparent focus:outline-none"
+                              />
+                            ) : (
+                              <input
+                                type="text"
+                                value={draftProfile[field] || ""}
+                                onChange={(e) =>
+                                  setDraftProfile((prev) => ({
+                                    ...prev,
+                                    [field]: e.target.value,
+                                  }))
+                                }
+                                className="w-full bg-transparent focus:outline-none"
+                              />
+                            )
+                          ) : (
+                            renderFieldValue(field)
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Resume Section — Students only */}
+                  {role?.toLowerCase() === "student" && (
+                    <div className="mt-6">
+                      {isEditing ? (
+                        <>
+                          <div className="flex items-center gap-2.5 text-sm font-semibold text-amber-800 mb-3">
+                            <span className="w-8 h-8 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex items-center justify-center text-orange-500">
+                              <svg
+                                className="w-4 h-4"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                              >
+                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                              </svg>
+                            </span>
+                            Resume
+                          </div>
+                          <input
+                            type="file"
+                            id="resumeEdit"
+                            accept=".pdf,.doc,.docx"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files[0])
+                                setDraftProfile((prev) => ({
+                                  ...prev,
+                                  resume: e.target.files[0],
+                                }));
+                            }}
+                          />
+                          <label
+                            htmlFor="resumeEdit"
+                            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-orange-200/60 hover:border-orange-400 bg-amber-50/50 cursor-pointer transition-all duration-300 group"
+                          >
+                            <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-amber-100 group-hover:from-orange-500 group-hover:to-rose-500 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300">
+                              <svg
+                                className="w-4 h-4 text-orange-500 group-hover:text-white transition-colors"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                              >
+                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                              </svg>
+                            </div>
+                            <span className="text-amber-500 text-sm truncate">
+                              {draftProfile.resume
+                                ? draftProfile.resume.name
+                                : "Upload new resume (PDF, DOC)"}
+                            </span>
+                          </label>
+                        </>
+                      ) : profile.resumePath ? (
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setShowResume((v) => !v)}
+                              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-orange-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 text-amber-700 hover:border-orange-300 hover:shadow-sm transition-all duration-300 group"
+                            >
+                              <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                                <svg
+                                  className="w-4 h-4 text-orange-500"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                >
+                                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                                </svg>
+                              </div>
+                              <span className="text-sm font-medium">
+                                {showResume ? "Hide Resume" : "View Resume"}
+                              </span>
+                              <svg
+                                className={`w-4 h-4 ml-1 transition-transform duration-300 ${showResume ? "rotate-180" : ""}`}
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                              >
+                                <path d="M7 10l5 5 5-5z" />
+                              </svg>
+                            </button>
+                            <a
+                              href={`http://localhost:8080/${profile.resumePath}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Open in new tab"
+                              className="p-2.5 rounded-xl border border-orange-100 bg-amber-50/50 text-amber-500 hover:text-orange-600 hover:border-orange-300 transition-all duration-300"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                              >
+                                <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+                              </svg>
+                            </a>
+                          </div>
+                          {showResume && (
+                            <div className="mt-3 rounded-xl border border-orange-200/60 overflow-hidden shadow-sm">
+                              <iframe
+                                src={`http://localhost:8080/${profile.resumePath}`}
+                                className="w-full h-[680px]"
+                                title="Resume"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="px-4 py-3.5 bg-gradient-to-r from-amber-50/50 to-orange-50/50 border border-orange-100 rounded-xl text-amber-400 text-sm">
+                          No resume uploaded
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Quick Links Card for Faculty */}
+                  {role === "PROFF" && profile.googleScholarLink && (
+                    <div className="mt-6 bg-white rounded-2xl shadow-lg shadow-orange-100/30 border border-orange-100/50 p-6">
+                      <h3 className="text-lg font-bold text-amber-900 flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-amber-100 rounded-xl flex items-center justify-center">
+                          <svg
+                            className="w-5 h-5 text-orange-500"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" />
+                          </svg>
+                        </div>
+                        Quick Links
+                      </h3>
+                      <a
+                        href={profile.googleScholarLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200/50 rounded-xl text-orange-600 hover:text-orange-700 hover:border-orange-300 hover:shadow-md transition-all group"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M5.242 13.769L0 9.5 12 0l12 9.5-5.242 4.269C17.548 11.249 14.978 9.5 12 9.5c-2.977 0-5.548 1.748-6.758 4.269zM12 10a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" />
+                        </svg>
+                        <span className="font-medium">
+                          View Google Scholar Profile
+                        </span>
+                        <svg
+                          className="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+                        </svg>
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Stats Cards for Faculty */}
+                  {role === "PROFF" && (
+                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-white rounded-2xl shadow-lg shadow-orange-100/30 border border-orange-100/50 p-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+                            <svg
+                              className="w-7 h-7 text-white"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm text-amber-600 font-medium">
+                              Experience
+                            </p>
+                            <p className="text-2xl font-bold text-amber-900">
+                              {profile.experience || 0} Years
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-2xl shadow-lg shadow-orange-100/30 border border-orange-100/50 p-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200">
+                            <svg
+                              className="w-7 h-7 text-white"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm text-amber-600 font-medium">
+                              Expertise Areas
+                            </p>
+                            <p className="text-lg font-bold text-amber-900 line-clamp-1">
+                              {profile.domain?.split(",").length || 0} Fields
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-        </>
-    );
+          </div>
+        </main>
+      </div>
+    </>
+  );
 };
 
 export default ProfilePage;

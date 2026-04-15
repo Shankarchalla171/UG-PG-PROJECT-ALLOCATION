@@ -4,7 +4,9 @@
 node_modules/
 target/
 build/
+Backend/uploads/
 *.log
 # Dockerfile*
 .idea/
 # docker-compose*
+uploads/

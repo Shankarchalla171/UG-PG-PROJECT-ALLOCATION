@@ -25,10 +25,9 @@ public class Project {
     @JoinColumn(name="professorId",nullable = false)
     private Professor professor;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="deptCoordinatorId",nullable = false)
-    private DeptCoordinator deptCoordinator;
+    @JoinColumn(name="coGuideId")
+    private Professor coGuide;
 
     @Column(name = "title")
     private String title;
@@ -37,16 +36,18 @@ public class Project {
     private String description;
 
     @Column(name = "slots")
-    private int slots;
+    private Integer slots;
 
     @Column(name = "domain")
     private String domain;
 
     @Column(name = "duration")
     private String duration;
-
-    @Column(name = "pre_requesites")
     private String preRequisites;
+
+    @Column(name = "allocated_slots", nullable = false)
+    @Builder.Default
+    private Integer allocatedSlots = 0;
 
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)

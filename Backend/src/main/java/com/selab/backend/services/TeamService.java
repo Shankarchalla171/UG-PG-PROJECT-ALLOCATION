@@ -2,6 +2,7 @@ package com.selab.backend.services;
 
 import com.selab.backend.Dto.StudentDto;
 import com.selab.backend.Dto.TeamDto;
+import com.selab.backend.exceptions.ResourceNotFoundException;
 import com.selab.backend.exceptions.TeamInvalidException;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.mappers.StudentMapper;
@@ -38,8 +39,13 @@ public class TeamService {
         team.setTeamLead(teamLead);
         team.setIsFinalized(false);
 
-         teamLead.setTeam(team);
-         teamLead.setTeamRole(TeamRole.TEAMlEAD);
+        String fullName = teamLead.getName();
+        String teamName = fullName + "_and_team";
+
+        team.setTeamName(teamName);
+
+        teamLead.setTeam(team);
+        teamLead.setTeamRole(TeamRole.TEAMlEAD);
 
         team.setTeamMembers(List.of(teamLead));
 
@@ -79,9 +85,11 @@ public class TeamService {
 
         Student student =studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("user with email"+user.getEmail()+" not Found"));
         Team currentTeam = teamRepository.findTeamWithMembers(teamId).orElseThrow(()-> new RuntimeException("team not found"));
-        if(currentTeam.getTeamMembers().size()==3){
+        if(currentTeam.getTeamMembers().size()==3 ){
             throw new TeamInvalidException("This team is full! Maximum 3 members allowed.");
         }
+        if(currentTeam.getIsFinalized())
+             throw new TeamInvalidException("The team is already finalized , you cant join them");
         student.setTeam(currentTeam);
         student.setTeamRole(TeamRole.TEAM_MEMBER);
         currentTeam.getTeamMembers().add(student);
@@ -131,6 +139,11 @@ public class TeamService {
 
         team.setTeamLead(newLead);
 
+        String fullName = newLead.getName();
+        String teamName = fullName + "_and_team";
+
+        team.setTeamName(teamName);
+
         List<StudentDto> membersDto= team.getTeamMembers().stream()
                 .map(studentMapper::toDto).toList();
         return TeamDto.builder()
@@ -157,5 +170,22 @@ public class TeamService {
         System.out.println("reached update statement");
         team.setIsFinalized(true);
         System.out.println("update done");
+    }
+
+    public TeamDto getTeamFromId(UUID teamId) {
+        Team team = teamRepository.findTeamByTeamId(teamId).orElseThrow(()-> new ResourceNotFoundException("Team not found.."));
+        List<StudentDto> memberDtos= team.getTeamMembers().stream()
+                .sorted((a, b) -> {
+                    if (a.getTeamRole() == TeamRole.TEAMlEAD) return -1;
+                    if (b.getTeamRole() == TeamRole.TEAMlEAD) return 1;
+                    return 0;
+                })
+                .map(studentMapper::toDto).toList();
+
+        return TeamDto.builder()
+                .teamId(team.getTeamId())
+                .members(memberDtos)
+                .isFinalized(team.getIsFinalized())
+                .build();
     }
 }

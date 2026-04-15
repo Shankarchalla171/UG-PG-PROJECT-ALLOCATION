@@ -11,6 +11,7 @@ const LoginPage = () => {
     const navigate = useNavigate();
 
     const API_URL = import.meta.env.VITE_API_URL;
+    console.log(API_URL);
     
     // State for form mode and form fields
     const [isRegistering, setIsRegistering] = useState(false);
@@ -18,6 +19,7 @@ const LoginPage = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState("");
     const [err, setErr] = useState("");
+    const [successMsg, setSuccessMsg] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -45,24 +47,34 @@ const LoginPage = () => {
             type: "setEmail",
             payload: e.target.value,
         });
+        setErr("");
+        setSuccessMsg("");
     };
 
     const handlePasswordChange = (e) => {
         setPassword(e.target.value);
+        setErr("");
     };
 
     const handleConfirmPasswordChange = (e) => {
         setConfirmPassword(e.target.value);
+        setErr("");
     };
 
     const handleLogin = async (e) => {
         e.preventDefault();
         if (!email || !password) {
-            alert("Please fill in all fields");
+            setErr("Please fill in all fields");
+            return;
+        }
+        if (password.length < 4) {
+            setErr("Password must be at least 4 characters long");
+            alert("Password must be at least 4 characters long");
             return;
         }
 
         setErr("");
+        setSuccessMsg("");
         setLoading(true);
 
         try {
@@ -80,11 +92,10 @@ const LoginPage = () => {
             const data = await response.json();
 
             if (!response.ok) {
+                // Backend now returns appropriate error status with a 'message' field
                 throw new Error(data.message || "Login failed");
             }
             
-            console.log(data);
-
             authDispatch({
                 type: "loginSuccess",
                 payload: {
@@ -95,11 +106,11 @@ const LoginPage = () => {
                 }
             });
             navigate('/dashboard');
-            setLoading(false);
 
         } catch (err) {
             console.error("Login error:", err);
-            setErr(err.message || "Login failed. Please try again.");
+            setErr(err.message);
+        } finally {
             setLoading(false);
         }
     };
@@ -110,21 +121,28 @@ const LoginPage = () => {
 
         // Validation
         if (!email || !password || !confirmPassword) {
-            alert("Please fill in all fields");
+            setErr("Please fill in all fields");
             return;
         }
 
         if (password !== confirmPassword) {
-            alert("Passwords do not match");
+            setErr("Passwords do not match");
             return;
         }
 
-        if (password.length < 3) {
-            alert("Password must be at least 3 characters long");
+        if (password.length < 4) {
+            setErr("Password must be at least 4 characters long");
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setErr("Please enter a valid email address");
             return;
         }
 
         setErr("");
+        setSuccessMsg("");
         setLoading(true);
 
         try {
@@ -143,65 +161,69 @@ const LoginPage = () => {
             const data = await response.json();
 
             if (!response.ok) {
+                // Handle 409 Conflict for duplicate user/email
                 throw new Error(data.message || "Registration failed");
             }
 
             // Registration successful
-            alert("Please check your inbox - we have sent you a verification link");
-
-            // Clear form and switch to login
-            clearForm();
-            setIsRegistering(false);
-            setLoading(false);
+            setSuccessMsg(data.message || "Registration successful! Please check your inbox for the verification link.");
+            
+            // Clear form after 3 seconds and switch to login
+            setTimeout(() => {
+                clearForm();
+                setIsRegistering(false);
+                setSuccessMsg("");
+            }, 3000);
 
         } catch (err) {
             console.error("Registration error:", err);
-            setErr(err.message || "Registration failed. Please try again.");
+            setErr(err.message);
+        } finally {
             setLoading(false);
         }
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
-    setLoading(true);
-    setErr("");
-    
-    try {
-        // Change from '/api/auth/google' to '/api/auth/google-signin'
-        const response = await fetch(`${API_URL}/api/auth/google-signin`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                token: credentialResponse.credential
-            }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || "Google login failed");
-        }
-
-        authDispatch({
-            type: "loginSuccess",
-            payload: {
-                token: data.token,
-                role: data.role,
-                teamRole: data.teamRole,
-                email: data.email,
-            }
-        });
+        setLoading(true);
+        setErr("");
+        setSuccessMsg("");
         
-        navigate('/dashboard');
+        try {
+            const response = await fetch(`${API_URL}/api/auth/google-signin`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    token: credentialResponse.credential
+                }),
+            });
 
-    } catch (err) {
-        console.error("Google login error:", err);
-        setErr(err.message || "Google login failed. Please try again.");
-    } finally {
-        setLoading(false);
-    }
-};
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Google login failed");
+            }
+
+            authDispatch({
+                type: "loginSuccess",
+                payload: {
+                    token: data.token,
+                    role: data.role,
+                    teamRole: data.teamRole,
+                    email: data.email,
+                }
+            });
+            
+            navigate('/dashboard');
+
+        } catch (err) {
+            console.error("Google login error:", err);
+            setErr(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleGoogleError = () => {
         console.error("Google Sign-In Failed");
@@ -212,11 +234,14 @@ const LoginPage = () => {
         authDispatch({ type: "setEmail", payload: "" });
         setPassword("");
         setConfirmPassword("");
+        setErr("");
+        setSuccessMsg("");
     };
 
     const toggleFormMode = () => {
         clearForm();
         setErr("");
+        setSuccessMsg("");
         setIsRegistering(!isRegistering);
     };
 
@@ -230,6 +255,13 @@ const LoginPage = () => {
                 <div className="absolute inset-0 bg-black/50"></div>
 
                 <div className="w-full max-w-md relative z-10">
+                    {/* Success Message Display */}
+                    {successMsg && (
+                        <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-white text-sm">
+                            {successMsg}
+                        </div>
+                    )}
+
                     {/* Error Message Display */}
                     {err && (
                         <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-white text-sm">
@@ -275,7 +307,7 @@ const LoginPage = () => {
                             {/* Password Field */}
                             <div>
                                 <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
-                                    Password
+                                    Password(Please use a strong password with at least 4 characters)
                                 </label>
                                 <div className="relative">
                                     <input
@@ -304,6 +336,11 @@ const LoginPage = () => {
                                         )}
                                     </button>
                                 </div>
+                                {isRegistering && (
+                                    <p className="mt-1 text-xs text-white/60">
+                                        Password must be at least 4 characters long
+                                    </p>
+                                )}
                             </div>
 
                             {/* Confirm Password Field (only for registration) */}
@@ -392,7 +429,7 @@ const LoginPage = () => {
                                 shape="rectangular"
                                 size="large"
                                 text="signin_with"
-                                width="100%"
+                                width={250}
                                 disabled={loading}
                             />
                         </div>

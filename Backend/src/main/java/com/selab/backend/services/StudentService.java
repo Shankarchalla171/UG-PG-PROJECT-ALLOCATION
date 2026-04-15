@@ -1,14 +1,11 @@
 package com.selab.backend.services;
 
-import com.selab.backend.Dto.StudentDto;
-import com.selab.backend.Dto.StudentProfileRequest;
-import com.selab.backend.Dto.UpdateProfileRequest;
+import com.selab.backend.Dto.*;
 import com.selab.backend.auth.JwtService;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.mappers.StudentMapper;
-import com.selab.backend.models.Role;
-import com.selab.backend.models.Student;
-import com.selab.backend.models.User;
+import com.selab.backend.models.*;
+import com.selab.backend.repositories.ProjectApplicationsRepository;
 import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.repositories.UserRepository;
 import com.selab.backend.utils.FileValidator;
@@ -22,7 +19,10 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -33,9 +33,34 @@ public class StudentService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final StudentMapper studentMapper;
+    private final ProjectApplicationsRepository projectApplicationsRepository;
 
     public Student getStudentProfile(User user) {
         return studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("profile for user with name"+user.getUsername()+" not found"));
+    }
+
+    public TeamDto getTeamDetails(Student student){
+
+        Team team = student.getTeam();
+
+        List<StudentDto> members = team.getTeamMembers().stream().map(s -> {
+            StudentDto dto = new StudentDto();
+            dto.setStudentId(s.getStudentId());
+            dto.setName(s.getName());
+            dto.setCollegeEmailId(s.getCollegeEmailId());
+            dto.setDepartmentName(s.getDepartmentName());
+            dto.setRollNumber(s.getRollNumber());
+            dto.setResumePath(s.getResumePath());
+            dto.setProfilePhotoLink(s.getProfilePhotoLink());
+            dto.setTeamRole(s.getTeamRole().name());
+            return dto;
+        }).toList();
+
+        return TeamDto.builder()
+                .teamId(team.getTeamId())
+                .members(members)
+                .isFinalized(team.getIsFinalized())
+                .build();
     }
 
     @Transactional
@@ -80,7 +105,7 @@ public class StudentService {
             return studentRepository.save(student);
 
         } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException("Error while creating student profile", e);
         }
     }
 
@@ -148,5 +173,42 @@ public class StudentService {
 
         studentMapper.updateStudent(request,student);
        return  studentRepository.save(student);
+    }
+
+    public StudentDashboardDto getDashboard(User user) {
+        if(!user.getRole().equals(Role.STUDENT))
+             throw new RuntimeException("Please request Dashboard according to your  role");
+        Student student= studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("Student not found with mail id : "+user.getEmail()));
+        Team team = student.getTeam();
+        Map<ApplicationStatus, Long> stats= getApplicationsStats(team);
+        Long pending = stats.getOrDefault(ApplicationStatus.PENDING, 0L);
+        Long approved = stats.getOrDefault(ApplicationStatus.CONFIRMED, 0L);
+        Long rejected = stats.getOrDefault(ApplicationStatus.REJECTED, 0L);
+
+        Long total = pending + approved + rejected;
+        return StudentDashboardDto.builder()
+                .name(student.getName())
+                .departmentName(student.getDepartmentName())
+                .rollNumber(student.getRollNumber())
+                .collegeEmailId(student.getCollegeEmailId())
+                .profilePhotoLink(student.getProfilePhotoLink())
+                .rejected(rejected)
+                .approved(approved)
+                .pending(pending)
+                .totalApplication(total)
+                .build();
+    }
+
+    private Map<ApplicationStatus, Long> getApplicationsStats(Team team) {
+        List<Object[]> results=projectApplicationsRepository.countByTeam(team);
+        Map<ApplicationStatus, Long>  stats=new HashMap<>();
+
+        for (Object[] row : results) {
+            ApplicationStatus status = (ApplicationStatus) row[0];
+            Long count = (Long) row[1];
+            stats.put(status, count);
+        }
+
+        return stats;
     }
 }

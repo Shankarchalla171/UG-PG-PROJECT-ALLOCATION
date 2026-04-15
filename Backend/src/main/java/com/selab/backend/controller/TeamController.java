@@ -19,36 +19,41 @@ public class TeamController {
     private final TeamService teamService;
 
     @PostMapping("")
-    public  ResponseEntity<TeamDto> createTeam(@AuthenticationPrincipal User user){
+    public ResponseEntity<TeamDto> createTeam(@AuthenticationPrincipal User user) {
         return new ResponseEntity<>(teamService.create(user), HttpStatus.CREATED);
     }
 
     @GetMapping("")
-    public ResponseEntity<TeamDto> getTeam(@AuthenticationPrincipal User user){
-        return new ResponseEntity<>(teamService.getTeam(user),HttpStatus.OK);
+    public ResponseEntity<TeamDto> getTeam(@AuthenticationPrincipal User user) {
+        return new ResponseEntity<>(teamService.getTeam(user), HttpStatus.OK);
+    }
+    @GetMapping("/{teamId}")
+    public ResponseEntity<TeamDto> getTeam(@PathVariable("teamId") UUID teamId) {
+      return new ResponseEntity<>(teamService.getTeamFromId(teamId),HttpStatus.OK);
+
     }
 
     @PostMapping("/{teamId}")
-    public ResponseEntity<TeamDto> joinTeams(@AuthenticationPrincipal User user, @PathVariable String teamId){
-        return new ResponseEntity<>(teamService.join(user,UUID.fromString(teamId)),HttpStatus.OK);
+    public ResponseEntity<TeamDto> joinTeams(@AuthenticationPrincipal User user, @PathVariable String teamId) {
+        return new ResponseEntity<>(teamService.join(user, UUID.fromString(teamId)), HttpStatus.OK);
     }
 
     @DeleteMapping("/leave")
-    public ResponseEntity<?> leaveTeam(@AuthenticationPrincipal User user){
+    public ResponseEntity<?> leaveTeam(@AuthenticationPrincipal User user) {
         System.out.println("the has reached the leave controller");
         teamService.leaveTeam(user);
         return ResponseEntity.ok().body("you left the Team Succesfully");
     }
 
     @PutMapping("/transfer-leadership/{newLeadId}")
-    public ResponseEntity<TeamDto> transferLead(@PathVariable Long newLeadId,@AuthenticationPrincipal  User user){
-        return new ResponseEntity<>(teamService.transferLead(user,newLeadId),HttpStatus.OK);
+    public ResponseEntity<TeamDto> transferLead(@PathVariable Long newLeadId, @AuthenticationPrincipal User user) {
+        return new ResponseEntity<>(teamService.transferLead(user, newLeadId), HttpStatus.OK);
     }
 
     @PutMapping("/finalize/{teamId}")
-    public ResponseEntity<?> finaliseTeam(@AuthenticationPrincipal User user,@PathVariable UUID teamId){
+    public ResponseEntity<?> finaliseTeam(@AuthenticationPrincipal User user, @PathVariable UUID teamId) {
         System.out.println("reached controller");
-        teamService.finalise(user,teamId);
+        teamService.finalise(user, teamId);
         return ResponseEntity.ok().body("Team finalised successfully ! you can now apply for projects after the team formation deadline ends.");
     }
 }
