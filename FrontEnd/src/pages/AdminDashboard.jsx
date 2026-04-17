@@ -95,6 +95,12 @@ const AdminDashboard = () => {
     userId: null,
   });
 
+  // sorting state
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: null,
+  });
+
   // Make Coordinator Form State
   const [coordinatorForm, setCoordinatorForm] = useState({
     userId: "",
@@ -102,22 +108,32 @@ const AdminDashboard = () => {
     batch: "",
   });
 
+  // role filter state
+  const [selectedRole, setSelectedRole] = useState("");
+
   // Fetch all users
-  const fetchUsers = async () => {
+
+  const fetchUsers = async (sortBy, direction, roleParam) => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/admin/users`, {
+      let url = `${API_URL}/api/admin/users?`;
+
+      if (roleParam) {
+        url += `role=${roleParam}&`;
+      }
+
+      if (sortBy && direction) {
+        url += `sortBy=${sortBy}&direction=${direction}`;
+      }
+
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch users");
-      }
 
       const data = await response.json();
       setUsers(data.data);
@@ -132,12 +148,38 @@ const AdminDashboard = () => {
     }
   };
 
+  // sort click handler
+  const sortableColumns = ["email", "role"];
+  const handleSort = (column) => {
+    if (!sortableColumns.includes(column)) return;
+
+    let direction = "asc";
+    if (sortConfig.key === column) {
+      if (sortConfig.direction === "asc") direction = "desc";
+      else if (sortConfig.direction === "desc") direction = null;
+    }
+
+    setSortConfig({ key: column, direction });
+
+    fetchUsers(column, direction, selectedRole);
+  };
+
+  // arrow icons for sorting
+  const getSortIcon = (column) => {
+    if (!sortableColumns.includes(column)) return "";
+
+    if (sortConfig.key !== column) return "⇅";
+    if (sortConfig.direction === "asc") return "↑";
+    if (sortConfig.direction === "desc") return "↓";
+    return "⇅";
+  };
+
   // Fetch users on component mount
   useEffect(() => {
     if (role === "ADMIN") {
-      fetchUsers();
+      fetchUsers(null, null, selectedRole);
     }
-  }, [role]);
+  }, [role, selectedRole]);
 
   // auto hide toast after 5 seconds
   useEffect(() => {
@@ -241,9 +283,7 @@ const AdminDashboard = () => {
         !coordinatorForm.deptName ||
         !coordinatorForm.batch
       ) {
-        throw new Error(
-          "Please fill in all required fields",
-        );
+        throw new Error("Please fill in all required fields");
       }
 
       const response = await fetch(
@@ -384,171 +424,211 @@ const AdminDashboard = () => {
           </div>
 
           {/* Tabs Navigation */}
-          <div className="flex gap-4 mb-6 border-b border-orange-200">
-            <button
-              onClick={() => setActiveTab("users")}
-              className={`px-6 py-3 font-semibold border-b-2 transition ${
-                activeTab === "users"
-                  ? "border-orange-500 text-orange-600"
-                  : "border-transparent text-gray-600 hover:text-orange-500"
-              }`}
-            >
-              All Users ({users.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("create")}
-              className={`px-6 py-3 font-semibold border-b-2 transition ${
-                activeTab === "create"
-                  ? "border-orange-500 text-orange-600"
-                  : "border-transparent text-gray-600 hover:text-orange-500"
-              }`}
-            >
-              Create User
-            </button>
-            <button
-              onClick={() => setActiveTab("coordinator")}
-              className={`px-6 py-3 font-semibold border-b-2 transition ${
-                activeTab === "coordinator"
-                  ? "border-orange-500 text-orange-600"
-                  : "border-transparent text-gray-600 hover:text-orange-500"
-              }`}
-            >
-              Make Coordinator
-            </button>
+          <div className="flex justify-between items-center mb-6 border-b border-orange-200">
+            {/* LEFT: Tabs */}
+            <div className="flex gap-4">
+              <button
+                onClick={() => setActiveTab("users")}
+                className={`px-6 py-3 font-semibold border-b-2 transition ${
+                  activeTab === "users"
+                    ? "border-orange-500 text-orange-600"
+                    : "border-transparent text-gray-600 hover:text-orange-500"
+                }`}
+              >
+                All Users ({users.length})
+              </button>
+
+              <button
+                onClick={() => setActiveTab("create")}
+                className={`px-6 py-3 font-semibold border-b-2 transition ${
+                  activeTab === "create"
+                    ? "border-orange-500 text-orange-600"
+                    : "border-transparent text-gray-600 hover:text-orange-500"
+                }`}
+              >
+                Create User
+              </button>
+
+              <button
+                onClick={() => setActiveTab("coordinator")}
+                className={`px-6 py-3 font-semibold border-b-2 transition ${
+                  activeTab === "coordinator"
+                    ? "border-orange-500 text-orange-600"
+                    : "border-transparent text-gray-600 hover:text-orange-500"
+                }`}
+              >
+                Make Coordinator
+              </button>
+            </div>
+
+            {/* RIGHT: Filter */}
+            {activeTab === "users" && (
+              <div className="mb-2">
+                <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-1.5 shadow-sm hover:shadow-md transition">
+                  <span className="text-sm font-medium text-amber-800">
+                    🔎 Filter
+                  </span>
+
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    className="px-3 py-1 border border-orange-300 rounded-md bg-white text-amber-900 text-sm focus:outline-none focus:ring-1 focus:ring-orange-400"
+                  >
+                    <option value="">All</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="USER">User</option>
+                    <option value="STUDENT">Student</option>
+                    <option value="PROFF">Professor</option>
+                    <option value="DEPTCORDINATOR">Coordinator</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Tab Content */}
           {/* Users List Tab */}
           {activeTab === "users" && (
-            <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm overflow-hidden">
-              {loading ? (
-                <div className="p-8">
-                  <div className="mb-4">
-                    <Skeleton height={24} width={200} />
+            <div>
+              <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm overflow-hidden">
+                {loading ? (
+                  <div className="p-8">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-orange-50 border-b border-orange-200">
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
+                              <Skeleton width={60} />
+                            </th>
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
+                              <Skeleton width={50} />
+                            </th>
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
+                              <Skeleton width={100} />
+                            </th>
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
+                              <Skeleton width={70} />
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Array.from({ length: 5 }).map((_, index) => (
+                            <tr
+                              key={index}
+                              className="border-b border-orange-100 hover:bg-orange-50/30 transition"
+                            >
+                              <td className="px-6 py-4">
+                                <Skeleton width={150} />
+                              </td>
+                              <td className="px-6 py-4">
+                                <Skeleton width={80} />
+                              </td>
+                              <td className="px-6 py-4">
+                                <Skeleton width={120} />
+                              </td>
+                              <td className="px-6 py-4">
+                                <Skeleton width={60} />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
+                ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="bg-orange-50 border-b border-orange-200">
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
-                            <Skeleton width={60} />
+                          <th
+                            className="px-6 py-3 text-left text-sm font-semibold text-amber-900"
+                            onClick={() => handleSort("email")}
+                          >
+                            Email {getSortIcon("email")}
+                          </th>
+                          <th
+                            className="px-6 py-3 text-left text-sm font-semibold text-amber-900"
+                            onClick={() => handleSort("role")}
+                          >
+                            Role {getSortIcon("role")}
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
-                            <Skeleton width={50} />
+                            Department
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
-                            <Skeleton width={100} />
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
-                            <Skeleton width={70} />
+                            Actions
                           </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {Array.from({ length: 5 }).map((_, index) => (
-                          <tr
-                            key={index}
-                            className="border-b border-orange-100 hover:bg-orange-50/30 transition"
-                          >
-                            <td className="px-6 py-4">
-                              <Skeleton width={150} />
-                            </td>
-                            <td className="px-6 py-4">
-                              <Skeleton width={80} />
-                            </td>
-                            <td className="px-6 py-4">
-                              <Skeleton width={120} />
-                            </td>
-                            <td className="px-6 py-4">
-                              <Skeleton width={60} />
+                        {users.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="px-6 py-8 text-center text-amber-600"
+                            >
+                              No users found
                             </td>
                           </tr>
-                        ))}
+                        ) : (
+                          users.map((user) => (
+                            <tr
+                              key={user.id}
+                              className="border-b border-orange-100 hover:bg-orange-50/30 transition"
+                            >
+                              <td className="px-6 py-4 text-sm text-gray-600">
+                                {user.email}
+                                {user.email ===
+                                  JSON.parse(atob(token.split(".")[1])).sub && (
+                                  <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+                                    You
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-sm">
+                                <span
+                                  className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                                    user.role === "ADMIN"
+                                      ? "bg-red-100 text-red-800"
+                                      : user.role === "DEPTCORDINATOR"
+                                        ? "bg-blue-100 text-blue-800"
+                                        : user.role === "PROFF"
+                                          ? "bg-purple-100 text-purple-800"
+                                          : user.role === "STUDENT"
+                                            ? "bg-green-100 text-green-800"
+                                            : user.role === "USER"
+                                              ? "bg-slate-100 text-slate-700"
+                                              : "bg-gray-100 text-gray-800"
+                                  }`}
+                                >
+                                  {user.role}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-600">
+                                {user.departmentName || "-"}
+                              </td>
+                              <td className="px-6 py-4 text-sm">
+                                <button
+                                  onClick={() =>
+                                    setDeleteModal({
+                                      show: true,
+                                      userId: user.id,
+                                    })
+                                  }
+                                  disabled={loading}
+                                  className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition disabled:opacity-50 text-xs font-semibold"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-orange-50 border-b border-orange-200">
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
-                          Email
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
-                          Role
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
-                          Department
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-amber-900">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="px-6 py-8 text-center text-amber-600"
-                          >
-                            No users found
-                          </td>
-                        </tr>
-                      ) : (
-                        users.map((user) => (
-                          <tr
-                            key={user.id}
-                            className="border-b border-orange-100 hover:bg-orange-50/30 transition"
-                          >
-                            <td className="px-6 py-4 text-sm text-gray-600">
-                              {user.email}
-                            </td>
-                            <td className="px-6 py-4 text-sm">
-                              <span
-                                className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                                  user.role === "ADMIN"
-                                    ? "bg-red-100 text-red-800"
-                                    : user.role === "DEPTCORDINATOR"
-                                      ? "bg-blue-100 text-blue-800"
-                                      : user.role === "PROFF"
-                                        ? "bg-purple-100 text-purple-800"
-                                        : user.role === "STUDENT"
-                                          ? "bg-green-100 text-green-800"
-                                          : user.role === "USER"
-                                            ? "bg-slate-100 text-slate-700"
-                                            : "bg-gray-100 text-gray-800"
-                                }`}
-                              >
-                                {user.role}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
-                              {user.departmentName || "-"}
-                            </td>
-                            <td className="px-6 py-4 text-sm">
-                              <button
-                                onClick={() =>
-                                  setDeleteModal({
-                                    show: true,
-                                    userId: user.id,
-                                  })
-                                }
-                                disabled={loading}
-                                className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition disabled:opacity-50 text-xs font-semibold"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
