@@ -15,7 +15,6 @@ public interface ProjectMapper {
     @Mapping(target = "preRequisites", source = "prerequisites")  // Map DTO.prerequisites → Entity.preRequesites
     @Mapping(target = "projectId", ignore = true)           // Never update ID
     @Mapping(target = "professor", ignore = true)           // Never update professor
-    @Mapping(target = "deptCoordinator", ignore = true)     // Never update coordinator
     @Mapping(target = "applications", ignore = true)        // Never update applications
     void updateProjectFromDto(ProjectUpdateDto dto, @MappingTarget Project project);
 

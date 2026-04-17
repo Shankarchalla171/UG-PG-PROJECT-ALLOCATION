@@ -26,8 +26,146 @@ public class ConfirmationService {
     private final ProjectRepository projectRepository;
     private final TeamRepository teamRepository;
     private final ProfessorRepository professorRepository;
+    private final ProfessorBatchQuotaRepository professorBatchQuotaRepository;
 
     // ============ HELPER METHODS ============
+
+
+    // =====================================================
+// NEW FEATURE: Reject same project applications when project becomes full
+// =====================================================
+    private void rejectOtherTeamsApplicationsForProject(
+            Long projectId,
+            UUID confirmedTeamId
+    ) {
+        List<ProjectApplications> applications = applicationRepository.findAll().stream()
+                .filter(app ->
+                        app.getProject().getProjectId().equals(projectId) &&
+                                !app.getTeam().getTeamId().equals(confirmedTeamId) &&
+                                (
+                                        app.getStatus() == ApplicationStatus.CONFIRMED ||
+                                        app.getStatus() == ApplicationStatus.PENDING
+                                )
+                )
+                .collect(Collectors.toList());
+
+        applications.forEach(app ->
+                app.setStatus(ApplicationStatus.PROJECT_FULL_REJECTED));
+
+        if (!applications.isEmpty()) {
+            applicationRepository.saveAll(applications);
+        }
+    }
+
+    // =====================================================
+// NEW FEATURE: Reject all pending applications under main professor
+// =====================================================
+    private void rejectAllPendingApplicationsForProfessor(
+            Professor professor,
+            ApplicationStatus rejectionStatus
+    ) {
+        List<ProjectApplications> applications = applicationRepository.findAll().stream()
+                .filter(app ->
+                        app.getProject().getProfessor().getProfessorId()
+                                .equals(professor.getProfessorId()) &&
+                                (
+                                        app.getStatus() == ApplicationStatus.CONFIRMED ||
+                                        app.getStatus() == ApplicationStatus.PENDING
+                                )
+                )
+                .collect(Collectors.toList());
+
+        applications.forEach(app ->
+                app.setStatus(rejectionStatus));
+
+        if (!applications.isEmpty()) {
+            applicationRepository.saveAll(applications);
+        }
+    }
+
+
+    // =====================================================
+// NEW FEATURE: Full co-guide exhaustion handling
+// Covers BOTH:
+// 1. Projects where exhausted professor is main guide
+//    -> FACULTY_FULL_REJECTED
+// 2. Projects where exhausted professor is co-guide
+//    -> CO_GUIDE_FULL_REJECTED
+//
+// Reject only applications still active:
+// CONFIRMED or PENDING
+// =====================================================
+    private void rejectAllApplicationsForExhaustedCoGuide(
+            Professor exhaustedProfessor
+    ) {
+
+        List<ProjectApplications> applications = applicationRepository.findAll().stream()
+                .filter(app ->
+                        (
+                                app.getStatus() == ApplicationStatus.CONFIRMED ||
+                                        app.getStatus() == ApplicationStatus.PENDING
+                        )
+                )
+                .collect(Collectors.toList());
+
+        List<ProjectApplications> changedApps = new ArrayList<>();
+
+        for (ProjectApplications app : applications) {
+
+            Project project = app.getProject();
+
+            /*
+             * Case 1:
+             * Exhausted professor is MAIN professor
+             */
+            if (
+                    project.getProfessor().getProfessorId()
+                            .equals(exhaustedProfessor.getProfessorId())
+            ) {
+                app.setStatus(ApplicationStatus.FACULTY_FULL_REJECTED);
+                changedApps.add(app);
+            }
+
+            /*
+             * Case 2:
+             * Exhausted professor is CO-GUIDE
+             */
+            else if (
+                    project.getCoGuide() != null &&
+                            project.getCoGuide().getProfessorId()
+                                    .equals(exhaustedProfessor.getProfessorId())
+            ) {
+                app.setStatus(ApplicationStatus.CO_GUIDE_FULL_REJECTED);
+                changedApps.add(app);
+            }
+        }
+
+        if (!changedApps.isEmpty()) {
+            applicationRepository.saveAll(changedApps);
+        }
+    }
+
+    // =====================================================
+// NEW FEATURE: Check whether professor quota is exhausted
+// =====================================================
+    private boolean isProfessorQuotaFull(
+            Professor professor,
+            String batch
+    ) {
+        ProfessorBatchQuota quota =
+                professorBatchQuotaRepository
+                        .findByProfessorAndBatch(professor, batch)
+                        .orElseThrow(() -> new RuntimeException(
+                                "Quota not found for Professor "
+                                        + professor.getName()
+                        ));
+
+        double remaining =
+                quota.getMaxStudents() - quota.getAllocatedStudents();
+
+        // epsilon handling as remaining==0 fails incorrectly for floating/double values sometimes
+        return Math.abs(remaining) < 0.0001;
+    }
 
     /**
      * Get student from current user
@@ -102,24 +240,129 @@ public class ConfirmationService {
      * Calculate remaining slots for a project
      */
     private Integer getRemainingProjectSlots(Project project) {
-        // Get total slots for this project (from projects.slots)
         Integer totalSlots = project.getSlots();
+        Integer allocatedSlots = project.getAllocatedSlots();
+
         if (totalSlots == null) return 0;
+        if (allocatedSlots == null) allocatedSlots = 0;
 
-        // Get all TEAM_CONFIRMED applications for this project
-        List<ProjectApplications> confirmedApps = applicationRepository.findAll().stream()
-                .filter(app -> app.getProject().getProjectId().equals(project.getProjectId()) &&
-                        app.getStatus() == ApplicationStatus.TEAM_CONFIRMED)
-                .collect(Collectors.toList());
+        return totalSlots - allocatedSlots;
+    }
 
-        // Calculate total students already assigned to this project
-        int assignedStudents = 0;
-        for (ProjectApplications app : confirmedApps) {
-            assignedStudents += getTeamSize(app.getTeam().getTeamId());
+    private void reduceFacultyBatchQuota(Project project, Team team, int teamSize) {
+
+        String batch = extractBatchFromTeam(team);
+
+        Professor mainGuide = project.getProfessor();
+        Professor coGuide = project.getCoGuide();
+
+        if (coGuide == null) {
+
+            validateQuota(mainGuide, batch, (double) teamSize);
+            deductQuota(mainGuide, batch, (double) teamSize);
+
+        } else {
+
+            double splitLoad = teamSize / 2.0;
+
+            /*
+             * Validate both first
+             */
+            validateQuota(mainGuide, batch, splitLoad);
+            validateQuota(coGuide, batch, splitLoad);
+
+            /*
+             * Deduct only after both validations pass
+             */
+            deductQuota(mainGuide, batch, splitLoad);
+            deductQuota(coGuide, batch, splitLoad);
+        }
+    }
+
+    private void validateQuota(
+            Professor professor,
+            String batch,
+            double amount
+    ) {
+        ProfessorBatchQuota quota =
+                professorBatchQuotaRepository
+                        .findByProfessorAndBatch(professor, batch)
+                        .orElseThrow(() -> new RuntimeException(
+                                "No faculty quota set for Professor "
+                                        + professor.getName()
+                                        + " batch " + batch
+                        ));
+
+        double remaining =
+                quota.getMaxStudents() - quota.getAllocatedStudents();
+
+        if (remaining < amount) {
+            throw new RuntimeException(
+                    "Faculty quota exceeded for Professor "
+                            + professor.getName()
+            );
+        }
+    }
+
+    private String extractBatchFromTeam(Team team) {
+
+        /*
+         * Validate team members exist
+         */
+        if (team.getTeamMembers() == null || team.getTeamMembers().isEmpty()) {
+            throw new RuntimeException("Team has no members");
         }
 
-        return totalSlots - assignedStudents;
+        /*
+         * Take first student
+         * Assume all students belong to same batch
+         */
+        Student firstStudent = team.getTeamMembers().getFirst();
+
+        String rollNumber = firstStudent.getRollNumber();
+
+        /*
+         * Validate roll number format
+         */
+        if (rollNumber == null || rollNumber.length() < 3) {
+            throw new RuntimeException("Invalid roll number format");
+        }
+
+        /*
+         * Extract first 3 characters
+         * Example: B230668CS -> B23
+         */
+        return rollNumber.substring(0, 3);
     }
+
+    private void deductQuota(
+            Professor professor,
+            String batch,
+            double amount
+    ) {
+
+        ProfessorBatchQuota quota =
+                professorBatchQuotaRepository
+                        .findByProfessorAndBatch(professor, batch)
+                        .orElseThrow(() -> new RuntimeException(
+                                "No faculty quota set for Professor "
+                                        + professor.getName()
+                                        + " batch " + batch
+                        ));
+
+        Double before = quota.getAllocatedStudents();
+        Double after = before + amount;
+
+        System.out.println("Professor: " + professor.getName());
+        System.out.println("Before: " + before);
+        System.out.println("Amount: " + amount);
+        System.out.println("After: " + after);
+
+        quota.setAllocatedStudents(after);
+
+        professorBatchQuotaRepository.save(quota);
+    }
+
 
     // ============ MAIN SERVICE METHODS ============
 
@@ -271,9 +514,60 @@ public class ConfirmationService {
             );
         }
 
+        /*
+         * 8.5 Verify and reduce faculty batch quota
+         */
+        reduceFacultyBatchQuota(project, team, teamSize);
+
         // 9. Update the accepted application to TEAM_CONFIRMED
+        // =====================================================
+// EXISTING: Mark selected application as TEAM_CONFIRMED
+// =====================================================
         application.setStatus(ApplicationStatus.TEAM_CONFIRMED);
         applicationRepository.save(application);
+
+        project.setAllocatedSlots(
+                project.getAllocatedSlots() + teamSize
+        );
+        projectRepository.save(project);
+
+// =====================================================
+// NEW FEATURE: Project full exhaustion handling
+// =====================================================
+        int remainingAfterConfirmation = getRemainingProjectSlots(project);
+
+        if (remainingAfterConfirmation == 0) {
+            rejectOtherTeamsApplicationsForProject(
+                    project.getProjectId(),
+                    teamId
+            );
+        }
+
+// =====================================================
+// NEW FEATURE: Faculty exhaustion handling
+// =====================================================
+        String batch = extractBatchFromTeam(team);
+
+        Professor mainGuide = project.getProfessor();
+        Professor coGuide = project.getCoGuide();
+
+        /*
+         * Main guide full
+         */
+        if (isProfessorQuotaFull(mainGuide, batch)) {
+            rejectAllPendingApplicationsForProfessor(
+                    mainGuide,
+                    ApplicationStatus.FACULTY_FULL_REJECTED
+            );
+        }
+
+        /*
+         * Co-guide full
+         */
+        if (coGuide != null &&
+                isProfessorQuotaFull(coGuide, batch)) {
+            rejectAllApplicationsForExhaustedCoGuide(coGuide);
+        }
 
         // 10. Auto-reject all other CONFIRMED applications for this team
         List<ProjectApplications> otherConfirmedApps = getOtherConfirmedApplications(teamId, applicationId);

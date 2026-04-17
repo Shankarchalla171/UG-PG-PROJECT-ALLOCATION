@@ -2,12 +2,17 @@ package com.selab.backend.services;
 
 import com.selab.backend.Dto.AdminCreateUserRequest;
 import com.selab.backend.Dto.AdminUserResponse;
+import com.selab.backend.exceptions.ConflictException;
+import com.selab.backend.exceptions.ForbiddenException;
+import com.selab.backend.exceptions.NotFoundException;
+import com.selab.backend.exceptions.UnprocessableEntityException;
 import com.selab.backend.models.*;
 import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.ProfessorRepository;
 import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -83,49 +88,59 @@ public class UserService implements UserDetailsService {
 
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
-        if (user.getRole().name().equals("ADMIN")) {
-            throw new RuntimeException("Cannot delete admin");
+        if (user.getRole() == Role.ADMIN) {
+            throw new ForbiddenException(
+                    "Administrator accounts cannot be deleted"
+            );
         }
 
-        deptCoordinatorRepository.findByUserId(id)
-                .ifPresent(deptCoordinatorRepository::delete);
+        try {
+            deptCoordinatorRepository.findByUserId(id)
+                    .ifPresent(deptCoordinatorRepository::delete);
 
-        professorRepository.findByUserId(id)
-                .ifPresent(professorRepository::delete);
+            professorRepository.findByUserId(id)
+                    .ifPresent(professorRepository::delete);
 
-        studentRepository.findByUserId(id)
-                .ifPresent(studentRepository::delete);
+            studentRepository.findByUserId(id)
+                    .ifPresent(studentRepository::delete);
 
+            userRepository.delete(user);
 
-        userRepository.delete(user);
-    }
-
-    public User assignRole(Long id, Role role) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (user.getRole().name().equals("ADMIN")) {
-            throw new RuntimeException("Cannot modify admin");
+        } catch (DataIntegrityViolationException ex) {
+            throw new ConflictException(
+                    "This user cannot be deleted because related records exist"
+            );
         }
-
-        user.setRole(role);
-        return userRepository.save(user);
     }
 
-    public void makeCoordinator(Long userId, String deptName) {
+    public void makeCoordinator(Long userId, String deptName, String batch) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
-        if (user.getRole().name().equals("ADMIN")) {
-            throw new RuntimeException("Cannot modify admin");
+        if (user.getRole() == Role.ADMIN) {
+            throw new ForbiddenException("Administrator accounts cannot be modified");
+        }
+
+        // 🔴 NEW: Only professors can be made coordinators
+        if (user.getRole() != Role.PROFF) {
+            throw new UnprocessableEntityException("Only professors can be made into department coordinators");
         }
 
         // 🔴 Prevent duplicate coordinator entries
         if (deptCoordinatorRepository.findByUserId(userId).isPresent()) {
-            throw new RuntimeException("User is already a coordinator");
+            throw new ConflictException("User is already a coordinator");
+        }
+
+        // 🔴 Enforce ONE coordinator per dept per batch
+        if (deptCoordinatorRepository
+                .findByDeptNameAndBatch(deptName, batch)
+                .isPresent()) {
+            throw new ConflictException(
+                    "Coordinator already exists for " + deptName + " in batch " + batch
+            );
         }
 
         // 1. Update role
@@ -136,6 +151,7 @@ public class UserService implements UserDetailsService {
         DeptCoordinator coordinator = new DeptCoordinator();
         coordinator.setUser(user);  // JPA handles user_id
         coordinator.setDeptName(deptName);
+        coordinator.setBatch(batch);
 
         deptCoordinatorRepository.save(coordinator);
     }
@@ -144,14 +160,11 @@ public class UserService implements UserDetailsService {
 
         // 🔴 Check if user exists
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "User already exists"
-            );
+            throw new ConflictException( "A user with email " + request.getEmail() + " already exists");
         }
 
         User user = new User();
-        user.setUsername(request.getUserName());
+        user.setUsername(request.getEmail());
         user.setEmail(request.getEmail());
 //        user.setPassword(request.getPassword());
         user.setPassword(encoder.encode(request.getPassword()));

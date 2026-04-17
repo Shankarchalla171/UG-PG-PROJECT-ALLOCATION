@@ -22,6 +22,8 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     Page<ProjectApplications> findByTeam(Team team, Pageable pageable);
     Page<ProjectApplications> findByProject_Professor(Professor professor, Pageable pageable);
     boolean existsByTeamAndProject_Professor(Team team, Professor professor);
+    boolean existsByProjectAndTeam(Project project, Team team);
+    boolean existsByTeamAndStatus(Team team, ApplicationStatus status);
     Page<ProjectApplications> findByProject_ProfessorAndStatus(
             Professor professor,
             ApplicationStatus status,
@@ -44,8 +46,7 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     SELECT pa FROM ProjectApplications pa
     JOIN FETCH pa.project
     JOIN FETCH pa.team
-    WHERE pa.project.deptCoordinator = :coordinator
-    AND pa.status = :status
+    WHERE pa.status = :status
 """)
     List<ProjectApplications>  getAllFinal(@Param("coordinator") DeptCoordinator coordinator,@Param("status")ApplicationStatus status);
 
