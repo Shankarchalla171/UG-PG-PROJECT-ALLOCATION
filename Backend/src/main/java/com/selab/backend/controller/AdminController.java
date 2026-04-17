@@ -21,9 +21,13 @@ public class AdminController {
     private final UserService userService;
 
     @GetMapping("/users")
-    public ResponseEntity<ApiResponse<List<AdminUserResponse>>> getAllUsers() {
+    public ResponseEntity<ApiResponse<List<AdminUserResponse>>> getAllUsers(
+            @RequestParam(required = false) Role role,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
         return ResponseEntity.ok(
-                ApiResponse.success(userService.getAllUsers())
+                ApiResponse.success(userService.getAllUsers(role, sortBy, direction))
         );
     }
 

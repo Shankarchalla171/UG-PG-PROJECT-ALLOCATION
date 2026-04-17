@@ -13,6 +13,7 @@ import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -43,9 +44,36 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
-    public List<AdminUserResponse> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
+    public List<AdminUserResponse> getAllUsers(Role role, String sortBy, String direction) {
+
+        // ✅ 1. Validate sort field (prevents crashes like departmentName issue)
+        List<String> allowedFields = List.of("email", "role");
+
+        if (sortBy == null || !allowedFields.contains(sortBy)) {
+            sortBy = "email"; // better UX default than "id"
+        }
+
+        // ✅ 2. Normalize direction (avoid null / invalid values)
+        if (direction == null || (!direction.equalsIgnoreCase("asc") && !direction.equalsIgnoreCase("desc"))) {
+            direction = "asc";
+        }
+
+        // ✅ 3. Create Sort object (DB-level sorting)
+        Sort sort = direction.equalsIgnoreCase("desc") ?
+                Sort.by(sortBy).descending() :
+                Sort.by(sortBy).ascending();
+
+        List<User> users;
+
+        // ✅ 4. Apply role filter (if provided)
+        if (role != null) {
+            users = userRepository.findByRole(role, sort);
+        } else {
+            users = userRepository.findAll(sort);
+        }
+
+        // ✅ 5. Convert to DTO (adds departmentName logic)
+        return users.stream()
                 .map(this::convertToDTO)
                 .toList();
     }
