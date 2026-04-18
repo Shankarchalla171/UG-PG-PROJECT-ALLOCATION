@@ -18,6 +18,14 @@ const DEPARTMENTS = [
   "Biotechnology",
 ];
 
+const ROLE_DISPLAY = {
+  ADMIN: "Admin",
+  DEPTCORDINATOR: "Coordinator",
+  PROFF: "Professor",
+  STUDENT: "Student",
+  USER: "User",
+};
+
 // Custom styles for react-select
 const customSelectStyles = {
   control: (base) => ({
@@ -601,7 +609,7 @@ const AdminDashboard = () => {
                                               : "bg-gray-100 text-gray-800"
                                   }`}
                                 >
-                                  {user.role}
+                                  {ROLE_DISPLAY[user.role] || "Unknown"}
                                 </span>
                               </td>
                               <td className="px-6 py-4 text-sm text-gray-600">
@@ -809,7 +817,7 @@ const AdminDashboard = () => {
                           .filter((user) => user.role === "PROFF")
                           .map((user) => ({
                             value: user.id,
-                            label: `(${user.email}) - ${user.role}`,
+                            label: `(${user.email}) - ${ROLE_DISPLAY[user.role] || "Unknown"}`,
                           }))}
                         value={
                           coordinatorForm.userId
