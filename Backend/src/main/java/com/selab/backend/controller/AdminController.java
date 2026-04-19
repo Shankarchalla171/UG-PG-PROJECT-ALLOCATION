@@ -5,6 +5,7 @@ import com.selab.backend.Dto.AdminMakeCoordinatorRequest;
 import com.selab.backend.Dto.AdminUserResponse;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.User;
+import com.selab.backend.responses.ApiResponse;
 import com.selab.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,33 +21,49 @@ public class AdminController {
     private final UserService userService;
 
     @GetMapping("/users")
-    public List<AdminUserResponse> getAllUsers() {
-        return userService.getAllUsers();
+    public ResponseEntity<ApiResponse<List<AdminUserResponse>>> getAllUsers(
+            @RequestParam(required = false) Role role,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(userService.getAllUsers(role, sortBy, direction))
+        );
     }
 
     @PostMapping("/users")
-    public User createUser(@RequestBody AdminCreateUserRequest request) {
-        return userService.createUserByAdmin(request);
+    public ResponseEntity<ApiResponse<User>> createUser(
+            @RequestBody AdminCreateUserRequest request
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(userService.createUserByAdmin(request))
+        );
     }
 
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return ResponseEntity.ok("Deleted");
-    }
-
-    // ✅ Assign role (STUDENT / PROFF etc.)
-    @PutMapping("/users/{id}/role")
-    public User assignRole(
-            @PathVariable Long id,
-            @RequestParam Role role
+    public ResponseEntity<ApiResponse<String>> deleteUser(
+            @PathVariable Long id
     ) {
-        return userService.assignRole(id, role);
+        userService.deleteUser(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Deleted successfully")
+        );
     }
 
     // ✅ Make department coordinator
     @PostMapping("/users/{id}/make-coordinator")
-    public void makeCoordinator(@PathVariable Long id, @RequestBody AdminMakeCoordinatorRequest request) {
-        userService.makeCoordinator(id, request.getDeptName());
+    public ResponseEntity<ApiResponse<String>> makeCoordinator(
+            @RequestBody AdminMakeCoordinatorRequest request
+    ) {
+        userService.makeCoordinator(
+                request.getUserId(),
+                request.getDeptName(),
+                request.getBatch()
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Coordinator assigned successfully")
+        );
     }
 }

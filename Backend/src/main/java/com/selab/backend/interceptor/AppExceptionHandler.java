@@ -1,15 +1,8 @@
 package com.selab.backend.interceptor;
 
-import com.selab.backend.exceptions.AccessDeniedException;
-import com.selab.backend.exceptions.FileValidationException;
-import com.selab.backend.exceptions.ResourceNotFoundException;
-import com.selab.backend.exceptions.TeamInvalidException;
-import com.selab.backend.exceptions.UserNotFoundException;
-import com.selab.backend.exceptions.AuthenticationFailedException;
-import com.selab.backend.exceptions.InvalidOtpException;
-import com.selab.backend.exceptions.UsernameAlreadyExistsException;
-import com.selab.backend.exceptions.EmailAlreadyExistsException;
+import com.selab.backend.exceptions.*;
 
+import com.selab.backend.responses.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -23,6 +16,14 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class AppExceptionHandler {
+
+    // Handles all custom ApiException subclasses
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiResponse<?>> handleApiException(ApiException ex) {
+        return ResponseEntity
+                .status(ex.getStatus())
+                .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
+    }
 
     // ================= EXISTING =================
 
