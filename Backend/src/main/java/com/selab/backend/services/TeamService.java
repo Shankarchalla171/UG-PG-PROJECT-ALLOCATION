@@ -92,7 +92,7 @@ public class TeamService {
         if(currentTeam.getTeamMembers().size()==coordinator.getMaxTeamSize() ){
             throw new TeamInvalidException("This team is full! Maximum "+coordinator.getMaxTeamSize()+" members allowed.");
         }
-        if(student.getDepartmentName().equals(teamLead.getDepartmentName()))
+        if(!student.getDepartmentName().equals(teamLead.getDepartmentName()))
              throw new TeamInvalidException("you cant join teams of  other departments ");
         if(currentTeam.getIsFinalized())
              throw new TeamInvalidException("The team is already finalized , you cant join them");
