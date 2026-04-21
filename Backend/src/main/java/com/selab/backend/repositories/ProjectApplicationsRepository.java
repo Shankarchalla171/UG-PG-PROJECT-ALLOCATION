@@ -27,7 +27,7 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     boolean existsByTeamAndStatus(Team team, ApplicationStatus status);
     Page<ProjectApplications> findByProject_ProfessorAndStatus(
             Professor professor,
-            ApplicationStatus status,
+            List<ApplicationStatus> statuses,
             Pageable pageable
     );
 
@@ -64,7 +64,6 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     JOIN FETCH pa.team
     WHERE pa.status = :status
 """)
-    List<ProjectApplications>  getAllFinal(@Param("coordinator") DeptCoordinator coordinator,@Param("status")ApplicationStatus status);
 
     Optional<ProjectApplications> findByAppliedProjectsId(Long appliedProjectsId);
 
@@ -77,7 +76,7 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     Page<ProjectApplications> findByProject_ProjectIdAndProject_ProfessorAndStatus(
             Long projectId,
             Professor professor,
-            ApplicationStatus status,
+            List<ApplicationStatus> statuses,
             Pageable pageable
     );
 
@@ -111,4 +110,6 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
             "WHERE pa.project.professor.professorId = :professorId " +
             "AND pa.status = 'TEAM_CONFIRMED'")
     Long countTeamConfirmedByProfessorId(@Param("professorId") Long professorId);
+
+    List<ProjectApplications> findByStatus(ApplicationStatus status);
 }

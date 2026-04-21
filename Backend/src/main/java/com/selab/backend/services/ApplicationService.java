@@ -142,11 +142,27 @@ public class ApplicationService {
         boolean hasStatus = status != null && !status.isEmpty() && !status.equalsIgnoreCase("all");
         boolean hasProject = projectId != null;
 
-        if (hasProject && hasStatus) {
+        List<ApplicationStatus> statusList = new ArrayList<>();
+
+        if (hasStatus) {
             ApplicationStatus enumStatus = ApplicationStatus.valueOf(status.toUpperCase());
+
+            if (enumStatus == ApplicationStatus.REJECTED) {
+                statusList = List.of(
+                        ApplicationStatus.REJECTED,
+                        ApplicationStatus.PROJECT_FULL_REJECTED,
+                        ApplicationStatus.FACULTY_FULL_REJECTED,
+                        ApplicationStatus.CO_GUIDE_FULL_REJECTED
+                );
+            } else {
+                statusList = List.of(enumStatus);
+            }
+        }
+
+        if (hasProject && hasStatus) {
             applications = projectApplicationsRepository
                     .findByProject_ProjectIdAndProject_ProfessorAndStatus(
-                            projectId, professor, enumStatus, pageable);
+                            projectId, professor, statusList, pageable);
 
         } else if (hasProject) {
             applications = projectApplicationsRepository
@@ -154,10 +170,9 @@ public class ApplicationService {
                             projectId, professor, pageable);
 
         } else if (hasStatus) {
-            ApplicationStatus enumStatus = ApplicationStatus.valueOf(status.toUpperCase());
             applications = projectApplicationsRepository
                     .findByProject_ProfessorAndStatus(
-                            professor, enumStatus, pageable);
+                            professor, statusList, pageable);
 
         } else {
             applications = projectApplicationsRepository
@@ -226,7 +241,7 @@ public class ApplicationService {
 
         int teamSize = team.getTeamMembers().size();
         String roll = team.getTeamMembers().getFirst().getRollNumber();
-        String batch = roll.substring(0, 3);
+        String batch = roll.substring(0, 3).toUpperCase();
         Professor professor = project.getProfessor();
 
         ProfessorBatchQuota quota = professorBatchQuotaRepository
@@ -274,28 +289,48 @@ public class ApplicationService {
     }
 
     public List<ApplicationDto> getFinal(User user) {
-         DeptCoordinator coordinator = deptCoordinatorRepository.findByUser(user).orElseThrow(()-> new ResourceNotFoundException("user not found.."));
 
-        List<ProjectApplications> projectApplications= projectApplicationsRepository.getAllFinal(coordinator, ApplicationStatus.TEAM_CONFIRMED);
-        List<ApplicationDto> applicationDtos=new ArrayList<>();
-        for(ProjectApplications app:projectApplications){
-            Team team=app.getTeam();
-            List<StudentDto> memberDtos= team.getTeamMembers().stream()
-                    .map(studentMapper::toDto).toList();
-            TeamDto teamDto= TeamDto.builder()
-                            .teamId(team.getTeamId())
-                                    .isFinalized(team.getIsFinalized())
-                                            .members(memberDtos)
+        DeptCoordinator deptCoordinator = deptCoordinatorRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Coordinator not found"));
+
+        String coordinatorBatch = deptCoordinator.getBatch();
+
+        List<ProjectApplications> projectApplications =
+                projectApplicationsRepository.findByStatus(ApplicationStatus.TEAM_CONFIRMED);
+
+        List<ApplicationDto> applicationDto = new ArrayList<>();
+
+        for (ProjectApplications app : projectApplications) {
+
+            Team team = app.getTeam();
+
+            // 👉 Extract batch from first member
+            String teamBatch = team.getTeamMembers().getFirst()
+                    .getRollNumber()
+                    .substring(0, 3);
+
+            if (!teamBatch.equalsIgnoreCase(coordinatorBatch)) {
+                continue;
+            }
+
+            List<StudentDto> memberDto = team.getTeamMembers().stream()
+                    .map(studentMapper::toDto)
+                    .toList();
+
+            TeamDto teamDto = TeamDto.builder()
+                    .teamId(team.getTeamId())
+                    .isFinalized(team.getIsFinalized())
+                    .members(memberDto)
                     .build();
 
-            ApplicationDto appDto=ApplicationDto.builder()
+            ApplicationDto appDto = ApplicationDto.builder()
                     .project(projectMapper.toResponseDto(app.getProject()))
                     .team(teamDto)
                     .build();
 
-            applicationDtos.add(appDto);
+            applicationDto.add(appDto);
         }
 
-        return applicationDtos;
+        return applicationDto;
     }
 }
