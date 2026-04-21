@@ -266,25 +266,41 @@ const ProjectListing = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      if (response.status === 404) {
+      // Treat 404 AND 400 (in case ResourceNotFoundException maps there) as 'not_set'
+      if (response.status === 404 || response.status === 400) {
         setAllocationDeadline(null);
         setDeadlineError('not_set');
         return;
       }
 
-      if (response.status === 401) throw new Error('session_expired');
+      if (response.status === 401) {
+        setDeadlineError('network');
+        return;
+      }
 
       if (!response.ok) {
-        let msg = `Could not fetch allocation dates (${response.status})`;
-        try { const e = await response.json(); msg = e.message || msg; } catch (_) {}
-        throw new Error(msg);
+        // Try to parse the error body — if it looks like a "not announced" message, treat as not_set
+        try {
+          const e = await response.json();
+          const msg = (e.message || e.error || '').toLowerCase();
+          if (msg.includes('not') || msg.includes('announced') || msg.includes('found')) {
+            setAllocationDeadline(null);
+            setDeadlineError('not_set');
+            return;
+          }
+        } catch (_) {}
+        setDeadlineError('network');
+        return;
       }
 
       const data = await response.json();
-      // startDate may be null (backend allows it); endDate and status are required
-      if (!data?.endDate || !data?.status) throw new Error('Incomplete deadline data received.');
-      setAllocationDeadline(data); // { status: 'Active'|'Upcoming'|'Passed', startDate (nullable), endDate }
+      if (!data?.endDate || !data?.status) {
+        setDeadlineError('not_set');  // incomplete data = treat as not configured
+        return;
+      }
+      setAllocationDeadline(data);
     } catch (err) {
+      // Only true network failures (TypeError: Failed to fetch) land here
       setDeadlineError('network');
       setAllocationDeadline(null);
     } finally {

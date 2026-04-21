@@ -73,6 +73,12 @@ public class ProjectService {
                 } else if ("APPLIED".equalsIgnoreCase(applicationStatus)) {
                     predicates.add(root.get("projectId").in(subquery));
                 }
+            } else {
+                // No team — can never have applied, so APPLIED filter should return nothing
+                if ("APPLIED".equalsIgnoreCase(applicationStatus)) {
+                    predicates.add(cb.disjunction()); // always-false predicate → zero results
+                }
+                // NOT_APPLIED or empty → show all, no predicate needed
             }
 
             // MULTI-WORD SEARCH
@@ -115,12 +121,22 @@ public class ProjectService {
                 // Handle numeric values (1,2,3)
                 try {
                     int slotValue = Integer.parseInt(slots);
-                    predicates.add(cb.equal(root.get("slots"), slotValue));
+                    predicates.add(
+                            cb.equal(
+                                    cb.diff(root.get("slots"), root.get("allocatedSlots")),
+                                    slotValue
+                            )
+                    );
                 } catch (NumberFormatException e) {
                     // ignore invalid values
                 }
             }
-            predicates.add(cb.greaterThan(root.get("slots"), 0));
+            predicates.add(
+                    cb.greaterThan(
+                            cb.diff(root.get("slots"), root.get("allocatedSlots")),
+                            0
+                    )
+            );
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
@@ -135,48 +151,9 @@ public class ProjectService {
             String slots,
             String applicationStatus
     ) {
-
-        if(student.getTeamRole() == null){
-            Page<Project> projects;
-            projects = projectRepository.findAll(
-                    (root, query, cb) -> cb.greaterThan(root.get("slots"), 0),
-                    pageable
-            );
-            int teamSize = 0;
-            return projects.map(project -> {
-
-                        ProjectListingDto dto = new ProjectListingDto();
-
-                        dto.setId(project.getProjectId());
-                        dto.setProjectTitle(project.getTitle());
-                        dto.setDescription(project.getDescription());
-                        dto.setFacultyName(project.getProfessor().getName());
-                        if (project.getDomain() != null && !project.getDomain().isEmpty()) {
-                            dto.setDomains(
-                                    Arrays.stream(project.getDomain().split(","))
-                                            .map(String::trim)
-                                            .filter(s -> !s.isEmpty())
-                                            .toList()
-                            );
-                        } else {
-                            dto.setDomains(new ArrayList<>());
-                        }
-                        dto.setDuration(project.getDuration());
-                        dto.setPreRequisites(project.getPreRequisites());
-                        dto.setAvailableSlots(project.getSlots());
-                        dto.setTeamSize(teamSize);
-
-                        // Default values
-                        dto.setAppliedOn(null);
-                        dto.setApplied(false);
-                        dto.setTeamConfirmed(false);
-
-                        return dto;
-            });
-        }
-
+        Team team = student.getTeam();
         Specification<Project> spec = buildSpecification(
-                student.getTeam(),
+                team,
                 student.getDepartmentName(),
                 search,
                 domain,
@@ -187,9 +164,14 @@ public class ProjectService {
 
         Page<Project> projects = projectRepository.findAll(spec, pageable);
 
-        boolean isConfirmed = isTeamAlreadyConfirmed(student.getTeam());
+        boolean isConfirmed = team != null && isTeamAlreadyConfirmed(student.getTeam());
 
-        int teamSize = student.getTeam().getTeamMembers().size();
+        int teamSize = team != null ? team.getTeamMembers().size() : 0;
+
+        final Set<Long> appliedProjectIds =
+                (team != null)
+                        ? projectApplicationsRepository.findProjectIdsByTeam(team)
+                        : Collections.emptySet();
 
         return projects.map(project -> {
             ProjectListingDto dto = new ProjectListingDto();
@@ -211,9 +193,12 @@ public class ProjectService {
             }
             dto.setDuration(project.getDuration());
             dto.setPreRequisites(project.getPreRequisites());
-            dto.setAvailableSlots(project.getSlots());
+
+            int availableSlots = project.getSlots() - project.getAllocatedSlots();
+            dto.setAvailableSlots(Math.max(availableSlots, 0));
+
             dto.setTeamConfirmed(isConfirmed);
-            dto.setApplied(projectApplicationsRepository.existsByProjectAndTeam(project,student.getTeam()));
+            dto.setApplied(appliedProjectIds.contains(project.getProjectId()));
             dto.setTeamSize(teamSize);
 
             return dto;
@@ -221,7 +206,7 @@ public class ProjectService {
     }
 
     @Transactional
-    public ProjectResponseDto createProject(ProjectRequestDto projectRequestDto, User user){
+    public ProjectResponseDto createProject(ProjectRequestDto projectRequestDto, User user) {
         Professor professor = professorRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Professor not found"));
 
@@ -253,7 +238,7 @@ public class ProjectService {
     }
 
     //  GET by ID
-    public ProjectResponseDto getProjectById(Long id){
+    public ProjectResponseDto getProjectById(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + id));
         return mapToResponseDto(project);  // Uses the simpler version
@@ -266,7 +251,7 @@ public class ProjectService {
             throw new ResourceNotFoundException("Professor not found with id: " + professorId);
         }
 
-        List<Project> projects = projectRepository.findByProfessorProfessorId(professorId);
+        List<Project> projects = projectRepository.findByProfessorOrCoGuide(professorId);
         return projects.stream()
                 .map(this::mapToResponseDto)  // Uses the simpler version
                 .collect(Collectors.toList());
@@ -307,7 +292,6 @@ public class ProjectService {
                 .professor(professorMapper.toDto(project.getProfessor()))  // Get from project
                 .build();
     }
-
 
 
     /**

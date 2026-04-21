@@ -5,18 +5,15 @@ import com.selab.backend.exceptions.ResourceNotFoundException;
 import com.selab.backend.mappers.ProjectMapper;
 import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.*;
-import com.selab.backend.repositories.DeadLineRepository;
-import com.selab.backend.repositories.DeptCoordinatorRepository;
-import com.selab.backend.repositories.ProjectApplicationsRepository;
+import com.selab.backend.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -31,6 +28,8 @@ public class ApplicationService {
     private final ProjectMapper projectMapper;
 //    private final StudentMapper studentMapper;
     private final DeadLineRepository deadLineRepository;
+    private final ProjectRepository projectRepository;
+    private final ProfessorBatchQuotaRepository professorBatchQuotaRepository;
 
     public void applyToProject(Student student,Project project, Team team, String message) {
 
@@ -63,7 +62,9 @@ public class ApplicationService {
             throw new RuntimeException("Only team leader can apply");
         }
 
-        if(team.getTeamMembers().size() > project.getSlots()){
+        int availableSlots = project.getSlots() - project.getAllocatedSlots();
+
+        if (team.getTeamMembers().size() > availableSlots) {
             throw new RuntimeException("Team size exceeds available project slots");
         }
 
@@ -83,24 +84,49 @@ public class ApplicationService {
         Page<ProjectApplications> applications =
                 projectApplicationsRepository.findByTeam(student.getTeam(), pageable);
 
+        List<Long> projectIds = applications.stream()
+                .map(app -> app.getProject().getProjectId())
+                .distinct()
+                .toList();
+
+        Map<Long, Long> projectCountMap = new HashMap<>();
+
+        if (!projectIds.isEmpty()) {
+            List<Object[]> results =
+                    projectApplicationsRepository.countApplicationsByProjectIds(projectIds);
+
+            for (Object[] row : results) {
+                Long projectId = (Long) row[0];
+                Number count = (Number) row[1]; // safer than direct cast
+                projectCountMap.put(projectId, count.longValue());
+            }
+        }
+
         return applications.map(application -> {
 
             StudentApplicationDto dto = new StudentApplicationDto();
+
             dto.setApplicationId(application.getAppliedProjectsId());
             dto.setProjectTitle(application.getProject().getTitle());
             dto.setFacultyName(application.getProject().getProfessor().getName());
-            dto.setSlots(application.getProject().getSlots());
+
+            Project project = application.getProject();
+            int availableSlots = project.getSlots() - project.getAllocatedSlots();
+            dto.setSlots(Math.max(availableSlots, 0));
+
             dto.setStatus(application.getStatus().toString());
             dto.setMessage(application.getMessage());
 
-            if(application.getAppliedOn()!=null){
+            if (application.getAppliedOn() != null) {
                 dto.setAppliedOn(application.getAppliedOn());
             }
 
-            long competitors =
-                    projectApplicationsRepository.countByProject(application.getProject());
+            long competitors = projectCountMap.getOrDefault(
+                    project.getProjectId(),
+                    0L
+            );
 
-            dto.setCompetitors(Math.max(competitors,0));
+            dto.setCompetitors(competitors);
 
             return dto;
         });
@@ -178,13 +204,56 @@ public class ApplicationService {
                 projectApplicationsRepository.findById(applicationId)
                         .orElseThrow(() -> new RuntimeException("Application not found"));
 
-        Project project = application.getProject();
+        Project project = projectRepository.findByIdForUpdate(
+                application.getProject().getProjectId()
+        ).orElseThrow(() -> new RuntimeException("Project not found"));
+
+        boolean alreadyConfirmed =
+                projectApplicationsRepository.existsByTeamAndStatus(
+                        application.getTeam(),
+                        ApplicationStatus.TEAM_CONFIRMED
+                );
+
+        if (alreadyConfirmed) {
+            throw new RuntimeException("Team already confirmed another project");
+        }
+
+        if (application.getStatus() == ApplicationStatus.CONFIRMED) {
+            throw new RuntimeException("Application already accepted");
+        }
+
         Team team = application.getTeam();
 
         int teamSize = team.getTeamMembers().size();
-        int remainingSlots = project.getSlots();
+        String roll = team.getTeamMembers().getFirst().getRollNumber();
+        String batch = roll.substring(0, 3);
+        Professor professor = project.getProfessor();
 
-        if (teamSize > remainingSlots) {
+        ProfessorBatchQuota quota = professorBatchQuotaRepository
+                                    .findByProfessorAndBatch(professor, batch)
+                                    .orElseThrow(() -> new RuntimeException(
+                                            "Quota not found for Professor "
+                                                    + professor.getName()
+                                    ));
+
+        double allocatedStudents = quota.getAllocatedStudents();
+        double maxStudents = quota.getMaxStudents();
+
+        boolean hasCoGuide = project.getCoGuide() != null;
+
+        if (!hasCoGuide) {
+            if (teamSize + allocatedStudents > maxStudents) {
+                throw new RuntimeException("Not enough slots for this batch");
+            }
+        } else {
+            if (teamSize + (allocatedStudents / 2.0) > maxStudents) {
+                throw new RuntimeException("Not enough slots for this batch");
+            }
+        }
+
+        int availableSlots = project.getSlots() - project.getAllocatedSlots();
+
+        if (teamSize > availableSlots) {
             throw new RuntimeException("Not enough slots remaining for this team");
         }
 
