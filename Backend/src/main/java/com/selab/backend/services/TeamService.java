@@ -7,6 +7,7 @@ import com.selab.backend.exceptions.TeamInvalidException;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.*;
+import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.repositories.TeamRepository;
 import com.selab.backend.repositories.UserRepository;
@@ -25,6 +26,7 @@ public class TeamService {
     private final StudentRepository studentRepository;
     private final StudentMapper studentMapper;
     private final UserRepository userRepository;
+    private final DeptCoordinatorRepository deptCoordinatorRepository;
 
 
     @Transactional
@@ -86,8 +88,9 @@ public class TeamService {
         Student student =studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("user with email"+user.getEmail()+" not Found"));
         Team currentTeam = teamRepository.findTeamWithMembers(teamId).orElseThrow(()-> new RuntimeException("team not found"));
         Student teamLead= studentRepository.findByTeamAndTeamRole(currentTeam, TeamRole.TEAMlEAD).orElseThrow(()-> new TeamInvalidException("cant find lead of this team"));
-        if(currentTeam.getTeamMembers().size()==3 ){
-            throw new TeamInvalidException("This team is full! Maximum 3 members allowed.");
+        DeptCoordinator coordinator= deptCoordinatorRepository.findByDeptNameAndIsActive(student.getDepartmentName(), true).orElseThrow(()-> new ResourceNotFoundException(" please wait until the coordinator sets the team size limit"));
+        if(currentTeam.getTeamMembers().size()==coordinator.getMaxTeamSize() ){
+            throw new TeamInvalidException("This team is full! Maximum "+coordinator.getMaxTeamSize()+" members allowed.");
         }
         if(student.getDepartmentName().equals(teamLead.getDepartmentName()))
              throw new TeamInvalidException("you cant join teams of  other departments ");

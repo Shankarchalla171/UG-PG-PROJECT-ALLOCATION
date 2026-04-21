@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import { AuthContext } from '../context/AuthContext';
-const API_URL = import.meta.env.VITE_API_URL ;
+const API_URL = import.meta.env.VITE_API_URL;
 
 
 
@@ -32,7 +32,7 @@ const parseEventDate = (value) => {
 const formatDays = (days) => `${days} day${days === 1 ? '' : 's'}`;
 
 const Student_teams = () => {
-    const { token,  teamRole, authDispatch } = useContext(AuthContext);
+    const { token, teamRole, authDispatch } = useContext(AuthContext);
     const [view, setView] = useState('selection');
     const [teamId, setTeamId] = useState('');
     const [joinTeamId, setJoinTeamId] = useState('');
@@ -83,8 +83,12 @@ const Student_teams = () => {
         countdownSubtext = 'Start/end date is missing for TEAM_FORMATION.';
     }
 
+
+
     useEffect(() => {
+
         const fetchTeamRoleAndDetails = async () => {
+
             try {
                 const roleUrl = `${API_URL}/api/students/team-role`;
                 const roleResponse = await fetch(roleUrl, {
@@ -106,7 +110,7 @@ const Student_teams = () => {
                     type: 'setTeam',
                     payload: serverRole,
                 });
-
+                
                 if (serverRole === 'NO_TEAM') {
                     setView('selection');
                     setCurrentTeam(null);
@@ -140,51 +144,67 @@ const Student_teams = () => {
                 } else {
                     setView('teamJoined');
                 }
+
+                if (normalizeStatus(teamFormationEvent?.status) === 'passed') {
+                    setIsFinalized(true);
+                    setView('teamFinalized');
+                }
             } catch (error) {
                 setToast({ show: true, type: 'error', message: error.message || 'Failed to load team information.' });
             }
         };
 
         if (token) {
+            fetchTeamFormationEvent();
             fetchTeamRoleAndDetails();
         }
     }, [token, authDispatch]);
 
-    useEffect(() => {
-        const fetchTeamFormationEvent = async () => {
-            try {
-                setEventLoading(true);
-                setEventError('');
-                const url = `${API_URL}/api/events/TEAM_FORMATION`;
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    }
-                });
-
-                if (!response.ok) {
-                    const message = await response.text();
-                    throw new Error(message || 'Failed to fetch team formation event');
+    const fetchTeamFormationEvent = async () => {
+        try {
+            setEventLoading(true);
+            setEventError('');
+            const url = `${API_URL}/api/events/TEAM_FORMATION`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
                 }
+            });
 
-                const data = await response.json();
-                setTeamFormationEvent(data);
-            } catch (error) {
-                setTeamFormationEvent(null);
-                setEventError(error.message || 'Failed to fetch team formation event');
-                setToast({
-                    show: true,
-                    type: 'error',
-                    message: error.message || 'Unable to verify team formation window. Actions are temporarily disabled.',
-                });
-            } finally {
-                setEventLoading(false);
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(message || 'Failed to fetch team formation event');
             }
-        };
 
-        fetchTeamFormationEvent();
-    }, [token]);
+            const data = await response.json();
+            console.log('Fetched TEAM_FORMATION event:', data);
+            setTeamFormationEvent(data);
+        } catch (error) {
+            setTeamFormationEvent(null);
+            setEventError(error.message || 'Failed to fetch team formation event');
+            setToast({
+                show: true,
+                type: 'error',
+                message: error.message || 'Unable to verify team formation window. Actions are temporarily disabled.',
+            });
+        } finally {
+            setEventLoading(false);
+        }
+    };
+
+ 
+
+
+    useEffect(() => {
+        if (eventLoading || eventError) return;
+        if (!currentTeam) return;
+
+        if (normalizeStatus(teamFormationEvent?.status) === 'passed') {
+            setIsFinalized(true);
+            setView('teamFinalized');
+        }
+    }, [teamFormationEvent, eventLoading, eventError, currentTeam]);
 
     useEffect(() => {
         if (toast.show) {
@@ -414,19 +434,16 @@ const Student_teams = () => {
                 <div className='flex-1 p-6 md:p-8 flex flex-col gap-6'>
                     {/* Toast Notification */}
                     <div
-                        className={`fixed top-20 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl border transition-all duration-500 ${
-                            toast.show
+                        className={`fixed top-20 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl border transition-all duration-500 ${toast.show
                                 ? 'translate-x-0 opacity-100'
                                 : 'translate-x-full opacity-0 pointer-events-none'
-                        } ${
-                            toast.type === 'success'
+                            } ${toast.type === 'success'
                                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800 shadow-emerald-100'
                                 : 'bg-red-50 border-red-200 text-red-800 shadow-red-100'
-                        }`}
+                            }`}
                     >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                            toast.type === 'success' ? 'bg-emerald-100' : 'bg-red-100'
-                        }`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-100' : 'bg-red-100'
+                            }`}>
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                 {toast.type === 'success' ? (
                                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
@@ -461,13 +478,12 @@ const Student_teams = () => {
                         </div>
 
                         <div
-                            className={`w-full md:w-auto md:min-w-[320px] md:max-w-sm rounded-2xl border px-4 py-3 shadow-md ${
-                                canManageTeamFormation
+                            className={`w-full md:w-auto md:min-w-[320px] md:max-w-sm rounded-2xl border px-4 py-3 shadow-md ${canManageTeamFormation
                                     ? 'border-emerald-200 bg-emerald-50/90'
                                     : eventLoading
                                         ? 'border-amber-200 bg-amber-50/90'
                                         : 'border-rose-200 bg-rose-50/90'
-                            }`}
+                                }`}
                         >
                             <div className='flex items-start justify-between gap-3'>
                                 <div>
@@ -475,13 +491,12 @@ const Student_teams = () => {
                                     <p className='mt-1 text-sm font-bold text-amber-900'>{countdownTitle}</p>
                                     <p className='text-xs mt-1 text-amber-700/80'>{countdownSubtext}</p>
                                 </div>
-                                <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${
-                                    canManageTeamFormation
+                                <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${canManageTeamFormation
                                         ? 'bg-emerald-100 text-emerald-800'
                                         : eventLoading
                                             ? 'bg-amber-100 text-amber-800'
                                             : 'bg-rose-100 text-rose-800'
-                                }`}>
+                                    }`}>
                                     {eventLoading ? 'Loading' : getStatusText(teamFormationEvent?.status)}
                                 </span>
                             </div>
@@ -520,11 +535,10 @@ const Student_teams = () => {
                                     <button
                                         onClick={() => setView('createConfirm')}
                                         disabled={!canManageTeamFormation}
-                                        className={`group relative p-7 bg-white rounded-2xl border-2 shadow-sm transition-all duration-300 text-left focus:outline-none focus:ring-2 focus:ring-orange-500/30 ${
-                                            canManageTeamFormation
+                                        className={`group relative p-7 bg-white rounded-2xl border-2 shadow-sm transition-all duration-300 text-left focus:outline-none focus:ring-2 focus:ring-orange-500/30 ${canManageTeamFormation
                                                 ? 'border-orange-200/60 hover:border-orange-400 hover:shadow-xl hover:shadow-orange-100/50 hover:-translate-y-1 cursor-pointer'
                                                 : 'border-orange-100 opacity-60 cursor-not-allowed'
-                                        }`}
+                                            }`}
                                     >
                                         <div className='w-14 h-14 mb-5 rounded-xl bg-gradient-to-br from-orange-100 to-amber-50 group-hover:from-orange-500 group-hover:to-rose-500 flex items-center justify-center group-hover:scale-110 transition-all duration-300'>
                                             <svg className="w-7 h-7 text-orange-600 group-hover:text-white transition-colors duration-300" viewBox="0 0 24 24" fill="currentColor">
@@ -550,9 +564,8 @@ const Student_teams = () => {
                                             ))}
                                         </ul>
 
-                                        <div className={`flex items-center text-sm font-medium transition-colors ${
-                                            canManageTeamFormation ? 'text-orange-500 group-hover:text-orange-600' : 'text-gray-400'
-                                        }`}>
+                                        <div className={`flex items-center text-sm font-medium transition-colors ${canManageTeamFormation ? 'text-orange-500 group-hover:text-orange-600' : 'text-gray-400'
+                                            }`}>
                                             {canManageTeamFormation ? 'Get started' : 'Closed'}
                                             <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
                                                 <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
@@ -571,11 +584,10 @@ const Student_teams = () => {
                                     <button
                                         onClick={() => setView('joinInput')}
                                         disabled={!canManageTeamFormation}
-                                        className={`group relative p-7 bg-white rounded-2xl border-2 shadow-sm transition-all duration-300 text-left focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${
-                                            canManageTeamFormation
+                                        className={`group relative p-7 bg-white rounded-2xl border-2 shadow-sm transition-all duration-300 text-left focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${canManageTeamFormation
                                                 ? 'border-emerald-200/60 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-100/50 hover:-translate-y-1 cursor-pointer'
                                                 : 'border-emerald-100 opacity-60 cursor-not-allowed'
-                                        }`}
+                                            }`}
                                     >
                                         <div className='w-14 h-14 mb-5 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-50 group-hover:from-emerald-500 group-hover:to-teal-500 flex items-center justify-center group-hover:scale-110 transition-all duration-300'>
                                             <svg className="w-7 h-7 text-emerald-600 group-hover:text-white transition-colors duration-300" viewBox="0 0 24 24" fill="currentColor">
@@ -601,9 +613,8 @@ const Student_teams = () => {
                                             ))}
                                         </ul>
 
-                                        <div className={`flex items-center text-sm font-medium transition-colors ${
-                                            canManageTeamFormation ? 'text-emerald-500 group-hover:text-emerald-600' : 'text-gray-400'
-                                        }`}>
+                                        <div className={`flex items-center text-sm font-medium transition-colors ${canManageTeamFormation ? 'text-emerald-500 group-hover:text-emerald-600' : 'text-gray-400'
+                                            }`}>
                                             {canManageTeamFormation ? 'Enter code' : 'Closed'}
                                             <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
                                                 <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
@@ -710,11 +721,10 @@ const Student_teams = () => {
                                     <button
                                         onClick={handleJoinTeam}
                                         disabled={!joinTeamId.trim() || loading || !canManageTeamFormation}
-                                        className={`w-full py-3.5 font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 ${
-                                            joinTeamId.trim() && canManageTeamFormation
+                                        className={`w-full py-3.5 font-medium rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 ${joinTeamId.trim() && canManageTeamFormation
                                                 ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30'
                                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
-                                        }`}
+                                            }`}
                                     >
                                         {loading && (
                                             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -834,11 +844,10 @@ const Student_teams = () => {
                                                 .map((member) => (
                                                     <label
                                                         key={member.studentId}
-                                                        className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                                                            selectedNewLeaderId === String(member.studentId)
+                                                        className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${selectedNewLeaderId === String(member.studentId)
                                                                 ? 'border-orange-400 bg-orange-50/80 shadow-sm'
                                                                 : 'border-orange-100 bg-white hover:border-orange-200 hover:bg-orange-50/40'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <input
                                                             type="radio"
@@ -848,11 +857,10 @@ const Student_teams = () => {
                                                             onChange={(e) => setSelectedNewLeaderId(e.target.value)}
                                                             className='sr-only'
                                                         />
-                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                                            selectedNewLeaderId === String(member.studentId)
+                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${selectedNewLeaderId === String(member.studentId)
                                                                 ? 'border-orange-500 bg-orange-500'
                                                                 : 'border-orange-300'
-                                                        }`}>
+                                                            }`}>
                                                             {selectedNewLeaderId === String(member.studentId) && (
                                                                 <div className='w-2 h-2 rounded-full bg-white'></div>
                                                             )}
@@ -873,11 +881,10 @@ const Student_teams = () => {
                                         <button
                                             onClick={handleTransferLeadership}
                                             disabled={!canManageTeamFormation || !isTransferringLeadership || !selectedNewLeaderId}
-                                            className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                                                !canManageTeamFormation || !isTransferringLeadership || !selectedNewLeaderId
+                                            className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${!canManageTeamFormation || !isTransferringLeadership || !selectedNewLeaderId
                                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                                     : 'bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:from-orange-600 hover:to-rose-600 shadow-lg shadow-orange-500/25 cursor-pointer'
-                                            }`}
+                                                }`}
                                         >
                                             {isTransferringLeadership && isLeavingTeam ? 'Transfer & Leave Team' : 'Transfer Leadership'}
                                         </button>
@@ -900,11 +907,10 @@ const Student_teams = () => {
                             <div className='w-full max-w-3xl animate-fadeIn'>
                                 <div className='bg-white rounded-2xl border border-orange-200/60 shadow-lg shadow-orange-100/30 overflow-hidden'>
                                     {/* Header with gradient */}
-                                    <div className={`relative p-7 text-white text-center overflow-hidden ${
-                                        isFinalized
+                                    <div className={`relative p-7 text-white text-center overflow-hidden ${isFinalized
                                             ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600'
                                             : 'bg-gradient-to-r from-orange-500 via-rose-500 to-orange-600'
-                                    }`}>
+                                        }`}>
                                         {/* Decorative circles */}
                                         <div className='absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10'></div>
                                         <div className='absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/10'></div>
@@ -954,25 +960,22 @@ const Student_teams = () => {
                                                         return (
                                                             <React.Fragment key={step}>
                                                                 {i > 0 && (
-                                                                    <div className={`flex-1 h-0.5 mx-2 rounded-full transition-colors duration-500 ${
-                                                                        current >= step ? 'bg-orange-400' : 'bg-orange-100'
-                                                                    }`} />
+                                                                    <div className={`flex-1 h-0.5 mx-2 rounded-full transition-colors duration-500 ${current >= step ? 'bg-orange-400' : 'bg-orange-100'
+                                                                        }`} />
                                                                 )}
                                                                 <div className='flex flex-col items-center gap-1.5'>
-                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                                                                        isCompleted
+                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${isCompleted
                                                                             ? 'bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/20'
                                                                             : 'bg-orange-100 text-orange-400'
-                                                                    } ${isActive ? 'ring-4 ring-orange-200' : ''}`}>
+                                                                        } ${isActive ? 'ring-4 ring-orange-200' : ''}`}>
                                                                         {isCompleted && step < current ? (
                                                                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                                                                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
                                                                             </svg>
                                                                         ) : step}
                                                                     </div>
-                                                                    <span className={`text-xs font-medium hidden sm:block ${
-                                                                        isCompleted ? 'text-amber-900' : 'text-amber-400'
-                                                                    }`}>{label}</span>
+                                                                    <span className={`text-xs font-medium hidden sm:block ${isCompleted ? 'text-amber-900' : 'text-amber-400'
+                                                                        }`}>{label}</span>
                                                                 </div>
                                                             </React.Fragment>
                                                         );
@@ -991,11 +994,10 @@ const Student_teams = () => {
                                                     </div>
                                                     <button
                                                         onClick={copyToClipboard}
-                                                        className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                                                            copied
+                                                        className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${copied
                                                                 ? 'bg-emerald-50 border-emerald-300 text-emerald-600 scale-95'
                                                                 : 'bg-white border-orange-200 text-amber-600 hover:bg-orange-50 hover:border-orange-300 hover:scale-105'
-                                                        }`}
+                                                            }`}
                                                         title="Copy Team Code"
                                                     >
                                                         {copied ? (
@@ -1045,11 +1047,10 @@ const Student_teams = () => {
                                                             <p className='text-sm font-semibold text-amber-900 truncate'>{member.name}</p>
                                                             <p className='text-xs text-amber-500'>{member.rollNumber}</p>
                                                         </div>
-                                                        <span className={`px-3 py-1 text-xs font-medium rounded-full shrink-0 ${
-                                                            member.teamRole === "TEAMlEAD" || member.teamRole === "TEAMLEAD"
+                                                        <span className={`px-3 py-1 text-xs font-medium rounded-full shrink-0 ${member.teamRole === "TEAMlEAD" || member.teamRole === "TEAMLEAD"
                                                                 ? 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 ring-1 ring-amber-200'
                                                                 : 'bg-orange-50 text-orange-600'
-                                                        }`}>
+                                                            }`}>
                                                             {member.teamRole === "TEAMlEAD" || member.teamRole === "TEAMLEAD" ? "Leader" : "Member"}
                                                         </span>
                                                     </div>
