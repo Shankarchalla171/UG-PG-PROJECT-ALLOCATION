@@ -8,3 +8,4 @@ build/
 # Dockerfile*
 .idea/
 # docker-compose*
+Backend/uploads/*
