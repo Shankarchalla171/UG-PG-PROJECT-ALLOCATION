@@ -628,7 +628,7 @@ public class ConfirmationService {
      */
     public List<ProfessorFinalAllocationDto> getTeamConfirmedAllocationsForProfessor(User currentUser) {
         // 1. Verify user is a professor
-        if (currentUser.getRole() != Role.PROFF) {
+        if (currentUser.getRole() != Role.PROFF && currentUser.getRole() != Role.DEPTCORDINATOR) {
             throw new RuntimeException("Only professors can access team allocations");
         }
 

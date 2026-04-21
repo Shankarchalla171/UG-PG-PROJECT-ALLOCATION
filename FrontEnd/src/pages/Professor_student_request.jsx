@@ -38,7 +38,6 @@ const ApplicationCard = ({
   };
 
   const s = statusStyles[req.status] || statusStyles.PENDING;
-  // ← Use teamSize from DTO directly, no more req.team?.members
   const memberCount = req.teamSize || 0;
   const teamName = getTeamName(req);
 
@@ -99,10 +98,7 @@ const ApplicationCard = ({
         transition: "max-height 0.38s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease",
       }}
     >
-      {/* ── Collapsed Row (always visible) ── */}
       <div className="flex flex-col lg:flex-row lg:items-center p-4 gap-3 lg:gap-0 h-[76px]">
-
-        {/* Team name + project subtitle */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <svg className="w-4 h-4 text-orange-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -115,12 +111,8 @@ const ApplicationCard = ({
           <p className="text-sm font-medium text-amber-700 truncate ml-6">{req.projectTitle}</p>
         </div>
 
-        {/* Desktop: dividers + meta columns */}
         <div className="hidden lg:flex items-center">
-
           <div className="w-px h-12 bg-orange-200 mx-5" />
-
-          {/* Applied Date */}
           <div className="flex items-center gap-2 mx-3">
             <svg className="w-4 h-4 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/>
@@ -134,10 +126,7 @@ const ApplicationCard = ({
               </p>
             </div>
           </div>
-
           <div className="w-px h-12 bg-orange-200 mx-5" />
-
-          {/* Members */}
           <div className="flex items-center gap-2 mx-3">
             <svg className="w-4 h-4 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
               <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
@@ -147,10 +136,7 @@ const ApplicationCard = ({
               <p className="text-sm font-medium text-amber-800">{memberCount}</p>
             </div>
           </div>
-
           <div className="w-px h-12 bg-orange-200 mx-5" />
-
-          {/* Status block */}
           <div className="flex items-center ml-3">
             <div className={`px-4 py-2 rounded-lg ${s.bg} ${s.border} border`}>
               <p className="text-xs text-gray-500 mb-0.5">Status</p>
@@ -159,7 +145,6 @@ const ApplicationCard = ({
           </div>
         </div>
 
-        {/* Mobile: compact status */}
         <div className="flex lg:hidden items-center gap-2 shrink-0">
           <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${s.bg} ${s.text}`}>
             {formatStatus(req.status)}
@@ -168,7 +153,6 @@ const ApplicationCard = ({
         </div>
       </div>
 
-      {/* ── Expanded Review Section ── */}
       <div
         className="px-5 pb-4"
         style={{
@@ -180,8 +164,6 @@ const ApplicationCard = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="border-t border-orange-100 pt-3">
-
-          {/* Row: review label + edit button */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <svg className="w-3.5 h-3.5 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
@@ -196,7 +178,6 @@ const ApplicationCard = ({
                 </span>
               )}
             </div>
-
             {!editingReview && (
               <button
                 onClick={(e) => { e.stopPropagation(); setEditingReview(true); }}
@@ -210,7 +191,6 @@ const ApplicationCard = ({
             )}
           </div>
 
-          {/* Review content / textarea */}
           {editingReview ? (
             <div className="space-y-2">
               <textarea
@@ -262,7 +242,6 @@ const ApplicationCard = ({
             </div>
           )}
 
-          {/* View Details button */}
           <div className="flex justify-end mt-3">
             <button
               onClick={(e) => { e.stopPropagation(); onClick(); }}
@@ -274,7 +253,6 @@ const ApplicationCard = ({
               View Details
             </button>
           </div>
-
         </div>
       </div>
     </div>
@@ -317,15 +295,17 @@ const ProfessorStudentRequest = () => {
   const [loadingResume, setLoadingResume] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
 
+  // NEW: Slot validation states
+  const [availableSlots, setAvailableSlots] = useState(null);
+  const [slotCheckError, setSlotCheckError] = useState(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [projectCoGuideId, setProjectCoGuideId] = useState(null);
+
   // lazy team fetch state
   const [teamDetails, setTeamDetails] = useState(null);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const teamCache = useRef({});
 
-  // Single loading state: "initial" | "filter" | false
-  // "initial" = very first load (show stats+filter skeletons too)
-  // "filter"  = subsequent filter/page changes (keep stats+filter visible)
-  // false     = done loading
   const [loadingState, setLoadingState] = useState("initial");
   const hasFetchedOnce = useRef(false);
   const skeletonCount = useRef(5);
@@ -380,16 +360,63 @@ const ProfessorStudentRequest = () => {
     }
   }, []);
 
-  // ← NEW: fetch team details lazily, with cache
+  // NEW: Fetch professor's available slots
+  const fetchAvailableSlots = async () => {
+    setLoadingSlots(true);
+    try {
+      const res = await fetch(`${API_URL}/api/professors/slots`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const slots = await res.json();
+        setAvailableSlots(slots);
+      }
+    } catch (err) {
+      console.error("Error fetching slots:", err);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  // NEW: Fetch project details to get co-guide info
+  const fetchProjectDetails = async (projectId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/projects/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const project = await res.json();
+        setProjectCoGuideId(project.coGuideId || null);
+      }
+    } catch (err) {
+      console.error("Error fetching project details:", err);
+    }
+  };
+
+  // MODIFIED: Check slot conditions and set error message
+  const checkSlotConditions = (teamSize, hasCoGuide) => {
+    if (availableSlots === null) return null;
+    
+    if (!hasCoGuide) {
+      if (teamSize > availableSlots) {
+        return `Not enough slots. Team size (${teamSize}) exceeds your available slots (${availableSlots}).`;
+      }
+    } else {
+      const halfTeamSize = teamSize / 2;
+      if (halfTeamSize > availableSlots) {
+        return `Not enough slots with co-guide. Your share (${halfTeamSize}) exceeds your available slots (${availableSlots}). Team size: ${teamSize}`;
+      }
+    }
+    return null;
+  };
+
+  // MODIFIED: fetch team details lazily, with cache
   const fetchTeamDetails = async (teamId) => {
     if (!teamId) return;
-
-    // Return cached result immediately
     if (teamCache.current[teamId]) {
       setTeamDetails(teamCache.current[teamId]);
       return;
     }
-
     setLoadingTeam(true);
     setTeamDetails(null);
     try {
@@ -408,13 +435,32 @@ const ProfessorStudentRequest = () => {
     }
   };
 
-  // ← NEW: unified handler for selecting a request (card click OR view details)
-  const handleSelectRequest = (req) => {
+  // MODIFIED: unified handler for selecting a request
+  const handleSelectRequest = async (req) => {
     setSelectedRequest(req);
     setReviewText(req.professorReview || "");
     setEditingPanelReview(false);
+    setSlotCheckError(null);
+    setProjectCoGuideId(null);
+    
     fetchTeamDetails(req.teamId);
+    fetchAvailableSlots();
+    
+    // Fetch project details to check for co-guide
+    if (req.projectId) {
+      await fetchProjectDetails(req.projectId);
+    }
   };
+
+  // NEW: Effect to validate slots when selectedRequest changes or data loads
+  useEffect(() => {
+    if (selectedRequest && availableSlots !== null) {
+      const teamSize = selectedRequest.teamSize || 0;
+      const hasCoGuide = projectCoGuideId !== null && projectCoGuideId !== undefined;
+      const error = checkSlotConditions(teamSize, hasCoGuide);
+      setSlotCheckError(error);
+    }
+  }, [selectedRequest, availableSlots, projectCoGuideId]);
 
   const formatStatus = (status) => {
     switch (status) {
@@ -566,7 +612,9 @@ const ProfessorStudentRequest = () => {
         if (previewData) setPreviewData(null);
         else if (selectedRequest) {
           setSelectedRequest(null);
-          setTeamDetails(null); // ← clear team on close
+          setTeamDetails(null);
+          setSlotCheckError(null);
+          setAvailableSlots(null);
         }
       }
     };
@@ -580,17 +628,11 @@ const ProfessorStudentRequest = () => {
 
   const ApplicationCardSkeleton = () => (
     <div className="bg-white rounded-xl border border-orange-200/60 border-l-4 border-orange-200 shadow-sm p-4 animate-pulse">
-      
-      {/* Row */}
       <div className="flex items-center justify-between">
-        
-        {/* Left */}
         <div className="flex-1 space-y-2">
           <div className="h-4 w-40 bg-gray-200 rounded"></div>
           <div className="h-3 w-56 bg-gray-100 rounded"></div>
         </div>
-
-        {/* Right meta */}
         <div className="hidden lg:flex items-center gap-6">
           <div className="h-10 w-20 bg-gray-200 rounded"></div>
           <div className="h-10 w-16 bg-gray-200 rounded"></div>
@@ -607,10 +649,7 @@ const ProfessorStudentRequest = () => {
         <Sidebar />
 
         <div className="flex flex-1 flex-col lg:flex-row">
-          {/* ── Main Content ── */}
           <div className="flex-1 p-4">
-
-            {/* Header */}
             <div className="mb-6">
               <h1 className="text-xl lg:text-2xl font-bold text-amber-900 flex items-center gap-2">
                 <svg className="w-6 h-6 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
@@ -621,7 +660,6 @@ const ProfessorStudentRequest = () => {
               <p className="text-sm text-amber-600 mt-1 ml-8">Review and manage project applications</p>
             </div>
 
-            {/* Stats */}
             {loadingState === "initial" ? (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                 {[1,2,3,4].map((i) => (
@@ -661,7 +699,6 @@ const ProfessorStudentRequest = () => {
               </div>
             )}
 
-            {/* Filter Bar */}
             {loadingState === "initial" ? (
               <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-4 mb-6 animate-pulse">
                 <div className="flex gap-3">
@@ -671,7 +708,6 @@ const ProfessorStudentRequest = () => {
                 </div>
               </div>
             ) : (
-              /* existing filter bar */
               <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-4 mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
@@ -684,7 +720,7 @@ const ProfessorStudentRequest = () => {
                     <span className="text-xs font-medium text-amber-600">Project:</span>
                     <select
                       value={projectFilter}
-                      onChange={(e) => { setProjectFilter(e.target.value); setPage(0); setSelectedRequest(null); setTeamDetails(null); }}
+                      onChange={(e) => { setProjectFilter(e.target.value); setPage(0); setSelectedRequest(null); setTeamDetails(null); setSlotCheckError(null); setAvailableSlots(null); }}
                       className="px-3 py-1.5 rounded-lg text-xs border border-orange-200 bg-white text-amber-700"
                     >
                       <option value="all">All Projects</option>
@@ -704,7 +740,7 @@ const ProfessorStudentRequest = () => {
                     ].map((f) => (
                       <button
                         key={f.key}
-                        onClick={() => { setFilter(f.key); setPage(0); setSelectedRequest(null); setTeamDetails(null); }}
+                        onClick={() => { setFilter(f.key); setPage(0); setSelectedRequest(null); setTeamDetails(null); setSlotCheckError(null); setAvailableSlots(null); }}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                           filter === f.key
                             ? "bg-orange-500 text-white"
@@ -719,7 +755,6 @@ const ProfessorStudentRequest = () => {
               </div>
             )}
 
-            {/* Loading skeletons for card list */}
             {loadingState !== false && (
               <div className="flex flex-col gap-3">
                 {Array.from({ length: skeletonCount.current }).map((_, i) => (
@@ -728,7 +763,6 @@ const ProfessorStudentRequest = () => {
               </div>
             )}
 
-            {/* Empty */}
             {loadingState === false && requests.length === 0 && (
               <div className="bg-white rounded-xl border border-orange-200/60 shadow-sm p-12 text-center">
                 <svg className="w-16 h-16 mx-auto mb-4 text-amber-200" viewBox="0 0 24 24" fill="currentColor">
@@ -741,7 +775,6 @@ const ProfessorStudentRequest = () => {
               </div>
             )}
 
-            {/* ── Horizontal Card List ── */}
             {loadingState === false && requests.length > 0 && (
               <div className="flex flex-col gap-3">
                 {requests.map((req) => (
@@ -749,7 +782,7 @@ const ProfessorStudentRequest = () => {
                     key={req.applicationId}
                     req={req}
                     isSelected={selectedRequest?.applicationId === req.applicationId}
-                    onClick={() => handleSelectRequest(req)}      // ← updated
+                    onClick={() => handleSelectRequest(req)}
                     onQuickReviewSave={handleQuickReviewSave}
                     formatStatus={formatStatus}
                     token={token}
@@ -759,7 +792,6 @@ const ProfessorStudentRequest = () => {
               </div>
             )}
 
-            {/* Pagination */}
             {loadingState === false && totalPages > 1 && (
               <div className="flex items-center gap-2 flex-wrap justify-center mt-8">
                 <button onClick={handlePrev} disabled={page === 0} className="px-3 py-1 border rounded disabled:opacity-50">Prev</button>
@@ -793,9 +825,8 @@ const ProfessorStudentRequest = () => {
 
             {selectedRequest ? (
               <div className="w-full max-w-md mx-auto lg:max-w-none">
-
                 <button
-                  onClick={() => { setSelectedRequest(null); setTeamDetails(null); }}
+                  onClick={() => { setSelectedRequest(null); setTeamDetails(null); setSlotCheckError(null); setAvailableSlots(null); }}
                   className="lg:hidden mb-4 flex items-center gap-2 text-amber-700 hover:text-orange-600 transition-colors"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -812,7 +843,6 @@ const ProfessorStudentRequest = () => {
                 </h2>
 
                 <div className="bg-white rounded-xl border border-orange-200 shadow-md p-4 lg:p-5">
-
                   <h3 className="text-base lg:text-lg font-semibold text-amber-900 mb-0.5 leading-tight">
                     {getTeamName(selectedRequest)}
                   </h3>
@@ -834,7 +864,6 @@ const ProfessorStudentRequest = () => {
                     </p>
                   </div>
 
-                  {/* ── Your Review ── */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2">
@@ -921,14 +950,12 @@ const ProfessorStudentRequest = () => {
                     )}
                   </div>
 
-                  {/* ── Team Members (lazy loaded) ── */}
                   <div className="mb-4">
                     <p className="text-xs font-medium text-amber-600 mb-2 uppercase tracking-wide">
                       Team Members ({selectedRequest.teamSize || 0})
                     </p>
 
                     {loadingTeam ? (
-                      // Skeleton: use teamSize from DTO so skeleton has the right count
                       <TeamMembersSkeleton count={selectedRequest.teamSize || 2} />
                     ) : teamDetails?.members?.length > 0 ? (
                       <div className="space-y-2">
@@ -974,40 +1001,80 @@ const ProfessorStudentRequest = () => {
                     )}
                   </div>
 
+                  {/* MODIFIED: Accept/Reject buttons with slot validation */}
                   {selectedRequest.status === "PENDING" && (
-                    <div className="flex gap-3 pt-2">
-                      <button
-                        onClick={() => handleAccept(selectedRequest.applicationId)}
-                        disabled={actionLoading}
-                        className="flex-1 py-2.5 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-                      >
-                        {actionLoading === "accept" ? (
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                    <div className="space-y-3">
+                      {/* Slot availability warning */}
+                      {slotCheckError && (
+                        <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                          <div className="flex items-start gap-2">
+                            <svg className="w-4 h-4 text-yellow-600 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                             </svg>
-                            Accept
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleReject(selectedRequest.applicationId)}
-                        disabled={actionLoading}
-                        className="flex-1 py-2.5 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-                      >
-                        {actionLoading === "reject" ? (
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                            Reject
-                          </>
-                        )}
-                      </button>
+                            <p className="text-xs text-yellow-700">{slotCheckError}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Loading slots indicator */}
+                      {loadingSlots && (
+                        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"/>
+                            <p className="text-xs text-blue-600">Checking slot availability...</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Available slots info */}
+                      {availableSlots !== null && !loadingSlots && !slotCheckError && (
+                        <div className="p-2 rounded-lg bg-green-50 border border-green-200">
+                          <p className="text-xs text-green-700 text-center">
+                            ✓ Available slots: {availableSlots} | Team size: {selectedRequest.teamSize || 0}
+                            {projectCoGuideId && ` (Co-guide: Split ${(selectedRequest.teamSize || 0) / 2} each)`}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          onClick={() => handleAccept(selectedRequest.applicationId)}
+                          disabled={actionLoading === "accept" || !!slotCheckError || loadingSlots}
+                          className={`flex-1 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                            actionLoading === "accept" || !!slotCheckError || loadingSlots
+                              ? "bg-gray-400 cursor-not-allowed opacity-60"
+                              : "bg-green-500 hover:bg-green-600 text-white"
+                          }`}
+                          title={slotCheckError || (loadingSlots ? "Checking availability..." : "")}
+                        >
+                          {actionLoading === "accept" ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                              </svg>
+                              Accept
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleReject(selectedRequest.applicationId)}
+                          disabled={actionLoading === "reject"}
+                          className="flex-1 py-2.5 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                        >
+                          {actionLoading === "reject" ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                              </svg>
+                              Reject
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )}
 

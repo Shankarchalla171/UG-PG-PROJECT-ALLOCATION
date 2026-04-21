@@ -16,5 +16,6 @@ public class ProfessorApplicationDto {
     private String status;
     private String professorReview;
     private LocalDate appliedOn;
+    private Long coGuideId;
 
 }
