@@ -241,7 +241,7 @@ public class ProjectService {
     public ProjectResponseDto getProjectById(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + id));
-        return mapToResponseDto(project);  // Uses the simpler version
+        return mapToResponseDto(project, null);  // Uses the simpler version
     }
 
     //  GET all projects by professor ID
@@ -251,9 +251,12 @@ public class ProjectService {
             throw new ResourceNotFoundException("Professor not found with id: " + professorId);
         }
 
+        Professor professor = professorRepository.findById(professorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Professor not found"));
+
         List<Project> projects = projectRepository.findByProfessorOrCoGuide(professorId);
         return projects.stream()
-                .map(this::mapToResponseDto)  // Uses the simpler version
+                .map(p -> mapToResponseDto(p, professor))// Uses the simpler version
                 .collect(Collectors.toList());
     }
 
@@ -268,7 +271,7 @@ public class ProjectService {
     // GET all projects
     public List<ProjectResponseDto> getAllProjects() {
         return projectRepository.findAll().stream()
-                .map(this::mapToResponseDto)
+                .map(p -> mapToResponseDto(p, null))
                 .collect(Collectors.toList());
     }
 
@@ -276,11 +279,11 @@ public class ProjectService {
     public List<ProjectResponseDto> searchProjects(String keyword) {
         return projectRepository.findByTitleContainingIgnoreCase(keyword)
                 .stream()
-                .map(this::mapToResponseDto)
+                .map(p -> mapToResponseDto(p, null))
                 .collect(Collectors.toList());
     }
 
-    private ProjectResponseDto mapToResponseDto(Project project) {
+    private ProjectResponseDto mapToResponseDto(Project project, Professor currentProfessor) {
         return ProjectResponseDto.builder()
                 .projectId(project.getProjectId())
                 .title(project.getTitle())
@@ -290,11 +293,9 @@ public class ProjectService {
                 .prerequisites(project.getPreRequisites())
                 .domain(project.getDomain())
                 .professor(professorMapper.toDto(project.getProfessor()))  // Get from project
-                .coGuide(
-                        project.getCoGuide() != null
-                                ? professorMapper.toDto(project.getCoGuide())
-                                : null
-                )
+                .isCoGuide(project.getCoGuide() != null &&
+                        project.getCoGuide().getProfessorId().equals(currentProfessor.getProfessorId()))
+                .hasCoGuide(project.getCoGuide() != null)
                 .build();
     }
 

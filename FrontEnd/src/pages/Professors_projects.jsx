@@ -25,7 +25,8 @@ const ProfessorViewProjects = () => {
     // Show only projects where required slots are less than professor's available slots.
     useEffect(() => {
         const eligible = projects.filter(
-            (project) => project.slots / 2 <= profSlotsLeft
+            (project) => project.slots / 2 <= profSlotsLeft  &&
+            project.coGuide === false && !project.hasCoGuide
         );
         console.log(`Filtering projects for collaboration. Professor slots left: ${profSlotsLeft}. Eligible projects:`, eligible);  
         setEligibleProjectsForCollaboration(eligible);
