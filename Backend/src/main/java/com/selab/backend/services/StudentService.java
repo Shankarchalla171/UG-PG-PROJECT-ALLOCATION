@@ -101,7 +101,6 @@ public class StudentService {
                     .resumePath(relativeResumePath)
                     .profilePhotoLink(relativePhotoPath)
                     .user(user)
-                    .teamRole(TeamRole.NO_TEAM)
                     .build();
             return studentRepository.save(student);
 
@@ -215,6 +214,6 @@ public class StudentService {
 
     public TeamRole teamRole(User user) {
         Student student= studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("student with email : "+ user.getEmail()));
-        return student.getTeamRole();
+        return student.getTeamRole()==null ? TeamRole.NO_TEAM : student.getTeamRole();
     }
 }
