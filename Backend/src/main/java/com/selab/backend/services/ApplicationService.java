@@ -5,10 +5,7 @@ import com.selab.backend.exceptions.ResourceNotFoundException;
 import com.selab.backend.mappers.ProjectMapper;
 import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.*;
-import com.selab.backend.repositories.DeadLineRepository;
-import com.selab.backend.repositories.DeptCoordinatorRepository;
-import com.selab.backend.repositories.ProjectApplicationsRepository;
-import com.selab.backend.repositories.ProjectRepository;
+import com.selab.backend.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,6 +29,7 @@ public class ApplicationService {
 //    private final StudentMapper studentMapper;
     private final DeadLineRepository deadLineRepository;
     private final ProjectRepository projectRepository;
+    private final ProfessorBatchQuotaRepository professorBatchQuotaRepository;
 
     public void applyToProject(Student student,Project project, Team team, String message) {
 
@@ -206,6 +204,10 @@ public class ApplicationService {
                 projectApplicationsRepository.findById(applicationId)
                         .orElseThrow(() -> new RuntimeException("Application not found"));
 
+        Project project = projectRepository.findByIdForUpdate(
+                application.getProject().getProjectId()
+        ).orElseThrow(() -> new RuntimeException("Project not found"));
+
         boolean alreadyConfirmed =
                 projectApplicationsRepository.existsByTeamAndStatus(
                         application.getTeam(),
@@ -220,13 +222,35 @@ public class ApplicationService {
             throw new RuntimeException("Application already accepted");
         }
 
-        Project project = projectRepository.findByIdForUpdate(
-                application.getProject().getProjectId()
-        ).orElseThrow(() -> new RuntimeException("Project not found"));
-
         Team team = application.getTeam();
 
         int teamSize = team.getTeamMembers().size();
+        String roll = team.getTeamMembers().getFirst().getRollNumber();
+        String batch = roll.substring(0, 3);
+        Professor professor = project.getProfessor();
+
+        ProfessorBatchQuota quota = professorBatchQuotaRepository
+                                    .findByProfessorAndBatch(professor, batch)
+                                    .orElseThrow(() -> new RuntimeException(
+                                            "Quota not found for Professor "
+                                                    + professor.getName()
+                                    ));
+
+        double allocatedStudents = quota.getAllocatedStudents();
+        double maxStudents = quota.getMaxStudents();
+
+        boolean hasCoGuide = project.getCoGuide() != null;
+
+        if (!hasCoGuide) {
+            if (teamSize + allocatedStudents > maxStudents) {
+                throw new RuntimeException("Not enough slots for this batch");
+            }
+        } else {
+            if (teamSize + (allocatedStudents / 2.0) > maxStudents) {
+                throw new RuntimeException("Not enough slots for this batch");
+            }
+        }
+
         int availableSlots = project.getSlots() - project.getAllocatedSlots();
 
         if (teamSize > availableSlots) {
