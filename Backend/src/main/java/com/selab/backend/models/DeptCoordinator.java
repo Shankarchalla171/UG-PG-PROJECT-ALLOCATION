@@ -31,4 +31,8 @@ public class DeptCoordinator {
     private Long maxIntake;
     private Long maxTeamSize;
     private Boolean isActive;
+
+    public String getDepartmentName() {
+        return deptName;
+    }
 }

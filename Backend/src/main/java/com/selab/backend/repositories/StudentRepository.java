@@ -26,4 +26,21 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     @Query("select  s.collegeEmailId  from Student s where s.departmentName= :departmentName and s.rollNumber like :batch")
     List<String>   getAllEmailsByDepartmentNameAndBatch(String departmentName,String batch);
+
+
+
+
+    long count();
+
+    @Query("SELECT COUNT(s) FROM Student s WHERE s.departmentName = :department")
+    Long countByDepartment(@Param("department") String department);
+
+    @Query("SELECT COUNT(s) FROM Student s WHERE s.departmentName = :department AND SUBSTRING(s.rollNumber, 1, 3) = :batch")
+    Long countByDepartmentAndBatch(@Param("department") String department, @Param("batch") String batch);
+
+    @Query("SELECT DISTINCT SUBSTRING(s.rollNumber, 1, 3) FROM Student s WHERE s.departmentName = :department ORDER BY SUBSTRING(s.rollNumber, 1, 3) DESC")
+    Optional<String> findLatestBatchByDepartment(@Param("department") String department);
+
+
+
 }

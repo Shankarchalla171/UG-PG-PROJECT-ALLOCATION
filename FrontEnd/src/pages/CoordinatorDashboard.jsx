@@ -6,21 +6,7 @@ import { AuthContext } from "../context/AuthContext";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-
 const API_BASE_URL = import.meta.env.VITE_API_URL;
-
-const department = {
-  name: "CSE",
-  totalStudents: 120,
-  allocatedStudents: 105,
-  totalProjects: 40,
-};
-
-const recentActivities = [
-  { id: 1, text: "Project allocations finalized for final year batch", time: "2h" },
-  { id: 2, text: "Application deadline extended for 3 students", time: "1d" },
-  { id: 3, text: "5 allocation requests pending review", time: "3d" },
-];
 
 export default function CoordinatorDashboard() {
   const navigate = useNavigate();
@@ -34,6 +20,14 @@ export default function CoordinatorDashboard() {
   const [isEditingIntake, setIsEditingIntake] = useState(false);
   const [isEditingTeamSize, setIsEditingTeamSize] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    allocatedStudents: 0,
+    availableProjects: 0,
+    pendingAllocations: 0,
+    batch: "",
+    departmentName: ""
+  });
 
   const fetchLimits = async () => {
     try {
@@ -58,9 +52,22 @@ export default function CoordinatorDashboard() {
     }
   };
 
+  const fetchDeptCoordinatorStats = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/deptCoordinators/dashboard/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setStats(data);
+    } catch (err) {
+      console.error("Error fetching dashboard stats:", err);
+    }
+  };
+
   useEffect(() => {
     if (token) {
       fetchLimits();
+      fetchDeptCoordinatorStats(); 
     }
   }, [token]);
 
@@ -154,9 +161,6 @@ export default function CoordinatorDashboard() {
     setIsEditingTeamSize(false);
   };
 
-  const pendingAllocations =
-    department.totalStudents - department.allocatedStudents;
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
       <Navbar />
@@ -165,7 +169,7 @@ export default function CoordinatorDashboard() {
 
         <main className="flex-1 p-6 mt-16">
           <div className="max-w-7xl mx-auto">
-            
+
             {/* Header */}
             <div className="mb-8">
               {isLoading ? (
@@ -179,27 +183,44 @@ export default function CoordinatorDashboard() {
                     Department Coordinator Dashboard
                   </h1>
                   <p className="text-amber-600/70 mt-2">
-                    Overview of project allocations and department activity
+                    Overview of project allocations and department activity - {stats.departmentName || "Your Department"}
                   </p>
                 </>
               )}
             </div>
 
-            {/* Stats */}
+            {/* Stats Cards - Fixed */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, index) => (
                   <div key={index} className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm">
                     <Skeleton height={16} width={100} />
                     <Skeleton height={32} width={50} className="mt-1" />
+                    <Skeleton height={12} width={80} className="mt-2" />
                   </div>
                 ))
               ) : (
                 <>
-                  <StatCard title="Total Students" value={department.totalStudents} />
-                  <StatCard title="Allocated Students" value={department.allocatedStudents} />
-                  <StatCard title="Available Projects" value={department.totalProjects} />
-                  <StatCard title="Pending Allocations" value={pendingAllocations} />
+                  <StatCard 
+                    title="Total Students" 
+                    value={stats.totalStudents || 0} 
+                    subtitle={`Batch ${stats.batch || "Current"}`}
+                  />
+                  <StatCard 
+                    title="Allocated Students" 
+                    value={stats.allocatedStudents || 0} 
+                    subtitle="Confirmed allocations"
+                  />
+                  <StatCard 
+                    title="Available Projects" 
+                    value={stats.availableProjects || 0} 
+                    subtitle="With open slots"
+                  />
+                  <StatCard 
+                    title="Pending Allocations" 
+                    value={stats.pendingAllocations || 0} 
+                    subtitle="Awaiting approval"
+                  />
                 </>
               )}
             </div>
@@ -364,93 +385,45 @@ export default function CoordinatorDashboard() {
               )}
             </div>
 
-            {/* Main Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Recent Activities */}
-              {/* <div className="lg:col-span-2 bg-white rounded-2xl border border-orange-200/60 shadow-sm p-6">
-                {isLoading ? (
-                  <>
-                    <div className="flex justify-between items-center mb-6">
-                      <Skeleton height={24} width={150} />
-                      <Skeleton height={20} width={80} />
-                    </div>
-                    <div className="relative border-l-2 border-orange-200 pl-6 space-y-6">
-                      {Array.from({ length: 3 }).map((_, index) => (
-                        <div key={index} className="relative">
-                          <Skeleton circle height={16} width={16} className="absolute -left-[13px] top-1" />
-                          <Skeleton height={60} className="ml-4" />
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-lg font-bold text-amber-800">
-                        Recent Activities
-                      </h2>
-                      <span className="text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 px-3 py-1 rounded-full">
-                        {recentActivities.length} updates
-                      </span>
-                    </div>
+            {/* Actions Section */}
+            <div className="bg-white rounded-2xl border border-orange-200/60 shadow-sm p-6">
+              {isLoading ? (
+                <>
+                  <Skeleton height={20} width={100} className="mb-4" />
+                  <div className="flex gap-4">
+                    <Skeleton height={48} width={200} />
+                    <Skeleton height={48} width={200} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-sm font-bold text-amber-800 mb-4">
+                    Quick Actions
+                  </h3>
 
-                    <div className="relative border-l-2 border-orange-200 pl-6 space-y-6">
-                      {recentActivities.map((a) => (
-                        <div key={a.id} className="relative">
-                          <span className="absolute -left-[13px] top-1 w-4 h-4 bg-gradient-to-br from-amber-400 to-orange-400 rounded-full border-4 border-white shadow-md"></span>
+                  <div className="flex flex-wrap gap-4">
+                    <button
+                      onClick={() => navigate("/dept_view_allocations")}
+                      className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-xl shadow-md hover:from-amber-600 hover:to-orange-600 transition-all flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      View Allocations
+                    </button>
 
-                          <div className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 border border-orange-200 rounded-xl p-4 hover:shadow-md transition-all">
-                            <div className="flex justify-between items-center">
-                              <p className="text-sm font-medium text-amber-800">
-                                {a.text}
-                              </p>
-                              <span className="text-xs text-amber-600/70 bg-white px-2 py-1 rounded-md">
-                                {a.time} ago
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div> */}
-
-              {/* Actions */}
-              <aside className="bg-white rounded-2xl border border-orange-200/60 shadow-sm p-6 flex flex-col">
-                {isLoading ? (
-                  <>
-                    <Skeleton height={20} width={100} className="mb-4" />
-                    <div className="flex flex-col gap-4 flex-1">
-                      <Skeleton height={48} />
-                      <Skeleton height={48} />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h3 className="text-sm font-bold text-amber-800 mb-4">
-                      Quick Actions
-                    </h3>
-
-                    <div className="flex flex-col gap-4 flex-1">
-                      <button
-                        onClick={() => navigate("/dept_view_allocations")}
-                        className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-xl shadow-md hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center"
-                      >
-                        View Allocations
-                      </button>
-
-                      <button
-                        onClick={() => navigate("/dept_enforce_deadlines")}
-                        className="flex-1 bg-gradient-to-r from-orange-400 to-rose-400 text-white font-medium rounded-xl shadow-md hover:from-orange-500 hover:to-rose-500 transition-all flex items-center justify-center"
-                      >
-                        Manage Events
-                      </button>
-                    </div>
-                  </>
-                )}
-              </aside>
+                    <button
+                      onClick={() => navigate("/dept_enforce_deadlines")}
+                      className="px-6 py-3 bg-gradient-to-r from-orange-400 to-rose-400 text-white font-medium rounded-xl shadow-md hover:from-orange-500 hover:to-rose-500 transition-all flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Manage Events
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </main>
@@ -459,11 +432,13 @@ export default function CoordinatorDashboard() {
   );
 }
 
-function StatCard({ title, value }) {
+// Fixed StatCard component - accepts title, value, and optional subtitle
+function StatCard({ title, value, subtitle }) {
   return (
-    <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm">
+    <div className="bg-white rounded-2xl p-6 border border-orange-200/60 shadow-sm hover:shadow-md transition-all">
       <p className="text-sm text-amber-600/70">{title}</p>
       <h3 className="text-2xl font-bold text-amber-800 mt-1">{value}</h3>
+      {subtitle && <p className="text-xs text-amber-400 mt-2">{subtitle}</p>}
     </div>
   );
 }

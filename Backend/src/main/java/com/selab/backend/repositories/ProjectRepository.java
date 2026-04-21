@@ -36,7 +36,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long>, JpaSpec
     WHERE p.professor.departmentName = :dept
     """)
     List<String> findDistinctFaculty(String dept);
-    
+
     List<Project> findByTitleContainingIgnoreCase(String keyword);
     Optional<Project> findByTitleIgnoreCase(String title);
     @Query("""
@@ -52,4 +52,23 @@ public interface ProjectRepository extends JpaRepository<Project, Long>, JpaSpec
 
     @Query("select count(p) from Project p where p.professor = :professor or p.coGuide = :professor")
     Long countByProfessor(Professor professor);
+
+
+
+
+
+
+
+
+
+
+
+    @Query("SELECT COUNT(p) FROM Project p " +
+            "WHERE p.slots - p.allocatedSlots > 0 " +
+            "AND p.professor.departmentName = :department")
+    Long countAvailableProjectsByDepartment(@Param("department") String department);
+
+    // Count total projects by department
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.professor.departmentName = :department")
+    Long countTotalProjectsByDepartment(@Param("department") String department);
 }

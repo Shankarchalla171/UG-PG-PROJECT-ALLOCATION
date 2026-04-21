@@ -1,14 +1,15 @@
 package com.selab.backend.services;
 
+import com.selab.backend.Dto.DeptCoordinatorDashboardStatsDto;
 import com.selab.backend.Dto.LimitsDto;
 import com.selab.backend.exceptions.UserNotFoundException;
 import com.selab.backend.models.*;
-import com.selab.backend.repositories.DeptCoordinatorRepository;
-import com.selab.backend.repositories.ProfessorBatchQuotaRepository;
-import com.selab.backend.repositories.ProfessorRepository;
+import com.selab.backend.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.selab.backend.Dto.DeptCoordinatorDashboardStatsDto;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +21,9 @@ public class DeptCoordinatorService {
     private final ProfessorRepository professorRepository;
     private final DeptCoordinatorRepository deptCoordinatorRepository;
     private final ProfessorBatchQuotaRepository professorBatchQuotaRepository;
+    private final StudentRepository studentRepository;
+    private final ProjectRepository projectRepository;
+    private final ProjectApplicationsRepository projectApplicationsRepository;
 
 
     public void setFacultyLimit(User user, Long limit) {
@@ -157,5 +161,84 @@ public class DeptCoordinatorService {
                 .facultyIntakeLimit(coordinator.getMaxIntake())
                 .StudentTeamSizeLimit(coordinator.getMaxTeamSize())
         .build();
+    }
+
+
+
+
+    @Transactional
+    public DeptCoordinatorDashboardStatsDto getDashboardStats(User user) {
+
+        DeptCoordinator coordinator = deptCoordinatorRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Department Coordinator not found"));
+
+        String batch = coordinator.getBatch();
+        String department = coordinator.getDepartmentName();
+
+        // 1. Total Students in this department for this batch
+        Long totalStudents = studentRepository.countByDepartmentAndBatch(department, batch);
+        if (totalStudents == null) totalStudents = 0L;
+
+        // 2. Allocated Students using native query
+        Long allocatedStudents = projectApplicationsRepository
+                .countAllocatedStudentsByDepartmentAndBatchNative(department, batch);
+        if (allocatedStudents == null) allocatedStudents = 0L;
+
+        // 3. Available Projects in this department
+        Long availableProjects = projectRepository.countAvailableProjectsByDepartment(department);
+        if (availableProjects == null) availableProjects = 0L;
+
+        // 4. Pending Allocations using native query
+        Long pendingAllocations = projectApplicationsRepository
+                .countPendingAllocationsByDepartmentAndBatchNative(department, batch);
+        if (pendingAllocations == null) pendingAllocations = 0L;
+
+        return DeptCoordinatorDashboardStatsDto.builder()
+                .totalStudents(totalStudents)
+                .allocatedStudents(allocatedStudents)
+                .availableProjects(availableProjects)
+                .pendingAllocations(pendingAllocations)
+                .batch(batch)
+                .departmentName(department)
+                .build();
+    }
+
+    /**
+     * Get dashboard statistics for department coordinator (all batches)
+     * Using native queries for reliability
+     */
+    @Transactional
+    public DeptCoordinatorDashboardStatsDto getAllBatchesStats(User user) {
+
+        DeptCoordinator coordinator = deptCoordinatorRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Department Coordinator not found"));
+
+        String department = coordinator.getDepartmentName();
+
+        // 1. Total Students in this department (all batches)
+        Long totalStudents = studentRepository.countByDepartment(department);
+        if (totalStudents == null) totalStudents = 0L;
+
+        // 2. Allocated Students using native query
+        Long allocatedStudents = projectApplicationsRepository
+                .countAllocatedStudentsByDepartmentNative(department);
+        if (allocatedStudents == null) allocatedStudents = 0L;
+
+        // 3. Available Projects in this department
+        Long availableProjects = projectRepository.countAvailableProjectsByDepartment(department);
+        if (availableProjects == null) availableProjects = 0L;
+
+        // 4. Pending Allocations using native query
+        Long pendingAllocations = projectApplicationsRepository
+                .countPendingAllocationsByDepartmentNative(department);
+        if (pendingAllocations == null) pendingAllocations = 0L;
+
+        return DeptCoordinatorDashboardStatsDto.builder()
+                .totalStudents(totalStudents)
+                .allocatedStudents(allocatedStudents)
+                .availableProjects(availableProjects)
+                .pendingAllocations(pendingAllocations)
+                .departmentName(department)
+                .build();
     }
 }

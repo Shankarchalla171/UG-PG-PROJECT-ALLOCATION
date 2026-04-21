@@ -15,12 +15,13 @@ import java.util.Optional;
 public interface ProfessorRepository extends JpaRepository<Professor,Long> {
     Optional<Professor> findByUser(User user);
     Optional<Professor> findByUserId(Long userID);
-    List<Professor> findByDepartmentName(String departmentName);
+    List<Professor> findByDepartmentName(String departmentName);  // Add this method
 
     Optional<Professor> findByProfessorId(Long professorId);
 
     @Query("select p.email from Professor p ")
     List<String> getAllEmails();
+
     @Query("SELECT pdq FROM ProfessorBatchQuota pdq WHERE pdq.professor = :professor AND pdq.batch = :batch")
     Optional<ProfessorBatchQuota> findByProfessorAndBatch(
             @Param("professor") Professor professor,

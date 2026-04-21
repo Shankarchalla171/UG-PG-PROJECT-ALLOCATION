@@ -112,4 +112,47 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     Long countTeamConfirmedByProfessorId(@Param("professorId") Long professorId);
 
     List<ProjectApplications> findByStatus(ApplicationStatus status);
+
+
+
+    // Native query methods for reliability
+    @Query(value = "SELECT COUNT(DISTINCT s.student_id) FROM students s " +
+            "JOIN teams t ON s.team_id = t.team_id " +
+            "JOIN project_applications pa ON t.team_id = pa.team_id " +
+            "WHERE pa.status = 'CONFIRMED' " +
+            "AND s.department_name = :department " +
+            "AND SUBSTRING(s.roll_number, 1, 3) = :batch",
+            nativeQuery = true)
+    Long countAllocatedStudentsByDepartmentAndBatchNative(
+            @Param("department") String department,
+            @Param("batch") String batch);
+
+    @Query(value = "SELECT COUNT(DISTINCT s.student_id) FROM students s " +
+            "JOIN teams t ON s.team_id = t.team_id " +
+            "JOIN project_applications pa ON t.team_id = pa.team_id " +
+            "WHERE pa.status = 'CONFIRMED' " +
+            "AND s.department_name = :department",
+            nativeQuery = true)
+    Long countAllocatedStudentsByDepartmentNative(@Param("department") String department);
+
+    @Query(value = "SELECT COUNT(*) FROM project_applications pa " +
+            "JOIN projects p ON pa.project_id = p.project_id " +
+            "JOIN professors prof ON p.professor_id = prof.professor_id " +
+            "WHERE pa.status = 'PENDING' " +
+            "AND prof.department_name = :department " +
+            "AND SUBSTRING((SELECT s.roll_number FROM students s " +
+            "JOIN teams t ON s.team_id = t.team_id " +
+            "WHERE t.team_id = pa.team_id LIMIT 1), 1, 3) = :batch",
+            nativeQuery = true)
+    Long countPendingAllocationsByDepartmentAndBatchNative(
+            @Param("department") String department,
+            @Param("batch") String batch);
+
+    @Query(value = "SELECT COUNT(*) FROM project_applications pa " +
+            "JOIN projects p ON pa.project_id = p.project_id " +
+            "JOIN professors prof ON p.professor_id = prof.professor_id " +
+            "WHERE pa.status = 'PENDING' " +
+            "AND prof.department_name = :department",
+            nativeQuery = true)
+    Long countPendingAllocationsByDepartmentNative(@Param("department") String department);
 }

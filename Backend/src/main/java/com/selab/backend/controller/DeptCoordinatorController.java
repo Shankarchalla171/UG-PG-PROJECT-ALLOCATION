@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.selab.backend.Dto.DeptCoordinatorDashboardStatsDto;
 
 import java.util.List;
 
@@ -44,5 +45,21 @@ public class DeptCoordinatorController {
     public ResponseEntity<LimitsDto> getLimits(@AuthenticationPrincipal User user){
 
         return new ResponseEntity<>( deptCoordinatorService.getLimits(user),HttpStatus.OK);
+    }
+
+
+
+    @GetMapping("/dashboard/stats")
+    public ResponseEntity<DeptCoordinatorDashboardStatsDto> getDashboardStats(
+            @AuthenticationPrincipal User user) {
+        DeptCoordinatorDashboardStatsDto stats = deptCoordinatorService.getDashboardStats(user);
+        return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/dashboard/stats/all-batches")
+    public ResponseEntity<DeptCoordinatorDashboardStatsDto> getAllBatchesStats(
+            @AuthenticationPrincipal User user) {
+        DeptCoordinatorDashboardStatsDto stats = deptCoordinatorService.getAllBatchesStats(user);
+        return ResponseEntity.ok(stats);
     }
 }
