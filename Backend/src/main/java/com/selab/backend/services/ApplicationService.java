@@ -161,7 +161,7 @@ public class ApplicationService {
 
         if (hasProject && hasStatus) {
             applications = projectApplicationsRepository
-                    .findByProject_ProjectIdAndProject_ProfessorAndStatus(
+                    .findByProject_ProjectIdAndProject_ProfessorAndStatusIn(
                             projectId, professor, statusList, pageable);
 
         } else if (hasProject) {
@@ -171,7 +171,7 @@ public class ApplicationService {
 
         } else if (hasStatus) {
             applications = projectApplicationsRepository
-                    .findByProject_ProfessorAndStatus(
+                    .findByProject_ProfessorAndStatusIn(
                             professor, statusList, pageable);
 
         } else {

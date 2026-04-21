@@ -19,7 +19,7 @@ const Dashboard = () => {
     if (role === "STUDENT") {
         return <StudentDashboard />;
     } else if (role === "DEPTCORDINATOR") {
-        const sidebarView =localStorage.getItem("sidebarViewMode");
+        const sidebarView =localStorage.getItem("sidebarViewMode") || "professor";
 
         if(sidebarView === "professor"){
             return <Professor_dashboard/>

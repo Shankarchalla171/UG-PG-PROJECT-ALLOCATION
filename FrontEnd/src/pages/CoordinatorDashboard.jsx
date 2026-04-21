@@ -368,7 +368,7 @@ export default function CoordinatorDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               {/* Recent Activities */}
-              <div className="lg:col-span-2 bg-white rounded-2xl border border-orange-200/60 shadow-sm p-6">
+              {/* <div className="lg:col-span-2 bg-white rounded-2xl border border-orange-200/60 shadow-sm p-6">
                 {isLoading ? (
                   <>
                     <div className="flex justify-between items-center mb-6">
@@ -415,7 +415,7 @@ export default function CoordinatorDashboard() {
                     </div>
                   </>
                 )}
-              </div>
+              </div> */}
 
               {/* Actions */}
               <aside className="bg-white rounded-2xl border border-orange-200/60 shadow-sm p-6 flex flex-col">

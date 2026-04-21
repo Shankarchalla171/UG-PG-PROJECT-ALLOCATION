@@ -1,7 +1,7 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink,useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { useContext } from 'react';
+import { useContext} from 'react';
 
 
 const Sidebar = () => {
@@ -10,7 +10,7 @@ const Sidebar = () => {
     const [viewMode, setViewMode] = React.useState(() => {
         return localStorage.getItem("viewMode") || "professor";
     });
-
+    const navigate = useNavigate();
     const isDeptCoordinator = role === 'DEPTCORDINATOR';
     const isProfessorMode = !isDeptCoordinator || viewMode === 'professor';
 
@@ -42,6 +42,7 @@ const Sidebar = () => {
         const nextViewMode = viewMode === 'professor' ? 'coordinator' : 'professor';
         setViewMode(nextViewMode);
         localStorage.setItem('sidebarViewMode', nextViewMode);
+        navigate('/dashboard'); 
     };
 
     console.log('User role in Sidebar:', role); // Debugging line to check the role value
@@ -213,7 +214,7 @@ const Sidebar = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 7l5 5-5 5" />
                         </svg>
                         <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>
-                            {isProfessorMode ? 'Show Coordinator Tools' : 'Show Professor Tools'}
+                            {isProfessorMode ? 'Switch to Coordinator Mode' : 'Switch to Professor Mode'}
                         </span>
                     </button>
                 )}
