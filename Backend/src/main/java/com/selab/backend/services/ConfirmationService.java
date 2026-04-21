@@ -381,7 +381,7 @@ public class ConfirmationService {
         // 2. Get team for this student
         Team team = student.getTeam();
         if (team == null) {
-            throw new ResourceNotFoundException("Student is not part of any team");
+            return new ArrayList<>();
         }
         UUID teamId = team.getTeamId();
 
