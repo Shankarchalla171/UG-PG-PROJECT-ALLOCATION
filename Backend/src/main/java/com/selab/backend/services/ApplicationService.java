@@ -274,18 +274,17 @@ public class ApplicationService {
     }
 
     public List<ApplicationDto> getFinal(User user) {
-         DeptCoordinator coordinator = deptCoordinatorRepository.findByUser(user).orElseThrow(()-> new ResourceNotFoundException("user not found.."));
 
-        List<ProjectApplications> projectApplications= projectApplicationsRepository.getAllFinal(coordinator, ApplicationStatus.TEAM_CONFIRMED);
-        List<ApplicationDto> applicationDtos=new ArrayList<>();
+        List<ProjectApplications> projectApplications= projectApplicationsRepository.findByStatus(ApplicationStatus.TEAM_CONFIRMED);
+        List<ApplicationDto> applicationDto = new ArrayList<>();
         for(ProjectApplications app:projectApplications){
             Team team=app.getTeam();
-            List<StudentDto> memberDtos= team.getTeamMembers().stream()
+            List<StudentDto> memberDto= team.getTeamMembers().stream()
                     .map(studentMapper::toDto).toList();
             TeamDto teamDto= TeamDto.builder()
                             .teamId(team.getTeamId())
                                     .isFinalized(team.getIsFinalized())
-                                            .members(memberDtos)
+                                            .members(memberDto)
                     .build();
 
             ApplicationDto appDto=ApplicationDto.builder()
@@ -293,9 +292,9 @@ public class ApplicationService {
                     .team(teamDto)
                     .build();
 
-            applicationDtos.add(appDto);
+            applicationDto.add(appDto);
         }
 
-        return applicationDtos;
+        return applicationDto;
     }
 }

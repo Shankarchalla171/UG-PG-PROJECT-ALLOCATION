@@ -64,7 +64,6 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     JOIN FETCH pa.team
     WHERE pa.status = :status
 """)
-    List<ProjectApplications>  getAllFinal(@Param("coordinator") DeptCoordinator coordinator,@Param("status")ApplicationStatus status);
 
     Optional<ProjectApplications> findByAppliedProjectsId(Long appliedProjectsId);
 
@@ -111,4 +110,6 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
             "WHERE pa.project.professor.professorId = :professorId " +
             "AND pa.status = 'TEAM_CONFIRMED'")
     Long countTeamConfirmedByProfessorId(@Param("professorId") Long professorId);
+
+    List<ProjectApplications> findByStatus(ApplicationStatus status);
 }
