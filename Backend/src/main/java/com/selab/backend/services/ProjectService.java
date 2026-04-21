@@ -290,6 +290,11 @@ public class ProjectService {
                 .prerequisites(project.getPreRequisites())
                 .domain(project.getDomain())
                 .professor(professorMapper.toDto(project.getProfessor()))  // Get from project
+                .coGuide(
+                        project.getCoGuide() != null
+                                ? professorMapper.toDto(project.getCoGuide())
+                                : null
+                )
                 .build();
     }
 

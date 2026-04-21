@@ -383,6 +383,13 @@ const ProfilePage = () => {
                           }
                           alt="Profile"
                           className="w-full h-full object-cover object-center"
+                          onError={(e) => {
+                            e.target.onerror = null; // prevent infinite loop
+
+                            const name = profile?.name || "User";
+
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f97316&color=fff`;
+                          }}
                         />
                       </div>
 
