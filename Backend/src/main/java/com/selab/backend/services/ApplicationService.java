@@ -142,11 +142,27 @@ public class ApplicationService {
         boolean hasStatus = status != null && !status.isEmpty() && !status.equalsIgnoreCase("all");
         boolean hasProject = projectId != null;
 
-        if (hasProject && hasStatus) {
+        List<ApplicationStatus> statusList = new ArrayList<>();
+
+        if (hasStatus) {
             ApplicationStatus enumStatus = ApplicationStatus.valueOf(status.toUpperCase());
+
+            if (enumStatus == ApplicationStatus.REJECTED) {
+                statusList = List.of(
+                        ApplicationStatus.REJECTED,
+                        ApplicationStatus.PROJECT_FULL_REJECTED,
+                        ApplicationStatus.FACULTY_FULL_REJECTED,
+                        ApplicationStatus.CO_GUIDE_FULL_REJECTED
+                );
+            } else {
+                statusList = List.of(enumStatus);
+            }
+        }
+
+        if (hasProject && hasStatus) {
             applications = projectApplicationsRepository
                     .findByProject_ProjectIdAndProject_ProfessorAndStatus(
-                            projectId, professor, enumStatus, pageable);
+                            projectId, professor, statusList, pageable);
 
         } else if (hasProject) {
             applications = projectApplicationsRepository
@@ -154,10 +170,9 @@ public class ApplicationService {
                             projectId, professor, pageable);
 
         } else if (hasStatus) {
-            ApplicationStatus enumStatus = ApplicationStatus.valueOf(status.toUpperCase());
             applications = projectApplicationsRepository
                     .findByProject_ProfessorAndStatus(
-                            professor, enumStatus, pageable);
+                            professor, statusList, pageable);
 
         } else {
             applications = projectApplicationsRepository

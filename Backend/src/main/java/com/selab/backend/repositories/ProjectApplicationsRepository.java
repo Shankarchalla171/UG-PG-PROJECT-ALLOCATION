@@ -27,7 +27,7 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     boolean existsByTeamAndStatus(Team team, ApplicationStatus status);
     Page<ProjectApplications> findByProject_ProfessorAndStatus(
             Professor professor,
-            ApplicationStatus status,
+            List<ApplicationStatus> statuses,
             Pageable pageable
     );
 
@@ -76,7 +76,7 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     Page<ProjectApplications> findByProject_ProjectIdAndProject_ProfessorAndStatus(
             Long projectId,
             Professor professor,
-            ApplicationStatus status,
+            List<ApplicationStatus> statuses,
             Pageable pageable
     );
 
