@@ -66,7 +66,7 @@ const Student_confirmations = () => {
             if (response.status === 403) {
                 throw new Error('Only team lead can confirm projects');
             } else {
-                const errorData = await response.json();
+                const errorData = await response.text();
                 throw new Error(errorData.message || 'Failed to confirm');
             }
         }
