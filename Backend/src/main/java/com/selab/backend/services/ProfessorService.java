@@ -126,8 +126,8 @@ public class ProfessorService {
     }
 
     public ProfDashboardDto getDashboard(User user) {
-        if(!user.getRole().equals(Role.PROFF))
-            throw new RuntimeException("Please request Dashboard according to your  role");
+//        if(!user.getRole().equals(Role.PROFF))
+//            throw new RuntimeException("Please request Dashboard according to your  role");
 
         Professor professor= professorRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("professor not found with mail id : "+user.getEmail()));
 
