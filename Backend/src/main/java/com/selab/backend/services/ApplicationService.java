@@ -131,77 +131,85 @@ public class ApplicationService {
             return dto;
         });
     }
+public Page<ProfessorApplicationDto> getProfessorApplications(Professor professor,
+                                                              String status,
+                                                              Long projectId,
+                                                              Pageable pageable) {
 
-    public Page<ProfessorApplicationDto> getProfessorApplications(Professor professor,
-                                                                  String status,
-                                                                  Long projectId,
-                                                                  Pageable pageable) {
+    Page<ProjectApplications> applications;
 
-        Page<ProjectApplications> applications;
+    boolean hasStatus = status != null && !status.isEmpty() && !status.equalsIgnoreCase("all");
+    boolean hasProject = projectId != null;
 
-        boolean hasStatus = status != null && !status.isEmpty() && !status.equalsIgnoreCase("all");
-        boolean hasProject = projectId != null;
+    List<ApplicationStatus> statusList = new ArrayList<>();
 
-        List<ApplicationStatus> statusList = new ArrayList<>();
+    if (hasStatus) {
+        ApplicationStatus enumStatus = ApplicationStatus.valueOf(status.toUpperCase());
 
-        if (hasStatus) {
-            ApplicationStatus enumStatus = ApplicationStatus.valueOf(status.toUpperCase());
-
-            if (enumStatus == ApplicationStatus.REJECTED) {
-                statusList = List.of(
-                        ApplicationStatus.REJECTED,
-                        ApplicationStatus.PROJECT_FULL_REJECTED,
-                        ApplicationStatus.FACULTY_FULL_REJECTED,
-                        ApplicationStatus.CO_GUIDE_FULL_REJECTED
-                );
-            } else {
-                statusList = List.of(enumStatus);
-            }
-        }
-
-        if (hasProject && hasStatus) {
-            applications = projectApplicationsRepository
-                    .findByProject_ProjectIdAndProject_ProfessorAndStatusIn(
-                            projectId, professor, statusList, pageable);
-
-        } else if (hasProject) {
-            applications = projectApplicationsRepository
-                    .findByProject_ProjectIdAndProject_Professor(
-                            projectId, professor, pageable);
-
-        } else if (hasStatus) {
-            applications = projectApplicationsRepository
-                    .findByProject_ProfessorAndStatusIn(
-                            professor, statusList, pageable);
-
+        if (enumStatus == ApplicationStatus.REJECTED) {
+            statusList = List.of(
+                    ApplicationStatus.REJECTED,
+                    ApplicationStatus.PROJECT_FULL_REJECTED,
+                    ApplicationStatus.FACULTY_FULL_REJECTED,
+                    ApplicationStatus.CO_GUIDE_FULL_REJECTED
+            );
         } else {
-            applications = projectApplicationsRepository
-                    .findByProject_Professor(professor, pageable);
+            statusList = List.of(enumStatus);
         }
-
-        return applications.map(application -> {
-
-            ProfessorApplicationDto dto = new ProfessorApplicationDto();
-
-            dto.setApplicationId(application.getAppliedProjectsId());
-            dto.setProjectTitle(application.getProject().getTitle());
-            dto.setMessage(application.getMessage());
-            dto.setStatus(application.getStatus().toString());
-
-            if(application.getAppliedOn()!=null){
-                dto.setAppliedOn(application.getAppliedOn().toLocalDate());
-            }
-
-            dto.setTeamId(application.getTeam().getTeamId());
-            dto.setTeamName(application.getTeam().getTeamName());
-            dto.setTeamSize(application.getTeam().getTeamMembers().size());
-
-            dto.setProfessorReview(application.getProfessorReview());
-
-            return dto;
-        });
     }
 
+    if (hasProject && hasStatus) {
+        applications = projectApplicationsRepository
+                .findByProject_ProjectIdAndProject_ProfessorAndStatusIn(
+                        projectId, professor, statusList, pageable);
+
+    } else if (hasProject) {
+        applications = projectApplicationsRepository
+                .findByProject_ProjectIdAndProject_Professor(
+                        projectId, professor, pageable);
+
+    } else if (hasStatus) {
+        applications = projectApplicationsRepository
+                .findByProject_ProfessorAndStatusIn(
+                        professor, statusList, pageable);
+
+    } else {
+        applications = projectApplicationsRepository
+                .findByProject_Professor(professor, pageable);
+    }
+
+    return applications.map(application -> {
+
+        ProfessorApplicationDto dto = new ProfessorApplicationDto();
+
+        dto.setApplicationId(application.getAppliedProjectsId());
+        dto.setProjectTitle(application.getProject().getTitle());
+        dto.setMessage(application.getMessage());
+        dto.setStatus(application.getStatus().toString());
+
+        if(application.getAppliedOn()!=null){
+            dto.setAppliedOn(application.getAppliedOn().toLocalDate());
+        }
+
+        dto.setTeamId(application.getTeam().getTeamId());
+        dto.setTeamName(application.getTeam().getTeamName());
+        dto.setTeamSize(application.getTeam().getTeamMembers().size());
+
+        dto.setProfessorReview(application.getProfessorReview());
+        
+        // Add co-guide information
+        Project project = application.getProject();
+        if (project.getCoGuide() != null) {
+            dto.setCoGuideId(project.getCoGuide().getProfessorId());
+            
+        } else {
+            dto.setCoGuideId(null);
+            
+                    }
+
+        return dto;
+    });
+}
     public void addProfessorReview(Long applicationId, String review){
 
         ProjectApplications application =
@@ -212,71 +220,110 @@ public class ApplicationService {
 
         projectApplicationsRepository.save(application);
     }
+public void acceptApplication(Long applicationId) {
 
-    public void acceptApplication(Long applicationId){
+    ProjectApplications application =
+            projectApplicationsRepository.findById(applicationId)
+                    .orElseThrow(() -> new RuntimeException("Application not found"));
 
-        ProjectApplications application =
-                projectApplicationsRepository.findById(applicationId)
-                        .orElseThrow(() -> new RuntimeException("Application not found"));
+    Project project = projectRepository.findByIdForUpdate(
+            application.getProject().getProjectId()
+    ).orElseThrow(() -> new RuntimeException("Project not found"));
 
-        Project project = projectRepository.findByIdForUpdate(
-                application.getProject().getProjectId()
-        ).orElseThrow(() -> new RuntimeException("Project not found"));
+    boolean alreadyConfirmed =
+            projectApplicationsRepository.existsByTeamAndStatus(
+                    application.getTeam(),
+                    ApplicationStatus.TEAM_CONFIRMED
+            );
 
-        boolean alreadyConfirmed =
-                projectApplicationsRepository.existsByTeamAndStatus(
-                        application.getTeam(),
-                        ApplicationStatus.TEAM_CONFIRMED
-                );
-
-        if (alreadyConfirmed) {
-            throw new RuntimeException("Team already confirmed another project");
-        }
-
-        if (application.getStatus() == ApplicationStatus.CONFIRMED) {
-            throw new RuntimeException("Application already accepted");
-        }
-
-        Team team = application.getTeam();
-
-        int teamSize = team.getTeamMembers().size();
-        String roll = team.getTeamMembers().getFirst().getRollNumber();
-        String batch = roll.substring(0, 3).toUpperCase();
-        Professor professor = project.getProfessor();
-
-        ProfessorBatchQuota quota = professorBatchQuotaRepository
-                                    .findByProfessorAndBatch(professor, batch)
-                                    .orElseThrow(() -> new RuntimeException(
-                                            "Quota not found for Professor "
-                                                    + professor.getName()
-                                    ));
-
-        double allocatedStudents = quota.getAllocatedStudents();
-        double maxStudents = quota.getMaxStudents();
-
-        boolean hasCoGuide = project.getCoGuide() != null;
-
-        if (!hasCoGuide) {
-            if (teamSize + allocatedStudents > maxStudents) {
-                throw new RuntimeException("Not enough slots for this batch");
-            }
-        } else {
-            if (teamSize + (allocatedStudents / 2.0) > maxStudents) {
-                throw new RuntimeException("Not enough slots for this batch");
-            }
-        }
-
-        int availableSlots = project.getSlots() - project.getAllocatedSlots();
-
-        if (teamSize > availableSlots) {
-            throw new RuntimeException("Not enough slots remaining for this team");
-        }
-
-        application.setStatus(ApplicationStatus.CONFIRMED);
-
-        projectApplicationsRepository.save(application);
+    if (alreadyConfirmed) {
+        throw new RuntimeException("Team already confirmed another project");
     }
 
+    if (application.getStatus() == ApplicationStatus.CONFIRMED) {
+        throw new RuntimeException("Application already accepted");
+    }
+
+    Team team = application.getTeam();
+    int teamSize = team.getTeamMembers().size();
+    
+    // Get project details
+    Professor professor = project.getProfessor();
+    Professor coGuide = project.getCoGuide();
+    boolean hasCoGuide = coGuide != null;
+
+    // Check project slots availability
+    int availableSlots = project.getSlots() - project.getAllocatedSlots();
+    if (teamSize > availableSlots) {
+        throw new RuntimeException("Not enough project slots remaining");
+    }
+
+    // Get batch from first team member
+    String roll = team.getTeamMembers().getFirst().getRollNumber();
+    String batch = roll.substring(0, 3).toUpperCase();
+
+    // Get professor quota
+    ProfessorBatchQuota professorQuota = professorBatchQuotaRepository
+            .findByProfessorAndBatch(professor, batch)
+            .orElseThrow(() -> new RuntimeException(
+                    "Quota not found for Professor " + professor.getName()
+            ));
+
+    double professorAllocated = professorQuota.getAllocatedStudents();
+    double professorMax = professorQuota.getMaxStudents();
+    double professorRemaining = professorMax - professorAllocated;
+
+    if (!hasCoGuide) {
+        // No co-guide: Team size must be ≤ professor's remaining slots
+        if (teamSize > professorRemaining) {
+            throw new RuntimeException("Not enough slots for this batch");
+        }
+        
+        // Update professor quota
+        professorQuota.setAllocatedStudents(professorAllocated + teamSize);
+        professorBatchQuotaRepository.save(professorQuota);
+        
+    } else {
+        // WITH CO-GUIDE: Check BOTH have enough for half the team size
+        double halfTeamSize = teamSize / 2.0;
+        
+        // Check professor has enough for half
+        if (halfTeamSize > professorRemaining) {
+            throw new RuntimeException("Professor doesn't have enough quota slots for their share");
+        }
+        
+        // Get and check co-guide quota
+        ProfessorBatchQuota coGuideQuota = professorBatchQuotaRepository
+                .findByProfessorAndBatch(coGuide, batch)
+                .orElseThrow(() -> new RuntimeException(
+                        "Quota not found for Co-Guide " + coGuide.getName()
+                ));
+        
+        double coGuideAllocated = coGuideQuota.getAllocatedStudents();
+        double coGuideMax = coGuideQuota.getMaxStudents();
+        double coGuideRemaining = coGuideMax - coGuideAllocated;
+        
+        // Check co-guide has enough for half
+        if (halfTeamSize > coGuideRemaining) {
+            throw new RuntimeException("Co-Guide doesn't have enough quota slots for their share");
+        }
+        
+        // Update BOTH quotas
+        professorQuota.setAllocatedStudents(professorAllocated + halfTeamSize);
+        professorBatchQuotaRepository.save(professorQuota);
+        
+        coGuideQuota.setAllocatedStudents(coGuideAllocated + halfTeamSize);
+        professorBatchQuotaRepository.save(coGuideQuota);
+    }
+
+    // Update project allocated slots
+    project.setAllocatedSlots(project.getAllocatedSlots() + teamSize);
+    projectRepository.save(project);
+
+    // Update application status
+    application.setStatus(ApplicationStatus.CONFIRMED);
+    projectApplicationsRepository.save(application);
+}
     public void rejectApplication(Long applicationId){
 
         ProjectApplications application =
