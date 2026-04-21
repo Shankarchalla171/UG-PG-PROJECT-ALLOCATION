@@ -4,6 +4,8 @@ import Sidebar from '../components/Sidebar'
 import { AuthContext } from '../context/AuthContext';
 const API_URL = import.meta.env.VITE_API_URL ;
 
+
+
 const normalizeStatus = (status = '') => String(status || '').toLowerCase();
 
 const getStatusText = (status = '') => {
@@ -82,43 +84,71 @@ const Student_teams = () => {
     }
 
     useEffect(() => {
-        if (teamRole == null)
-            setView('selection');
-        else {
-            const fetchTeamDetails = async () => {
-                try {
-                    const url = `${API_URL}/api/teams`;
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                        }
-                    });
+        const fetchTeamRoleAndDetails = async () => {
+            try {
+                const roleUrl = `${API_URL}/api/students/team-role`;
+                const roleResponse = await fetch(roleUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
 
-                    if (!response.ok) {
-                        console.log(await response.text());
-                        const msg = await response.text();
-                        throw new Error(msg || 'Failed to fetch team details');
-                    }
-
-                    const teamData = await response.json();
-                    setCurrentTeam(teamData);
-                    setTeamId(teamData.teamId);
-                    setIsFinalized(teamData.isFinalized);
-                    if (teamData.isFinalized) {
-                        setView('teamFinalized');
-                    } else if (teamRole === "TEAMlEAD") {
-                        setView('teamCreated');
-                    } else
-                        setView('teamJoined');
-
-                } catch (error) {
-                    setToast({ show: true, type: 'error', message: error.message || 'Failed to fetch team details.' });
+                if (!roleResponse.ok) {
+                    const msg = await roleResponse.text();
+                    throw new Error(msg || 'Failed to fetch team role');
                 }
+
+                const serverRole = (await roleResponse.text()).trim();
+                // const resolvedRole = serverRole === 'NO_TEAM' ? null : serverRole;
+
+                authDispatch({
+                    type: 'setTeam',
+                    payload: serverRole,
+                });
+
+                if (serverRole === 'NO_TEAM') {
+                    setView('selection');
+                    setCurrentTeam(null);
+                    setTeamId('');
+                    setIsFinalized(false);
+                    return;
+                }
+
+                const teamUrl = `${API_URL}/api/teams`;
+                const teamResponse = await fetch(teamUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+
+                if (!teamResponse.ok) {
+                    const msg = await teamResponse.text();
+                    throw new Error(msg || 'Failed to fetch team details');
+                }
+
+                const teamData = await teamResponse.json();
+                setCurrentTeam(teamData);
+                setTeamId(teamData.teamId);
+                setIsFinalized(teamData.isFinalized);
+
+                if (teamData.isFinalized) {
+                    setView('teamFinalized');
+                } else if (serverRole === 'TEAMlEAD' || serverRole === 'TEAMLEAD') {
+                    setView('teamCreated');
+                } else {
+                    setView('teamJoined');
+                }
+            } catch (error) {
+                setToast({ show: true, type: 'error', message: error.message || 'Failed to load team information.' });
             }
-            fetchTeamDetails();
+        };
+
+        if (token) {
+            fetchTeamRoleAndDetails();
         }
-    }, []);
+    }, [token, authDispatch]);
 
     useEffect(() => {
         const fetchTeamFormationEvent = async () => {
@@ -193,9 +223,7 @@ const Student_teams = () => {
             setCurrentTeam(data);
             authDispatch({
                 type: "setTeam",
-                payload: {
-                    teamRole: "TEAMLEAD"
-                }
+                payload: "TEAMLEAD"
             });
             setView('teamCreated');
             setToast({ show: true, type: 'success', message: 'Team created successfully!' });
@@ -234,9 +262,7 @@ const Student_teams = () => {
 
             authDispatch({
                 type: "setTeam",
-                payload: {
-                    teamRole: "TEAM_MEMBER"
-                }
+                payload: "TEAM_MEMBER"
             });
 
             setToast({ show: true, type: "success", message: "Successfully joined the team!" });
@@ -326,9 +352,7 @@ const Student_teams = () => {
             setSelectedNewLeaderId('');
             authDispatch({
                 type: 'setTeam',
-                payload: {
-                    teamRole: 'TEAM_MEMBER',
-                },
+                payload: 'TEAM_MEMBER',
             });
             setToast({ show: true, type: 'success', message: 'Leadership transferred. You can now leave the team.' });
 

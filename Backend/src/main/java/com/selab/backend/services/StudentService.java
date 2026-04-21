@@ -211,4 +211,9 @@ public class StudentService {
 
         return stats;
     }
+
+    public TeamRole teamRole(User user) {
+        Student student= studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("student with email : "+ user.getEmail()));
+        return student.getTeamRole();
+    }
 }

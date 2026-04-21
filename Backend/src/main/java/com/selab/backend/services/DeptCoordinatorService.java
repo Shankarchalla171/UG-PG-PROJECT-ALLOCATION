@@ -115,7 +115,7 @@ public class DeptCoordinatorService {
                  * Update existing quota
                  */
                 ProfessorBatchQuota quota = existingQuota.get();
-                quota.setMaxStudents(limit.doubleValue());
+                quota.setMaxStudents(limit);
 
                 professorBatchQuotaRepository.save(quota);
 
@@ -127,7 +127,7 @@ public class DeptCoordinatorService {
                 ProfessorBatchQuota newQuota = ProfessorBatchQuota.builder()
                         .professor(professor)
                         .batch(batch)
-                        .maxStudents(limit.doubleValue())
+                        .maxStudents(limit)
                         .allocatedStudents(0.0)
                         .build();
 

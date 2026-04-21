@@ -12,4 +12,5 @@ public interface DeptCoordinatorRepository extends JpaRepository<DeptCoordinator
     Optional<DeptCoordinator> findByUserId(Long userId);
     Optional<DeptCoordinator> findByBatch(String batch);
     Optional<DeptCoordinator> findByDeptNameAndBatch(String deptName, String batch);
+    Optional<DeptCoordinator> findByDeptNameAndIsActive(String deptName, Boolean isActive);
 }

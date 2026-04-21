@@ -2,5 +2,6 @@ package com.selab.backend.models;
 
 public enum TeamRole {
     TEAM_MEMBER,
-    TEAMlEAD
+    TEAMlEAD,
+    NO_TEAM
 }

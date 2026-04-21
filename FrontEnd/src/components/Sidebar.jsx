@@ -7,6 +7,12 @@ import { useContext } from 'react';
 const Sidebar = () => {
     const { role } = useContext(AuthContext);
     const [isExpanded, setIsExpanded] = React.useState(true);
+    const [viewMode, setViewMode] = React.useState(() => {
+        return localStorage.getItem("viewMode") || "professor";
+    });
+
+    const isDeptCoordinator = role === 'DEPTCORDINATOR';
+    const isProfessorMode = !isDeptCoordinator || viewMode === 'professor';
 
     const handleSize = () => {
         const sidebar = document.querySelector('.side');
@@ -21,6 +27,24 @@ const Sidebar = () => {
         })
         setIsExpanded(!isExpanded);
     }
+
+    React.useEffect(() => {
+        if (!isDeptCoordinator) {
+            setViewMode('professor');
+            return;
+        }
+
+        const storedViewMode = localStorage.getItem('sidebarViewMode');
+        setViewMode(storedViewMode === 'coordinator' ? 'coordinator' : 'professor');
+    }, [isDeptCoordinator]);
+
+    const handleSwitchView = () => {
+        const nextViewMode = viewMode === 'professor' ? 'coordinator' : 'professor';
+        setViewMode(nextViewMode);
+        localStorage.setItem('sidebarViewMode', nextViewMode);
+    };
+
+    console.log('User role in Sidebar:', role); // Debugging line to check the role value
 
     const navLinkClasses = ({ isActive }) =>
         `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${isActive
@@ -45,7 +69,7 @@ const Sidebar = () => {
 
             {/* Navigation Links */}
             <nav className='flex flex-col gap-4 px-4 flex-1'>
-                
+
                 <NavLink to="/dashboard" className={navLinkClasses}>
                     <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
@@ -89,7 +113,7 @@ const Sidebar = () => {
 
                 {role === "PROFF" && (
                     <>
-                       <NavLink to="/professor_create_project" className={navLinkClasses}>
+                        <NavLink to="/professor_create_project" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
@@ -99,7 +123,7 @@ const Sidebar = () => {
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                             </svg>
-                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>{role === "student" ? "Projects Available" : "Your Projects"}</span>
+                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Your Projects</span>
                         </NavLink>
                         <NavLink to="/professor_student_request" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -107,12 +131,11 @@ const Sidebar = () => {
                             </svg>
                             <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Student Requests</span>
                         </NavLink>
-
                         <NavLink to="/professor_final_allocation" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                             </svg>
-                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>{role === "faculty" ? "Final Allocations" : "Confirmations"}</span>
+                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Confirmations</span>
                         </NavLink>
                         <NavLink to="/professor_collaboration" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,23 +145,79 @@ const Sidebar = () => {
                         </NavLink>
                     </>
                 )}
-                {role === "DEPTCORDINATOR" && (
+
+                {isDeptCoordinator && isProfessorMode && (
                     <>
+                        <NavLink to="/professor_create_project" className={navLinkClasses}>
+                            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Create Project</span>
+                        </NavLink>
+                        <NavLink to="/professor_projects" className={navLinkClasses}>
+                            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            </svg>
+                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Your Projects</span>
+                        </NavLink>
+                        <NavLink to="/professor_student_request" className={navLinkClasses}>
+                            <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z" />
+                            </svg>
+                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Student Requests</span>
+                        </NavLink>
+                        <NavLink to="/professor_final_allocation" className={navLinkClasses}>
+                            <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                            </svg>
+                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Confirmations</span>
+                        </NavLink>
+                        <NavLink to="/professor_collaboration" className={navLinkClasses}>
+                            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Collaboration</span>
+                        </NavLink>
+                    </>
+                )}
+
+                {isDeptCoordinator && !isProfessorMode && (
+                    <>
+                        {/* <NavLink to="/dept_dashboard" className={navLinkClasses}>
+                            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                            </svg>
+                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Coordinator Dashboard</span>
+                        </NavLink> */}
                         <NavLink to="/dept_view_allocations" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
                             <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>View Allocations</span>
                         </NavLink>
-
                         <NavLink to="/dept_enforce_deadlines" className={navLinkClasses}>
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Event Management </span>
+                            <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>Event Management</span>
                         </NavLink>
                     </>
                 )}
+
+                {isDeptCoordinator && (
+                    <button
+                        onClick={handleSwitchView}
+                        className="mt-2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-orange-200 bg-white/70 text-amber-800 font-semibold hover:bg-orange-100 hover:text-orange-600 transition-all duration-300"
+                    >
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 7l5 5-5 5" />
+                        </svg>
+                        <span className='links opacity-100 w-auto whitespace-nowrap overflow-hidden transition-all duration-300 font-medium'>
+                            {isProfessorMode ? 'Show Coordinator Tools' : 'Show Professor Tools'}
+                        </span>
+                    </button>
+                )}
+
 
             </nav>
 

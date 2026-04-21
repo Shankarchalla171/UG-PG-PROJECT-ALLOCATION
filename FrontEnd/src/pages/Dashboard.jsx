@@ -19,7 +19,13 @@ const Dashboard = () => {
     if (role === "STUDENT") {
         return <StudentDashboard />;
     } else if (role === "DEPTCORDINATOR") {
-        return <CoordinatorDashboard />;
+        const sidebarView =localStorage.getItem("sidebarViewMode");
+
+        if(sidebarView === "professor"){
+            return <Professor_dashboard/>
+        }else if(sidebarView === "coordinator") {
+           return <CoordinatorDashboard />;
+        }
     } else if (role === "PROFF") {
         // Faculty will be redirected, but show nothing while redirecting
         return <Professor_dashboard/>

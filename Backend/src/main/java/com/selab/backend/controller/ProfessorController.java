@@ -105,4 +105,9 @@ public class ProfessorController {
 
         return "Application rejected";
     }
+
+    @GetMapping("/slots")
+    public Double getSlotsLeft(@AuthenticationPrincipal User user){
+        return professorService.getSlotsLeft(user);
+    }
 }

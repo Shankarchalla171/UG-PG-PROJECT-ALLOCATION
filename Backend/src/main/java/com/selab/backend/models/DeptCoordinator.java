@@ -30,4 +30,5 @@ public class DeptCoordinator {
 
     private Long maxIntake;
     private Long maxTeamSize;
+    private Boolean isActive;
 }
