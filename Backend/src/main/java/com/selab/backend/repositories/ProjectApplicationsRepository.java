@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 //import java.util.List;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 //import java.util.UUID;
 
@@ -29,6 +30,21 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
             ApplicationStatus status,
             Pageable pageable
     );
+
+    @Query("""
+    SELECT pa.project.projectId, COUNT(pa)
+    FROM ProjectApplications pa
+    WHERE pa.project.projectId IN :projectIds
+    GROUP BY pa.project.projectId
+""")
+    List<Object[]> countApplicationsByProjectIds(@Param("projectIds") List<Long> projectIds);
+
+    @Query("""
+    SELECT pa.project.projectId 
+    FROM ProjectApplications pa 
+    WHERE pa.team = :team
+""")
+    Set<Long> findProjectIdsByTeam(@Param("team") Team team);
 
     @Query("""
     SELECT COUNT(pa) > 0

@@ -3,8 +3,10 @@ package com.selab.backend.repositories;
 import com.selab.backend.models.Professor;
 import com.selab.backend.models.Project;
 import com.selab.backend.models.Team;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +17,9 @@ import java.util.Optional;
 
 public interface ProjectRepository extends JpaRepository<Project, Long>, JpaSpecificationExecutor<Project> {
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Project p WHERE p.projectId = :id")
+    Optional<Project> findByIdForUpdate(@Param("id") Long id);
 
     @Query("""
     SELECT DISTINCT p.domain 

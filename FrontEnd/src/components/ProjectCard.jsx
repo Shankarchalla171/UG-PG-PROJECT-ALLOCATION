@@ -163,26 +163,12 @@ const ProjectCard = ({ project, activeProjectId, setActiveProjectId }) => {
 
             {/* ── Footer ───────────────────────────────────────────────────── */}
             <div className="px-6 py-4 bg-gradient-to-r from-amber-50 to-orange-50 border-t border-orange-100">
-                {applied ? (
-                    <div className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-emerald-100 text-emerald-700 text-sm font-medium rounded-lg">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                        </svg>
-                        Applied
-                        {appliedOn && (
-                            <span className="text-xs text-emerald-600 font-normal">
-                                · {new Date(appliedOn).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                            </span>
-                        )}
-                    </div>
-                ) : (
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setActiveProjectId(id); }}
-                        className="w-full py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-300"
-                    >
-                        View Details
-                    </button>
-                )}
+                <button
+                    onClick={(e) => { e.stopPropagation(); setActiveProjectId(id); }}
+                    className="w-full py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-300"
+                >
+                    View Details
+                </button>
             </div>
         </div>
     );
