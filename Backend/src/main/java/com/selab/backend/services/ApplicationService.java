@@ -226,7 +226,7 @@ public class ApplicationService {
 
         int teamSize = team.getTeamMembers().size();
         String roll = team.getTeamMembers().getFirst().getRollNumber();
-        String batch = roll.substring(0, 3);
+        String batch = roll.substring(0, 3).toUpperCase();
         Professor professor = project.getProfessor();
 
         ProfessorBatchQuota quota = professorBatchQuotaRepository
@@ -275,19 +275,40 @@ public class ApplicationService {
 
     public List<ApplicationDto> getFinal(User user) {
 
-        List<ProjectApplications> projectApplications= projectApplicationsRepository.findByStatus(ApplicationStatus.TEAM_CONFIRMED);
+        DeptCoordinator deptCoordinator = deptCoordinatorRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Coordinator not found"));
+
+        String coordinatorBatch = deptCoordinator.getBatch();
+
+        List<ProjectApplications> projectApplications =
+                projectApplicationsRepository.findByStatus(ApplicationStatus.TEAM_CONFIRMED);
+
         List<ApplicationDto> applicationDto = new ArrayList<>();
-        for(ProjectApplications app:projectApplications){
-            Team team=app.getTeam();
-            List<StudentDto> memberDto= team.getTeamMembers().stream()
-                    .map(studentMapper::toDto).toList();
-            TeamDto teamDto= TeamDto.builder()
-                            .teamId(team.getTeamId())
-                                    .isFinalized(team.getIsFinalized())
-                                            .members(memberDto)
+
+        for (ProjectApplications app : projectApplications) {
+
+            Team team = app.getTeam();
+
+            // 👉 Extract batch from first member
+            String teamBatch = team.getTeamMembers().getFirst()
+                    .getRollNumber()
+                    .substring(0, 3);
+
+            if (!teamBatch.equalsIgnoreCase(coordinatorBatch)) {
+                continue;
+            }
+
+            List<StudentDto> memberDto = team.getTeamMembers().stream()
+                    .map(studentMapper::toDto)
+                    .toList();
+
+            TeamDto teamDto = TeamDto.builder()
+                    .teamId(team.getTeamId())
+                    .isFinalized(team.getIsFinalized())
+                    .members(memberDto)
                     .build();
 
-            ApplicationDto appDto=ApplicationDto.builder()
+            ApplicationDto appDto = ApplicationDto.builder()
                     .project(projectMapper.toResponseDto(app.getProject()))
                     .team(teamDto)
                     .build();
