@@ -6,6 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
 
 @Entity
 @Table(name = "professor_batch_quota")
@@ -41,7 +45,7 @@ public class ProfessorBatchQuota {
      * for this professor in this batch
      */
     @Column(name = "max_students", nullable = false)
-    private Double maxStudents;
+    private Long maxStudents;
 
     /**
      * Number of students already allocated

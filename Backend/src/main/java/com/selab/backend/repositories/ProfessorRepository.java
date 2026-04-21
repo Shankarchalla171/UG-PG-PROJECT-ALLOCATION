@@ -1,6 +1,7 @@
 package com.selab.backend.repositories;
 
 import com.selab.backend.models.Professor;
+import com.selab.backend.models.ProfessorBatchQuota;
 import com.selab.backend.models.Project;
 import com.selab.backend.models.User;
 import org.springframework.data.domain.Limit;
@@ -17,20 +18,12 @@ public interface ProfessorRepository extends JpaRepository<Professor,Long> {
     List<Professor> findByDepartmentName(String departmentName);
 
     Optional<Professor> findByProfessorId(Long professorId);
-    List<Professor> findAllByStudentsTakenLessThanEqual(Long allowed);
-
-    @Query("""
-        SELECT p FROM Professor p
-        LEFT JOIN Collaboration c
-            ON c.receiver = p AND c.project = :project
-        WHERE c.id IS NULL
-        AND p.studentsTaken <= :allowed
-   """)
-    List<Professor> findAllAvailableForProject(
-            @Param("project") Project project,
-            @Param("allowed") Long allowed
-    );
 
     @Query("select p.email from Professor p ")
     List<String> getAllEmails();
+    @Query("SELECT pdq FROM ProfessorBatchQuota pdq WHERE pdq.professor = :professor AND pdq.batch = :batch")
+    Optional<ProfessorBatchQuota> findByProfessorAndBatch(
+            @Param("professor") Professor professor,
+            @Param("batch") String batch
+    );
 }

@@ -10,6 +10,8 @@ const ProfessorViewProjects = () => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [profSlotsLeft, setProfSlotsLeft] = useState(0);
+    const [eligibleProjectsForCollaboration, setEligibleProjectsForCollaboration] = useState([]);
     const API_URL = import.meta.env.VITE_API_URL;
 
     // Collaborate feature states
@@ -18,6 +20,17 @@ const ProfessorViewProjects = () => {
     const [selectedProject, setSelectedProject] = useState(null);
     const [collaborateProfessors, setCollaborateProfessors] = useState([]);
     const [collaborateLoading, setCollaborateLoading] = useState(false);
+    
+
+    // Show only projects where required slots are less than professor's available slots.
+    useEffect(() => {
+        const eligible = projects.filter(
+            (project) => project.slots / 2 <= profSlotsLeft
+        );
+        console.log(`Filtering projects for collaboration. Professor slots left: ${profSlotsLeft}. Eligible projects:`, eligible);  
+        setEligibleProjectsForCollaboration(eligible);
+    }, [projects]);
+
 
     // State for editing (includes domain)
     const [editingId, setEditingId] = useState(null);
@@ -34,8 +47,38 @@ const ProfessorViewProjects = () => {
     // Fetch projects on component mount
     useEffect(() => {
         fetchProjects();
+        fetchProfSlotsLeft();
     }, []);
+   const fetchProfSlotsLeft = async () => {
+        setLoading(true);
+        setError(null);
+       const url=`${API_URL}/api/professors/slots`;
 
+       try{
+           const response =await fetch(url,{
+              headers:{
+                "Authorization": `Bearer ${token}`
+              }
+           });
+
+           if(!response.ok){
+                const errorData = await response.text();
+                console.error('Error fetching professor slots:', errorData);    
+
+                throw new Error(`Failed to fetch professor slots: ${errorData}`);
+           }
+
+               const data = await response.json();
+                console.log('Professor slots left:', data);
+                setProfSlotsLeft(data);
+       }catch(err){
+           console.error('Error fetching professor slots:', err);
+            setError(err.message);
+           setProfSlotsLeft(0); // Default to 0 on error
+       }finally {
+            setLoading(false);
+        }
+   }
     const fetchProjects = async () => {
         setLoading(true);
         setError(null);
@@ -207,7 +250,8 @@ const ProfessorViewProjects = () => {
         setSelectedProject(project);
         setCollaborateLoading(true);
         
-        const requiredSlots = Math.floor(project.slots / 2);
+        const requiredSlots = project.slots / 2;
+        console.log(`Selected project: ${project.title} with ${project.slots} total slots. Fetching professors with at least ${requiredSlots} available slots.`);
         
         try {
             const url=`${API_URL}/api/professors/${project.projectId}/available-professors`
@@ -641,10 +685,10 @@ const ProfessorViewProjects = () => {
                             ) : collaborateStep === 'select' ? (
                                 // Project Selection Step
                                 <div className="space-y-3">
-                                    {projects.length === 0 ? (
-                                        <p className="text-center text-amber-600/70 py-8">No projects available</p>
+                                    {eligibleProjectsForCollaboration.length === 0 ? (
+                                        <p className="text-center text-amber-600/70 py-8">No projects available for collaboration based on your remaining slots</p>
                                     ) : (
-                                        projects.map((project) => (
+                                        eligibleProjectsForCollaboration.map((project) => (
                                             <div
                                                 key={project.projectId}
                                                 onClick={() => handleProjectSelect(project)}
@@ -656,7 +700,7 @@ const ProfessorViewProjects = () => {
                                                         <p className="text-sm text-amber-600/70 mt-1">{project.description}</p>
                                                         <div className="flex gap-4 mt-2 text-xs text-amber-600">
                                                             <span>Slots: {project.slots}</span>
-                                                            <span>Required: {Math.floor(project.slots / 2)}</span>
+                                                            <span>Required: {project.slots / 2}</span>
                                                         </div>
                                                     </div>
                                                     <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -676,7 +720,7 @@ const ProfessorViewProjects = () => {
                                                 <span className="font-medium">Selected Project:</span> {selectedProject.title}
                                             </p>
                                             <p className="text-xs text-amber-600 mt-1">
-                                                Looking for professors with {Math.floor(selectedProject.slots / 2)} available slots
+                                                Looking for professors with available slots more than  {selectedProject.slots / 2} available slots
                                             </p>
                                         </div>
                                     )}

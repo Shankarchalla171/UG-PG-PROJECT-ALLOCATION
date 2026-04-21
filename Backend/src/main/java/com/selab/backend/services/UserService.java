@@ -11,6 +11,7 @@ import com.selab.backend.repositories.DeptCoordinatorRepository;
 import com.selab.backend.repositories.ProfessorRepository;
 import com.selab.backend.repositories.StudentRepository;
 import com.selab.backend.repositories.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
@@ -143,6 +144,7 @@ public class UserService implements UserDetailsService {
         }
     }
 
+
     public void makeCoordinator(Long userId, String deptName, String batch) {
 
         User user = userRepository.findById(userId)
@@ -163,6 +165,14 @@ public class UserService implements UserDetailsService {
         }
 
         // 🔴 Enforce ONE coordinator per dept per batch
+        //find the existing active coordinator and deactivate him
+        DeptCoordinator existingCoordinator = deptCoordinatorRepository.findByDeptNameAndIsActive(deptName,true).orElse(null);
+
+        if(existingCoordinator != null){
+            existingCoordinator.setIsActive(false);
+            deptCoordinatorRepository.save(existingCoordinator);
+        }
+
         if (deptCoordinatorRepository
                 .findByDeptNameAndBatch(deptName, batch)
                 .isPresent()) {
@@ -180,6 +190,7 @@ public class UserService implements UserDetailsService {
         coordinator.setUser(user);  // JPA handles user_id
         coordinator.setDeptName(deptName);
         coordinator.setBatch(batch);
+        coordinator.setIsActive(true);
 
         deptCoordinatorRepository.save(coordinator);
     }

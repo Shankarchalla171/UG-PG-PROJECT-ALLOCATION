@@ -29,6 +29,7 @@ public class ProfessorService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final ProfessorMapper professorMapper;
+    private final ProfessorBatchQuotaRepository professorBatchQuotaRepository;
     private  final DeptCoordinatorRepository coordinatorRepository;
     private final ProjectApplicationsRepository projectApplicationsRepository;
 
@@ -61,7 +62,6 @@ public class ProfessorService {
                     .profilePhotoPath(relativePath)
                     .experience(profileRequest.getExperience())
                     .user(user)
-                    .studentsTaken(0L)
                     .build();
             return professorRepository.save(professor);
 
@@ -109,17 +109,17 @@ public class ProfessorService {
     public List<Professor> filterBySlots(Long projectId, User user) {
 
             Professor professor=professorRepository.findByUser(user).orElseThrow(()->new RuntimeException("only professors are allowed to user this filter"));
-            DeptCoordinator coordinator= coordinatorRepository.findByDeptName(professor.getDepartmentName()).orElseThrow(()-> new RuntimeException("no dept coordinator found for your department"));
+            DeptCoordinator coordinator= coordinatorRepository.findByDeptNameAndIsActive(professor.getDepartmentName(), true).orElseThrow(()-> new RuntimeException("no dept coordinator found for your department"));
             Project project=projectRepository.findByProjectId(projectId).orElseThrow(()-> new ResourceNotFoundException("Project with ProjectID  : "+projectId+" not found"));
 
             Long maxIntakeAllowed=coordinator.getMaxIntake();
-            long allowed=maxIntakeAllowed-(project.getSlots()/2);
+            Double needed = maxIntakeAllowed.doubleValue() - (project.getSlots() / 2.0);
         System.out.println("Max intake allowed = " + maxIntakeAllowed);
         System.out.println("Project slots = " + project.getSlots());
-        System.out.println("Allowed = " + allowed);
+        System.out.println("Allowed = " + needed);
         System.out.println("Project ID = " + project.getProjectId());
-            return  professorRepository
-                    .findAllAvailableForProject(project,allowed)
+            return  professorBatchQuotaRepository
+                    .findAllAvailableForProject(project,needed,coordinator.getBatch())
                     .stream()
                     .filter(prof -> !prof.getProfessorId().equals(professor.getProfessorId()))
                     .toList();
@@ -162,5 +162,13 @@ public class ProfessorService {
         }
 
         return stats;
+    }
+
+    public Double getSlotsLeft(User user) {
+        Professor professor= professorRepository.findByUser(user).orElseThrow(() ->new UserNotFoundException("no prof found with email : "+user.getEmail()));
+        DeptCoordinator coordinator= coordinatorRepository.findByDeptNameAndIsActive(professor.getDepartmentName(), true).orElseThrow(()-> new UserNotFoundException("no Dept Coordinator found for prof department"));
+
+        ProfessorBatchQuota pbq=professorBatchQuotaRepository.findByProfessorAndBatch(professor,coordinator.getBatch()).orElseThrow(()-> new ResourceNotFoundException("no Quato found for the professor found in the current batch"));
+        return pbq.getMaxStudents()-pbq.getAllocatedStudents();
     }
 }
