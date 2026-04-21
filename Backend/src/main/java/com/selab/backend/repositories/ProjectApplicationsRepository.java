@@ -58,12 +58,12 @@ public interface ProjectApplicationsRepository extends JpaRepository<ProjectAppl
     long countByProject(Project project);
 
 
-    @Query("""
-    SELECT pa FROM ProjectApplications pa
-    JOIN FETCH pa.project
-    JOIN FETCH pa.team
-    WHERE pa.status = :status
-""")
+//    @Query("""
+//    SELECT pa FROM ProjectApplications pa
+//    JOIN FETCH pa.project
+//    JOIN FETCH pa.team
+//    WHERE pa.status = :status
+//""")
 
     Optional<ProjectApplications> findByAppliedProjectsId(Long appliedProjectsId);
 
