@@ -39,7 +39,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long>, JpaSpec
     
     List<Project> findByTitleContainingIgnoreCase(String keyword);
     Optional<Project> findByTitleIgnoreCase(String title);
-    List<Project> findByProfessorProfessorId(Long professorId);
+    @Query("""
+        SELECT p FROM Project p
+        WHERE p.professor.professorId = :professorId
+           OR p.coGuide.professorId = :professorId
+    """)
+    List<Project> findByProfessorOrCoGuide(@Param("professorId") Long professorId);
     List<Project> findBySlots(int slots);
     List<Project> findBySlotsGreaterThanEqual(int minSlots);
 

@@ -251,7 +251,7 @@ public class ProjectService {
             throw new ResourceNotFoundException("Professor not found with id: " + professorId);
         }
 
-        List<Project> projects = projectRepository.findByProfessorProfessorId(professorId);
+        List<Project> projects = projectRepository.findByProfessorOrCoGuide(professorId);
         return projects.stream()
                 .map(this::mapToResponseDto)  // Uses the simpler version
                 .collect(Collectors.toList());
