@@ -241,6 +241,7 @@ public class ProjectService {
     public ProjectResponseDto getProjectById(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + id));
+
         return mapToResponseDto(project, null);  // Uses the simpler version
     }
 
@@ -293,7 +294,7 @@ public class ProjectService {
                 .prerequisites(project.getPreRequisites())
                 .domain(project.getDomain())
                 .professor(professorMapper.toDto(project.getProfessor()))  // Get from project
-                .isCoGuide(project.getCoGuide() != null &&
+                .isCoGuide(project.getCoGuide() != null && currentProfessor != null &&
                         project.getCoGuide().getProfessorId().equals(currentProfessor.getProfessorId()))
                 .hasCoGuide(project.getCoGuide() != null)
                 .build();
