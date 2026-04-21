@@ -24,6 +24,7 @@ jobs:
             git pull origin main
             
             if docker compose up -d --build; then
+              systemctl restart nginx
               echo "✅ Deployment successful!"
               echo $CURRENT_COMMIT > .last_stable_commit
             else
