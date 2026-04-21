@@ -4,6 +4,7 @@ import com.selab.backend.Dto.*;
 import com.selab.backend.mappers.StudentMapper;
 import com.selab.backend.models.Role;
 import com.selab.backend.models.Student;
+import com.selab.backend.models.TeamRole;
 import com.selab.backend.models.User;
 import com.selab.backend.services.ApplicationService;
 import com.selab.backend.services.ProjectService;
@@ -121,5 +122,10 @@ public class StudentController {
         Pageable pageable = PageRequest.of(page, size, Sort.by("appliedOn").descending());
 
         return applicationService.getApplications(student, pageable);
+    }
+
+    @GetMapping("/team-role")
+    public ResponseEntity<String> getTeamRole(@AuthenticationPrincipal User user){
+        return new ResponseEntity<>(studentService.teamRole(user).toString(),HttpStatus.OK);
     }
 }

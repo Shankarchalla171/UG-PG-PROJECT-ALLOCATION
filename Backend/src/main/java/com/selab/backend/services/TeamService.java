@@ -85,9 +85,12 @@ public class TeamService {
 
         Student student =studentRepository.findByUser(user).orElseThrow(()-> new UserNotFoundException("user with email"+user.getEmail()+" not Found"));
         Team currentTeam = teamRepository.findTeamWithMembers(teamId).orElseThrow(()-> new RuntimeException("team not found"));
+        Student teamLead= studentRepository.findByTeamAndTeamRole(currentTeam, TeamRole.TEAMlEAD).orElseThrow(()-> new TeamInvalidException("cant find lead of this team"));
         if(currentTeam.getTeamMembers().size()==3 ){
             throw new TeamInvalidException("This team is full! Maximum 3 members allowed.");
         }
+        if(student.getDepartmentName().equals(teamLead.getDepartmentName()))
+             throw new TeamInvalidException("you cant join teams of  other departments ");
         if(currentTeam.getIsFinalized())
              throw new TeamInvalidException("The team is already finalized , you cant join them");
         student.setTeam(currentTeam);
