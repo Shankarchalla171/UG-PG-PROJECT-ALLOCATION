@@ -101,6 +101,7 @@ public class StudentService {
                     .resumePath(relativeResumePath)
                     .profilePhotoLink(relativePhotoPath)
                     .user(user)
+                    .teamRole(TeamRole.NO_TEAM)
                     .build();
             return studentRepository.save(student);
 
