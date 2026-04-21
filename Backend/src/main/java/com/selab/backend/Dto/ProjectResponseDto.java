@@ -15,5 +15,6 @@ public class ProjectResponseDto {
     private String duration;
     private String prerequisites;
     private ProfDto professor;
+    private ProfDto coGuide;
 
 }
