@@ -74,7 +74,7 @@ public class ConfirmationController {
             @AuthenticationPrincipal User currentUser) {
 
         // Verify user is professor
-        if (currentUser.getRole() != Role.PROFF) {
+        if (currentUser.getRole() != Role.PROFF && currentUser.getRole() != Role.DEPTCORDINATOR) {
             return ResponseEntity.status(403).build();
         }
 
