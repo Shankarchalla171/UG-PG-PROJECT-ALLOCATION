@@ -1,0 +1,302 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Theme settings
+\usetheme{Madrid}
+\usecolortheme{beaver}
+
+% Custom Colors
+\definecolor{primary}{HTML}{B07030}
+\definecolor{secondary}{HTML}{121212}
+
+\title{Edu Project: UG/PG Project Allocation System}
+\subtitle{Software Engineering Lab - Version 1.0}
+\author{Group 5: Gouri Shankar, Pratheek, Manaswin, Abhiram, Gowrinath}
+\institute{National Institute of Technology (NIT) Calicut}
+\date{2026}
+
+\begin{document}
+
+% Slide 1: Title Slide
+\begin{frame}
+    \titlepage
+\end{frame}
+
+% Slide 2: Outline
+\begin{frame}{Outline}
+    \tableofcontents
+\end{frame}
+
+\section{Introduction}
+
+% Slide 3: Problem Statement
+\begin{frame}{Problem Statement}
+    \begin{itemize}
+        \item \textbf{Current Process:} Departments at NIT Calicut rely on manual, paper-based project allocation.
+        \item \textbf{Challenges:}
+        \begin{itemize}
+            \item Prone to miscommunication and lost records.
+            \item Inequitable distribution of faculty workload.
+            \item High administrative overhead every semester.
+            \item Lack of real-time tracking for students and faculty.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+% Slide 4: Proposed Solution
+\begin{frame}{Proposed Solution: Edu Project}
+    \begin{itemize}
+        \item A centralized, college-internal web portal to digitalize the UG/PG project lifecycle.
+        \item \textbf{Key Capabilities:}
+        \begin{itemize}
+            \item Students browse projects and register preferences.
+            \item Faculty propose and manage project titles dynamically.
+            \item Department Coordinators oversee fair, conflict-free allocation.
+            \item Real-time tracking and automated notifications.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+% Slide 5: User Roles
+\begin{frame}{User Roles \& Actors}
+    \begin{itemize}
+        \item \textbf{Student:} Browse projects, form teams, apply as Team Leader, track status.
+        \item \textbf{Faculty (Professor):} Propose projects, define domains/slots, review applications, accept/reject teams.
+        \item \textbf{Department Coordinator:} Set faculty intake limits, manage phases (Team Formation, Allocation), resolve conflicts.
+        \item \textbf{Admin:} Create users, assign system roles, system governance.
+    \end{itemize}
+\end{frame}
+
+% Slide 6: Key Features
+\begin{frame}{Core System Features}
+    \begin{itemize}
+        \item Role-based authentication (JWT \& Google OAuth).
+        \item Faculty-driven project catalogue with capacity limits.
+        \item Dynamic slot management and capacity control.
+        \item Multi-semester project duration handling.
+        \item Automated audit logs and activity tracking.
+    \end{itemize}
+\end{frame}
+
+\section{System Architecture}
+
+% Slide 7: High-Level Architecture
+\begin{frame}{System Architecture Overview}
+    \begin{itemize}
+        \item \textbf{Client Layer:} React 19 + Vite 7 (Responsive Web Interface).
+        \item \textbf{API Layer:} Spring Boot (REST APIs, Security).
+        \item \textbf{Data Layer:} MySQL 8.0 (Relational Database with Hibernate ORM).
+        \item \textbf{Infrastructure:} Docker containerization.
+    \end{itemize}
+    \vspace{0.5cm}
+    \begin{center}
+        \textit{Data Flow: Client $\rightarrow$ REST API $\rightarrow$ Database}
+    \end{center}
+\end{frame}
+
+% Slide 8: Technology Stack (Frontend)
+\begin{frame}{Technology Stack: Frontend}
+    \begin{itemize}
+        \item \textbf{Framework:} React.js with Vite for fast builds.
+        \item \textbf{Styling:} Tailwind CSS / Custom theming.
+        \item \textbf{State Management:} React Context / Hooks.
+        \item \textbf{Features:}
+        \begin{itemize}
+            \item Dynamic role-based dashboards.
+            \item Form validation.
+            \item Secure token handling (JWT).
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+% Slide 9: Technology Stack (Backend \& DB)
+\begin{frame}{Technology Stack: Backend \& Database}
+    \begin{itemize}
+        \item \textbf{Backend Framework:} Java Spring Boot.
+        \item \textbf{Security:} Spring Security (RBAC), JWT, Google OAuth2.
+        \item \textbf{Database:} MySQL (JPA / Hibernate for object-relational mapping).
+        \item \textbf{Performance:} Redis for caching (planned), asynchronous processing for notifications.
+    \end{itemize}
+\end{frame}
+
+% Slide 10: Deployment Architecture (Docker \& CI/CD)
+\begin{frame}{Deployment \& CI/CD}
+    \begin{itemize}
+        \item \textbf{Containerization:} Docker \& Docker Compose.
+        \item \textbf{Services:} Isolated containers for React frontend, Spring Boot backend, MySQL, and Adminer.
+        \item \textbf{Automation:} GitHub Actions workflow for CI/CD.
+        \item \textbf{Safety:} Automated SSH deployment with rollback mechanisms upon failure.
+    \end{itemize}
+\end{frame}
+
+\section{Core Workflows}
+
+% Slide 11: Team Formation Flow
+\begin{frame}{Workflow: Team Formation}
+    \begin{enumerate}
+        \item \textbf{Create Team:} A student creates a team and becomes the Team Leader (max 3 members).
+        \item \textbf{Generate ID:} A unique Team ID is generated.
+        \item \textbf{Join Team:} Other members join using the Team ID.
+        \item \textbf{Finalize:} Team is locked before applying to projects.
+    \end{enumerate}
+\end{frame}
+
+% Slide 12: 3-Way Handshake Allocation
+\begin{frame}{Workflow: 3-Way Handshake Allocation}
+    \begin{enumerate}
+        \item \textbf{Apply to Project (Team Leader):} Submits application with resume $\rightarrow$ \texttt{PENDING}.
+        \item \textbf{Professor Decision:} Reviews application and accepts/rejects $\rightarrow$ \texttt{CONFIRMED} or \texttt{REJECTED}.
+        \item \textbf{Team Confirmation:} Team Leader accepts the offer $\rightarrow$ \texttt{TEAM\_CONFIRMED}.
+        \item \textbf{Finalization:} Project is officially assigned; other pending applications for the team are auto-rejected.
+    \end{enumerate}
+\end{frame}
+
+% Slide 13: Phase Management
+\begin{frame}{Phase Management (Coordinator)}
+    \begin{itemize}
+        \item Coordinators enforce strict deadlines for different phases:
+        \begin{enumerate}
+            \item \textbf{Team Formation Phase:} Students group up.
+            \item \textbf{Project Creation Phase:} Faculty propose topics and slots.
+            \item \textbf{Project Allocation Phase:} 3-way handshake execution.
+        \end{enumerate}
+        \item The system restricts actions outside of active phases.
+    \end{itemize}
+\end{frame}
+
+% Slide 14: Database Design
+\begin{frame}{Database Entities (Overview)}
+    \begin{itemize}
+        \item \textbf{User:} id, name, email, role, dept, passwordHash.
+        \item \textbf{Project:} title, description, capacity, professor, phase, projectDuration.
+        \item \textbf{Team:} teamId, leader, members, status.
+        \item \textbf{ProjectApplications:} team, project, status (PENDING $\rightarrow$ CONFIRMED).
+    \end{itemize}
+\end{frame}
+
+\section{System Interface \& Demonstrations}
+
+% Slide 15: UI - Authentication
+\begin{frame}{User Interface: Authentication}
+    \begin{center}
+        \textit{[Placeholder: Insert Screenshot of Login Page / Google OAuth]}
+    \end{center}
+    \vspace{1cm}
+    \begin{itemize}
+        \item Secure login using Institutional Credentials.
+        \item Role recognition upon successful authentication.
+    \end{itemize}
+\end{frame}
+
+% Slide 16: UI - Student Dashboard
+\begin{frame}{User Interface: Student Dashboard}
+    \begin{center}
+        \textit{[Placeholder: Insert Screenshot of Student Dashboard / Project Catalogue]}
+    \end{center}
+    \vspace{1cm}
+    \begin{itemize}
+        \item Displays available projects filtered by domain and faculty.
+        \item Shows real-time application status.
+    \end{itemize}
+\end{frame}
+
+% Slide 17: UI - Faculty Dashboard
+\begin{frame}{User Interface: Faculty Dashboard}
+    \begin{center}
+        \textit{[Placeholder: Insert Screenshot of Faculty Dashboard / Application Review]}
+    \end{center}
+    \vspace{1cm}
+    \begin{itemize}
+        \item Interface to create/edit projects.
+        \item View applied teams, member resumes, and CGPA.
+    \end{itemize}
+\end{frame}
+
+% Slide 18: UI - Coordinator Dashboard
+\begin{frame}{User Interface: Coordinator Dashboard}
+    \begin{center}
+        \textit{[Placeholder: Insert Screenshot of Coordinator Phase Management]}
+    \end{center}
+    \vspace{1cm}
+    \begin{itemize}
+        \item Global view of all team allocations.
+        \item Deadline management and faculty slot control.
+    \end{itemize}
+\end{frame}
+
+\section{Implementation Details}
+
+% Slide 19: Code Snippet - Entity Mapping
+\begin{frame}[fragile]{Implementation: Spring Boot Entity (Example)}
+    \begin{center}
+        \textit{[Placeholder: Insert Screenshot or Code snippet of JPA Entity mapping for Project or Team]}
+    \end{center}
+    \vspace{1cm}
+    \begin{itemize}
+        \item Demonstrates ORM mapping using Hibernate.
+        \item Highlights relationships (One-to-Many, Many-to-One).
+    \end{itemize}
+\end{frame}
+
+% Slide 20: Code Snippet - 3-Way Handshake Logic
+\begin{frame}[fragile]{Implementation: 3-Way Handshake Controller}
+    \begin{center}
+        \textit{[Placeholder: Insert Screenshot or Code snippet of the Allocation Controller]}
+    \end{center}
+    \vspace{1cm}
+    \begin{itemize}
+        \item Shows the state transition from PENDING to TEAM\_CONFIRMED.
+        \item Transactional safeguards to prevent double allocation.
+    \end{itemize}
+\end{frame}
+
+% Slide 21: Code Snippet - Docker Compose
+\begin{frame}[fragile]{Implementation: Docker Infrastructure}
+    \begin{center}
+        \textit{[Placeholder: Insert Screenshot or Code snippet of docker-compose.yml]}
+    \end{center}
+    \vspace{1cm}
+    \begin{itemize}
+        \item Multi-container setup (MySQL, Backend, Frontend).
+        \item Network bridging and volume management.
+    \end{itemize}
+\end{frame}
+
+% Slide 22: Code Snippet - CI/CD Pipeline
+\begin{frame}[fragile]{Implementation: GitHub Actions CI/CD}
+    \begin{center}
+        \textit{[Placeholder: Insert Screenshot or Code snippet of deployment.yml]}
+    \end{center}
+    \vspace{1cm}
+    \begin{itemize}
+        \item Automated deployment to server via SSH.
+        \item Rollback logic triggering on build failure.
+    \end{itemize}
+\end{frame}
+
+\section{Conclusion}
+
+% Slide 23: Conclusion
+\begin{frame}{Conclusion}
+    \begin{itemize}
+        \item \textbf{Efficiency:} Replaces manual paperwork with a streamlined digital workflow.
+        \item \textbf{Fairness:} Ensures transparent allocation through the 3-way handshake process.
+        \item \textbf{Scalability:} Dockerized, scalable architecture ready for multi-department use.
+        \item \textbf{Future Scope:} Integration with existing institutional SIS and advanced caching (Redis).
+    \end{itemize}
+\end{frame}
+
+% Slide 24: Q&A
+\begin{frame}
+    \begin{center}
+        \Huge \textbf{Thank You!}\\
+        \vspace{0.5cm}
+        \Large Questions?
+    \end{center}
+\end{frame}
+
+\end{document}
