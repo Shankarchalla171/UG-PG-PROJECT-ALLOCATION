@@ -376,9 +376,9 @@ const ProfilePage = () => {
                             draftProfile.profilePhoto
                               ? URL.createObjectURL(draftProfile.profilePhoto)
                               : profile.profilePhotoLink
-                                ? `http://localhost:8080/${profile.profilePhotoLink}`
+                                ? `${API_URL}/${profile.profilePhotoLink}`
                                 : profile.profilePhotoPath
-                                  ? `http://localhost:8080/${profile.profilePhotoPath}`
+                                  ? `${API_URL}/${profile.profilePhotoPath}`
                                   : profilePlaceholder
                           }
                           alt="Profile"
@@ -615,7 +615,7 @@ const ProfilePage = () => {
                               </svg>
                             </button>
                             <a
-                              href={`http://localhost:8080/${profile.resumePath}`}
+                              href={`${API_URL}/${profile.resumePath}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               title="Open in new tab"
@@ -633,7 +633,7 @@ const ProfilePage = () => {
                           {showResume && (
                             <div className="mt-3 rounded-xl border border-orange-200/60 overflow-hidden shadow-sm">
                               <iframe
-                                src={`http://localhost:8080/${profile.resumePath}`}
+                                src={`${API_URL}/${profile.resumePath}`}
                                 className="w-full h-[680px]"
                                 title="Resume"
                               />

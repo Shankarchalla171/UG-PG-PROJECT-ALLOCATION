@@ -13,6 +13,7 @@ const ProfessorViewProjects = () => {
     const [profSlotsLeft, setProfSlotsLeft] = useState(0);
     const [eligibleProjectsForCollaboration, setEligibleProjectsForCollaboration] = useState([]);
     const API_URL = import.meta.env.VITE_API_URL;
+    
 
     // Collaborate feature states
     const [showCollaborateModal, setShowCollaborateModal] = useState(false);
@@ -119,7 +120,7 @@ const ProfessorViewProjects = () => {
         if (!window.confirm('Are you sure you want to delete this project?')) return;
 
         try {
-            const response = await fetch(`http://localhost:8080/api/projects/${id}`, {
+            const response = await fetch(`${API_URL}/api/projects/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -177,7 +178,7 @@ const ProfessorViewProjects = () => {
 
             console.log('Saving edits with payload:', payload);
 
-            const response = await fetch(`http://localhost:8080/api/projects/${id}`, {
+            const response = await fetch(`${API_URL}/api/projects/${id}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
