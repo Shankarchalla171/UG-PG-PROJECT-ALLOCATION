@@ -93,7 +93,7 @@ public class ProfessorController {
     @PutMapping("/applications/{id}/accept")
     public String acceptApplication(@PathVariable Long id){
 
-        applicationService.accept(id);
+        applicationService.acceptApplication(id);
 
         return "Application accepted";
     }

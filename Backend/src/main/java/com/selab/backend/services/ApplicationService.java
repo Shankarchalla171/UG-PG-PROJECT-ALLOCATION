@@ -289,10 +289,7 @@ public void acceptApplication(Long applicationId) {
         if (teamSize > professorRemaining) {
             throw new RuntimeException("Not enough slots for this batch");
         }
-        
-        // Update professor quota
-        professorQuota.setAllocatedStudents(professorAllocated + teamSize);
-        professorBatchQuotaRepository.save(professorQuota);
+
         
     } else {
         // WITH CO-GUIDE: Check BOTH have enough for half the team size
@@ -300,7 +297,7 @@ public void acceptApplication(Long applicationId) {
         
         // Check professor has enough for half
         if (halfTeamSize > professorRemaining) {
-            throw new RuntimeException("Professor doesn't have enough quota slots for their share");
+            throw new RuntimeException("Professor doesn't have enough slots for their share");
         }
         
         // Get and check co-guide quota
@@ -316,20 +313,10 @@ public void acceptApplication(Long applicationId) {
         
         // Check co-guide has enough for half
         if (halfTeamSize > coGuideRemaining) {
-            throw new RuntimeException("Co-Guide doesn't have enough quota slots for their share");
+            throw new RuntimeException("Co-Guide doesn't have enough slots for their share");
         }
-        
-        // Update BOTH quotas
-        professorQuota.setAllocatedStudents(professorAllocated + halfTeamSize);
-        professorBatchQuotaRepository.save(professorQuota);
-        
-        coGuideQuota.setAllocatedStudents(coGuideAllocated + halfTeamSize);
-        professorBatchQuotaRepository.save(coGuideQuota);
-    }
 
-    // Update project allocated slots
-    project.setAllocatedSlots(project.getAllocatedSlots() + teamSize);
-    projectRepository.save(project);
+    }
 
     // Update application status
     application.setStatus(ApplicationStatus.CONFIRMED);
