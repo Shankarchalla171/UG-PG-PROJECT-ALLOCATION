@@ -220,6 +220,17 @@ public Page<ProfessorApplicationDto> getProfessorApplications(Professor professo
 
         projectApplicationsRepository.save(application);
     }
+
+
+    public void accept(Long applicationId){
+        ProjectApplications application =
+                projectApplicationsRepository.findById(applicationId)
+                        .orElseThrow(() -> new RuntimeException("Application not found"));
+
+        application.setStatus(ApplicationStatus.CONFIRMED);
+        projectApplicationsRepository.save(application);
+    }
+
 public void acceptApplication(Long applicationId) {
 
     ProjectApplications application =
