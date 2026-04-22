@@ -36,7 +36,7 @@ const ProfessorDashboard = () => {
 
   const fetchRecentApplications = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/professor/applications?page=0&size=3`, {
+      const response = await fetch(`${API_URL}/api/professors/applications?page=0&size=3`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`
