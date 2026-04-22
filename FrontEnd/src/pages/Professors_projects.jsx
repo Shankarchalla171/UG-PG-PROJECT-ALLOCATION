@@ -598,7 +598,7 @@ const ProfessorViewProjects = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Applicants (placeholder) */}
+                                                {/* Applicants (placeholder)
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
                                                         <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -609,7 +609,7 @@ const ProfessorViewProjects = () => {
                                                         <p className="text-xs text-amber-600/70">Applicants</p>
                                                         <p className="text-sm font-medium text-amber-800">{project.applicants || 0} applied</p>
                                                     </div>
-                                                </div>
+                                                </div> */}
                                             </div>
 
                                             {/* Prerequisites / Skills */}
