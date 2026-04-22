@@ -690,13 +690,13 @@ const ProjectListing = () => {
                   )}
                   <button onClick={handleNext} disabled={page === totalPages - 1} className="px-3 py-1 border rounded disabled:opacity-50">Next</button>
                 </div>
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   <span className="text-sm text-amber-700">Go to page:</span>
                   <input type="number" min="1" max={totalPages} value={pageInput}
                     onChange={(e) => setPageInput(e.target.value)}
                     className="w-16 px-2 py-1 border rounded text-sm" />
                   <button onClick={handlePageInput} className="px-2 py-1 bg-orange-500 text-white rounded text-sm">Go</button>
-                </div>
+                </div> */}
               </div>
             )}
 
