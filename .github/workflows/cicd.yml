@@ -21,16 +21,16 @@ jobs:
             CURRENT_COMMIT=$(git rev-parse HEAD)
             echo "Current commit: $CURRENT_COMMIT"
             
-            git pull origin main
+            sudo git pull origin main
             
-            if docker compose up -d --build; then
-              systemctl restart nginx
+            if sudo docker compose up -d --build; then
+              sudo systemctl restart nginx
               echo "✅ Deployment successful!"
-              echo $CURRENT_COMMIT > .last_stable_commit
+              echo $CURRENT_COMMIT | sudo tee .last_stable_commit
             else
               echo "❌ Deployment failed! Rolling back..."
-              git checkout $CURRENT_COMMIT
-              docker compose up -d --build
+              sudo git checkout $CURRENT_COMMIT
+              sudo docker compose up -d --build
               echo "⚠️ Rolled back to commit: $CURRENT_COMMIT"
               exit 1  
             fi
